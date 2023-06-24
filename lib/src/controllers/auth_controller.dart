@@ -3,8 +3,27 @@ part of 'controllers.dart';
 class DefaultAuthController<T extends Authenticator>
     extends Cubit<AuthResponse<T>> {
   final AuthHandler authHandler;
-  final DataHandler<T> dataHandler;
+  final DataHandler<T>? dataHandler;
   final String Function(String uid)? createUid;
+
+  DefaultAuthController._(this.authHandler, this.dataHandler);
+
+  factory DefaultAuthController.fromHandler(
+    AuthHandler authHandler,
+    DataHandler<T> dataHandler,
+  ) {
+    return DefaultAuthController._(authHandler, dataHandler);
+  }
+
+  factory DefaultAuthController.fromSource({
+    required AuthDataSource authSource,
+    required AuthenticatorDataSource<T>? dataSource,
+  }) {
+    return DefaultAuthController._(
+      AuthHandlerImpl.fromSource(authSource),
+      AuthenticatorDataSourceImpl<T>(),
+    );
+  }
 
   DefaultAuthController({
     required this.authHandler,
@@ -365,5 +384,24 @@ class DefaultAuthController<T extends Authenticator>
         emit(AuthResponse.failure(e.toString()));
       }
     }
+  }
+}
+
+abstract class AuthenticatorDataSource<T extends Authenticator>
+    extends LocalDataSourceImpl<T> {
+  AuthenticatorDataSource({
+    required super.path,
+  });
+}
+
+class AuthenticatorDataSourceImpl<T extends Authenticator>
+    extends AuthenticatorDataSource<T> {
+  AuthenticatorDataSourceImpl({
+    super.path = "authenticators",
+  });
+
+  @override
+  T build(source) {
+    return Authenticator.from(source) as T;
   }
 }

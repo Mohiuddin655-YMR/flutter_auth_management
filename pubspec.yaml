@@ -13,7 +13,7 @@ dependencies:
   intl: ^0.18.1
   flutter_bloc: ^8.1.3
   connectivity_plus: ^4.0.1
-  data_management: ^0.0.2
+  data_management: ^0.0.4
 
   # Authentications
   firebase_auth: ^4.6.1
