@@ -1,6 +1,7 @@
 part of 'controllers.dart';
 
-class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
+class DefaultAuthController<T extends Authenticator>
+    extends Cubit<AuthResponse<T>> {
   final AuthHandler authHandler;
   final DataHandler<T> dataHandler;
   final String Function(String uid)? createUid;
@@ -29,46 +30,7 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signUpByEmail(AuthInfo entity) async {
-    final email = entity.email;
-    final password = entity.password;
-    if (!Validator.isValidEmail(email)) {
-      emit(AuthResponse.failure("Email isn't valid!"));
-    } else if (!Validator.isValidPassword(password)) {
-      emit(AuthResponse.failure("Password isn't valid!"));
-    } else {
-      emit(AuthResponse.loading(AuthProvider.email));
-      try {
-        final response = await authHandler.signUpWithEmailNPassword(
-          email: email,
-          password: password,
-        );
-        if (response.isSuccessful) {
-          final result = response.data?.user;
-          if (result != null) {
-            final user = entity.copy(
-              id: createUid?.call(result.uid) ?? result.uid,
-              email: result.email,
-              name: result.displayName,
-              phone: result.phoneNumber,
-              photo: result.photoURL,
-              provider: AuthProvider.email.name,
-            ) as T;
-            await dataHandler.insert(user);
-            emit(AuthResponse.authenticated(user));
-          } else {
-            emit(AuthResponse.failure(response.exception));
-          }
-        } else {
-          emit(AuthResponse.failure(response.exception));
-        }
-      } catch (e) {
-        emit(AuthResponse.failure(e.toString()));
-      }
-    }
-  }
-
-  Future signInByApple(AuthInfo entity) async {
+  Future signInByApple([Authenticator? authenticator]) async {
     emit(AuthResponse.loading(AuthProvider.apple));
     try {
       final response = await authHandler.signInWithApple();
@@ -79,7 +41,7 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = entity.copy(
+          final user = (authenticator ?? Authenticator()).copy(
             id: createUid?.call(currentData?.uid ?? result.id ?? uid) ??
                 currentData?.uid ??
                 result.id,
@@ -108,12 +70,12 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
       if (response.isSuccessful) {
         final userResponse = await dataHandler.get(createUid?.call(uid) ?? uid);
         final user = userResponse.data;
-        if (userResponse.isSuccessful && user is AuthInfo) {
+        if (userResponse.isSuccessful && user is Authenticator) {
           final email = user.email;
           final password = user.password;
-          final loginResponse = await authHandler.signInWithEmail(
-            email: email,
-            password: password,
+          final loginResponse = await authHandler.signInWithEmailNPassword(
+            email: email ?? "example@gmail.com",
+            password: password ?? "password",
           );
           if (loginResponse.isSuccessful) {
             emit(AuthResponse.authenticated(user));
@@ -131,9 +93,9 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signInByEmail(AuthInfo entity) async {
-    final email = entity.email;
-    final password = entity.password;
+  Future signInByEmail(EmailAuthenticator authenticator) async {
+    final email = authenticator.email;
+    final password = authenticator.password;
     if (!Validator.isValidEmail(email)) {
       emit(AuthResponse.failure("Email isn't valid!"));
     } else if (!Validator.isValidPassword(password)) {
@@ -141,14 +103,14 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
     } else {
       emit(AuthResponse.loading(AuthProvider.email));
       try {
-        final response = await authHandler.signInWithEmail(
-          email: email,
-          password: password,
+        final response = await authHandler.signInWithEmailNPassword(
+          email: email ?? "example@gmail.com",
+          password: password ?? "password",
         );
         if (response.isSuccessful) {
           final result = response.data?.user;
           if (result != null) {
-            final user = entity.copy(
+            final user = authenticator.copy(
               id: createUid?.call(result.uid) ?? result.uid,
               email: result.email,
               name: result.displayName,
@@ -169,7 +131,7 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signInByFacebook(AuthInfo entity) async {
+  Future signInByFacebook([Authenticator? authenticator]) async {
     emit(AuthResponse.loading(AuthProvider.facebook));
     try {
       final response = await authHandler.signInWithFacebook();
@@ -180,7 +142,7 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = entity.copy(
+          final user = (authenticator ?? Authenticator()).copy(
             id: createUid?.call(currentData?.uid ?? result.id ?? uid) ??
                 currentData?.uid ??
                 result.id,
@@ -202,7 +164,7 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signInByGithub(AuthInfo entity) async {
+  Future signInByGithub([Authenticator? authenticator]) async {
     emit(AuthResponse.loading(AuthProvider.github));
     try {
       final response = await authHandler.signInWithGithub();
@@ -213,7 +175,7 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = entity.copy(
+          final user = (authenticator ?? Authenticator()).copy(
             id: createUid?.call(currentData?.uid ?? result.id ?? uid) ??
                 currentData?.uid ??
                 result.id,
@@ -235,7 +197,7 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signInByGoogle(AuthInfo entity) async {
+  Future signInByGoogle([Authenticator? authenticator]) async {
     emit(AuthResponse.loading(AuthProvider.google));
     try {
       final response = await authHandler.signInWithGoogle();
@@ -246,7 +208,7 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = entity.copy(
+          final user = (authenticator ?? Authenticator()).copy(
             id: createUid?.call(currentData?.uid ?? result.id ?? uid) ??
                 currentData?.uid ??
                 result.id,
@@ -268,6 +230,44 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
     }
   }
 
+  Future signInByUsername(UsernameAuthenticator authenticator) async {
+    final username = authenticator.username;
+    final password = authenticator.password;
+    if (!Validator.isValidUsername(username)) {
+      emit(AuthResponse.failure("Username isn't valid!"));
+    } else if (!Validator.isValidPassword(password)) {
+      emit(AuthResponse.failure("Password isn't valid!"));
+    } else {
+      emit(AuthResponse.loading(AuthProvider.username));
+      try {
+        final response = await authHandler.signInWithUsernameNPassword(
+          username: username,
+          password: password,
+        );
+        if (response.isSuccessful) {
+          final result = response.data?.user;
+          if (result != null) {
+            final user = authenticator.copy(
+              id: createUid?.call(result.uid) ?? result.uid,
+              email: result.email,
+              name: result.displayName,
+              phone: result.phoneNumber,
+              photo: result.photoURL,
+              provider: AuthProvider.username.name,
+            ) as T;
+            emit(AuthResponse.authenticated(user));
+          } else {
+            emit(AuthResponse.failure(response.exception));
+          }
+        } else {
+          emit(AuthResponse.failure(response.exception));
+        }
+      } catch (e) {
+        emit(AuthResponse.failure(e.toString()));
+      }
+    }
+  }
+
   Future signOut([AuthProvider? provider]) async {
     emit(AuthResponse.loading(provider));
     try {
@@ -286,6 +286,84 @@ class DefaultAuthController<T extends AuthInfo> extends Cubit<AuthResponse<T>> {
       }
     } catch (_) {
       emit(AuthResponse.failure(_));
+    }
+  }
+
+  Future signUpByEmail(EmailAuthenticator authenticator) async {
+    final email = authenticator.email;
+    final password = authenticator.password;
+    if (!Validator.isValidEmail(email)) {
+      emit(AuthResponse.failure("Email isn't valid!"));
+    } else if (!Validator.isValidPassword(password)) {
+      emit(AuthResponse.failure("Password isn't valid!"));
+    } else {
+      emit(AuthResponse.loading(AuthProvider.email));
+      try {
+        final response = await authHandler.signUpWithEmailNPassword(
+          email: email.use,
+          password: password.use,
+        );
+        if (response.isSuccessful) {
+          final result = response.data?.user;
+          if (result != null) {
+            final user = authenticator.copy(
+              id: createUid?.call(result.uid) ?? result.uid,
+              email: result.email,
+              name: result.displayName,
+              phone: result.phoneNumber,
+              photo: result.photoURL,
+              provider: AuthProvider.email.name,
+            ) as T;
+            await dataHandler.insert(user);
+            emit(AuthResponse.authenticated(user));
+          } else {
+            emit(AuthResponse.failure(response.exception));
+          }
+        } else {
+          emit(AuthResponse.failure(response.exception));
+        }
+      } catch (e) {
+        emit(AuthResponse.failure(e.toString()));
+      }
+    }
+  }
+
+  Future signUpByUsername(UsernameAuthenticator authenticator) async {
+    final username = authenticator.username;
+    final password = authenticator.password;
+    if (!Validator.isValidUsername(username)) {
+      emit(AuthResponse.failure("Username isn't valid!"));
+    } else if (!Validator.isValidPassword(password)) {
+      emit(AuthResponse.failure("Password isn't valid!"));
+    } else {
+      emit(AuthResponse.loading(AuthProvider.email));
+      try {
+        final response = await authHandler.signUpWithUsernameNPassword(
+          username: username.use,
+          password: password.use,
+        );
+        if (response.isSuccessful) {
+          final result = response.data?.user;
+          if (result != null) {
+            final user = authenticator.copy(
+              id: createUid?.call(result.uid) ?? result.uid,
+              email: result.email,
+              name: result.displayName,
+              phone: result.phoneNumber,
+              photo: result.photoURL,
+              provider: AuthProvider.email.name,
+            ) as T;
+            await dataHandler.insert(user);
+            emit(AuthResponse.authenticated(user));
+          } else {
+            emit(AuthResponse.failure(response.exception));
+          }
+        } else {
+          emit(AuthResponse.failure(response.exception));
+        }
+      } catch (e) {
+        emit(AuthResponse.failure(e.toString()));
+      }
     }
   }
 }

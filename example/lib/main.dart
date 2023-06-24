@@ -1,5 +1,6 @@
 import 'package:auth_management/core.dart';
 import 'package:data_management/core.dart';
+import 'package:example/authentication_test.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -44,64 +45,14 @@ class Application extends StatelessWidget {
             child: MultiBlocProvider(
               providers: [
                 BlocProvider(
-                  create: (context) => locator<AuthController>(),
+                  create: (context) => locator<DefaultAuthController>(),
                 ),
               ],
-              child: Column(
-                children: [
-                  TextField(
-
-                  ),
-                ],
-              ),
+              child:  const AuthenticationTest(),
             ),
           ),
         ),
       ),
     );
-  }
-}
-
-class AuthController extends DefaultAuthController {
-  AuthController({
-    required super.authHandler,
-    required super.dataHandler,
-  });
-}
-
-class AppAuthHandler extends AuthHandlerImpl {
-  AppAuthHandler({
-    required super.repository,
-  });
-}
-
-class AuthenticatorHandler extends LocalDataHandlerImpl<AuthInfo> {
-  AuthenticatorHandler({
-    required super.repository,
-  });
-}
-
-class AuthRepository extends AuthRepositoryImpl {
-  AuthRepository({
-    required super.source,
-  });
-}
-
-class AuthenticatorRepository extends LocalDataRepositoryImpl<AuthInfo> {
-  AuthenticatorRepository({
-    required super.local,
-  });
-}
-
-class AppAuthDataSource extends AuthDataSourceImpl {}
-
-class AuthenticatorDataSource extends LocalDataSourceImpl<AuthInfo> {
-  AuthenticatorDataSource({
-    super.path = "authenticators",
-  });
-
-  @override
-  AuthInfo build(source) {
-    return AuthInfo.from(source);
   }
 }

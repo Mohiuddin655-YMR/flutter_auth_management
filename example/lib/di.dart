@@ -3,35 +3,54 @@ import 'package:data_management/core.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'main.dart';
-
 GetIt locator = GetIt.instance;
 
 Future<void> diInit() async {
-
   final local = await SharedPreferences.getInstance();
   locator.registerLazySingleton<SharedPreferences>(() => local);
 
   locator.registerLazySingleton<AuthDataSource>(() {
-    return AppAuthDataSource();
+    return AuthDataSourceImpl();
   });
-  locator.registerLazySingleton<LocalDataSource<AuthInfo>>(() {
-    return AuthenticatorDataSource();
-  });
-
-  locator.registerLazySingleton<LocalDataRepository<AuthInfo>>(() {
-    return AuthenticatorRepository(local: locator());
+  locator.registerLazySingleton<LocalDataSource<Authenticator>>(() {
+    return LocalAuthenticatorDataSource();
   });
 
-  locator.registerLazySingleton<LocalDataHandler<AuthInfo>>(() {
-    return AuthenticatorHandler(repository: locator());
+  locator.registerLazySingleton<AuthRepository>(() {
+    return AuthRepositoryImpl(
+      source: locator(),
+    );
+  });
+  locator.registerLazySingleton<LocalDataRepository<Authenticator>>(() {
+    return LocalDataRepositoryImpl<Authenticator>(
+      local: locator(),
+    );
   });
 
-  locator.registerFactory<AuthController>(() {
-    return AuthController(
+  locator.registerLazySingleton<AuthHandler>(() {
+    return AuthHandlerImpl(repository: locator());
+  });
+
+  locator.registerLazySingleton<DataHandler<Authenticator>>(() {
+    return LocalDataHandlerImpl<Authenticator>(repository: locator());
+  });
+
+  locator.registerFactory<DefaultAuthController<Authenticator>>(() {
+    return DefaultAuthController(
       authHandler: locator(),
       dataHandler: locator(),
     );
   });
   await locator.allReady();
+}
+
+class LocalAuthenticatorDataSource extends LocalDataSourceImpl<Authenticator> {
+  LocalAuthenticatorDataSource({
+    super.path = "authenticators",
+  });
+
+  @override
+  Authenticator build(source) {
+    return Authenticator.from(source);
+  }
 }

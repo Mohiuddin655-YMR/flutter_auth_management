@@ -17,12 +17,24 @@ class AuthRepositoryImpl extends AuthRepository {
   Future<bool> isSignIn([AuthProvider? provider]) => source.isSignIn();
 
   @override
-  Future<Response> signOut([AuthProvider? provider]) =>
-      source.signOut();
+  Future<Response> signOut([AuthProvider? provider]) => source.signOut();
 
   @override
   Future<Response<Credential>> signInWithApple() {
     return source.signInWithApple();
+  }
+
+  @override
+  Future<Response<bool>> signInWithBiometric() {
+    return source.signInWithBiometric();
+  }
+
+  @override
+  Future<Response<UserCredential>> signInWithEmailNPassword({
+    required String email,
+    required String password,
+  }) {
+    return source.signInWithEmailNPassword(email: email, password: password);
   }
 
   @override
@@ -41,17 +53,14 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<Response<bool>> signInWithBiometric() {
-    return source.signInWithBiometric();
-  }
-
-  @override
-  Future<Response<UserCredential>> signInWithEmailNPassword({
-    required String email,
+  Future<Response<UserCredential>> signInWithUsernameNPassword({
+    required String username,
     required String password,
   }) {
-    return source.signInWithEmailNPassword(
-        email: email, password: password);
+    return source.signInWithUsernameNPassword(
+      username: username,
+      password: password,
+    );
   }
 
   @override
@@ -66,7 +75,17 @@ class AuthRepositoryImpl extends AuthRepository {
     required String email,
     required String password,
   }) {
-    return source.signUpWithEmailNPassword(
-        email: email, password: password);
+    return source.signUpWithEmailNPassword(email: email, password: password);
+  }
+
+  @override
+  Future<Response<UserCredential>> signUpWithUsernameNPassword({
+    required String username,
+    required String password,
+  }) {
+    return source.signUpWithUsernameNPassword(
+      username: username,
+      password: password,
+    );
   }
 }

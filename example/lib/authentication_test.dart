@@ -7,12 +7,11 @@ class AuthenticationTest extends StatefulWidget {
   const AuthenticationTest({Key? key}) : super(key: key);
 
   @override
-  State<AuthenticationTest> createState() =>
-      _AuthenticationTestState();
+  State<AuthenticationTest> createState() => _AuthenticationTestState();
 }
 
 class _AuthenticationTestState extends State<AuthenticationTest> {
-  late AuthController controller = context.read<AuthController>();
+  late DefaultAuthController controller = context.read<DefaultAuthController>();
 
   @override
   Widget build(BuildContext context) {
@@ -30,45 +29,86 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
               alignment: WrapAlignment.center,
               children: [
                 ElevatedButton(
-                  child: const Text("Availability"),
-                  onPressed: () => controller.isAvailable("1"),
+                  child: const Text("SignIn with Apple"),
+                  onPressed: () => controller.signInByApple(),
                 ),
                 ElevatedButton(
-                  child: const Text("Insert"),
-                  onPressed: () => controller.create(p1),
+                  child: const Text("SignIn with Biometric"),
+                  onPressed: () => controller.signInByBiometric(),
                 ),
                 ElevatedButton(
-                  child: const Text("Inserts"),
-                  onPressed: () => controller.creates([p1, p2]),
+                  child: const Text("SignIn with Email"),
+                  onPressed: () => controller.signInByEmail(
+                    EmailAuthenticator(
+                      email: "example@gmail.com",
+                      password: "123456",
+                    ),
+                  ),
                 ),
                 ElevatedButton(
-                  child: const Text("Update"),
-                  onPressed: () {
-                    controller.update(
-                      id: p1.id,
-                      data: p1.copyWith(price: 20500).source,
-                    );
-                  },
+                  child: const Text("SignIn with Facebook"),
+                  onPressed: () => controller.signInByFacebook(),
                 ),
                 ElevatedButton(
-                  onPressed: () => controller.delete("1"),
-                  child: const Text("Delete"),
+                  child: const Text("SignIn with Github"),
+                  onPressed: () => controller.signInByGithub(),
                 ),
                 ElevatedButton(
-                  onPressed: () => controller.clear(),
-                  child: const Text("Clear"),
+                  child: const Text("SignIn with Google"),
+                  onPressed: () => controller.signInByGoogle(),
                 ),
                 ElevatedButton(
-                  onPressed: () => controller.get("1"),
-                  child: const Text("Get"),
-                ),
-                ElevatedButton(
-                  onPressed: () => controller.gets(),
-                  child: const Text("Gets"),
+                  child: const Text("SignIn with Username"),
+                  onPressed: () => controller.signInByUsername(
+                    UsernameAuthenticator(
+                      username: "username",
+                      password: "123456",
+                    ),
+                  ),
                 ),
               ],
             ),
-            BlocConsumer<AuthController, Response<User>>(
+            const Divider(height: 32),
+            Wrap(
+              runSpacing: 12,
+              spacing: 12,
+              runAlignment: WrapAlignment.center,
+              alignment: WrapAlignment.center,
+              children: [
+                ElevatedButton(
+                  child: const Text("SignUp with Email"),
+                  onPressed: () => controller.signUpByEmail(
+                    EmailAuthenticator(
+                      email: "example@gmail.com",
+                      password: "123456",
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  child: const Text("SignUp with Username"),
+                  onPressed: () => controller.signUpByUsername(
+                    UsernameAuthenticator(
+                      username: "username",
+                      password: "123456",
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 32),
+            Wrap(
+              runSpacing: 12,
+              spacing: 12,
+              runAlignment: WrapAlignment.center,
+              alignment: WrapAlignment.center,
+              children: [
+                ElevatedButton(
+                  child: const Text("Sign Out"),
+                  onPressed: () => controller.signOut(),
+                ),
+              ],
+            ),
+            BlocConsumer<DefaultAuthController, AuthResponse<Authenticator>>(
               builder: (context, state) {
                 return Container(
                   width: double.infinity,
@@ -77,7 +117,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   color: Colors.grey.withAlpha(50),
                   margin: const EdgeInsets.symmetric(vertical: 24),
                   child: Text(
-                    state.toString(),
+                    state.beautify,
                     textAlign: TextAlign.center,
                   ),
                 );
@@ -91,57 +131,16 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(state.message),
                   ));
-                } else if (state.isException) {
+                } else if (state.isError) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(state.exception),
+                    content: Text(state.error),
                   ));
                 } else if (state.isValid) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text("Valid Data"),
                   ));
-                } else if (state.isSuccessful) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("Successful"),
-                  ));
-                } else if (state.isCancel) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("Cancel"),
-                  ));
                 }
               },
-            ),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              alignment: Alignment.center,
-              color: Colors.grey.withAlpha(50),
-              margin: const EdgeInsets.symmetric(vertical: 24),
-              child: StreamBuilder(
-                  stream: controller.live("1"),
-                  builder: (context, snapshot) {
-                    var value = snapshot.data ?? Response();
-                    return Text(
-                      value.data.toString(),
-                      textAlign: TextAlign.center,
-                    );
-                  }),
-            ),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              alignment: Alignment.center,
-              color: Colors.grey.withAlpha(50),
-              margin: const EdgeInsets.symmetric(vertical: 24),
-              child: StreamBuilder(
-                stream: controller.lives(),
-                builder: (context, snapshot) {
-                  var value = snapshot.data ?? Response();
-                  return Text(
-                    value.result.toString(),
-                    textAlign: TextAlign.center,
-                  );
-                },
-              ),
             ),
           ],
         ),
@@ -154,49 +153,18 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
 /// Create a data controller for access all place
 class AuthController extends DefaultAuthController<User> {
   AuthController({
-    required super.handler,
+    required super.authHandler,
+    required super.dataHandler,
   });
-}
-
-/// Step-4
-/// When you complete the repository to use User model for locally or remotely
-class ProductHandler extends RemoteDataHandlerImpl<User> {
-  ProductHandler({
-    required super.repository,
-  });
-}
-
-/// Step-3
-/// When you use to auto detected to use remote or local data
-class ProductRepository extends RemoteDataRepositoryImpl<User> {
-  ProductRepository({
-    super.local,
-    super.isCacheMode = true,
-    required super.remote,
-  });
-}
-
-/// Step - 2
-/// When you use remote database (ex. Firebase Firestore, Firebase Realtime, Api, Encrypted Api data)
-/// Use for remote data => insert, update, delete, get, gets, live, lives, clear
-class RemoteProductDataSource extends FireStoreDataSourceImpl<User> {
-  RemoteProductDataSource({
-    super.path = "products",
-  });
-
-  @override
-  User build(source) {
-    return User.from(source);
-  }
 }
 
 /// Step - 2
 /// When you use local database (ex. SharedPreference)
 /// Use for local data => insert, update, delete, get, gets, live, lives, clear
-class LocalProductDataSource extends LocalDataSourceImpl<User> {
-  LocalProductDataSource({
+class AuthenticatorDataSource extends LocalDataSourceImpl<User> {
+  AuthenticatorDataSource({
     required super.preferences,
-    super.path = "products",
+    super.path = "users",
   });
 
   @override
@@ -206,11 +174,11 @@ class LocalProductDataSource extends LocalDataSourceImpl<User> {
 }
 
 /// Step - 1
-/// Use for local or remote data model
-class User extends AuthInfo {
-
+/// Use for local or remote user data model
+class User extends Authenticator {
   User({
     super.id,
+    super.timeMills,
     super.email,
     super.password,
     super.phone,
@@ -219,10 +187,16 @@ class User extends AuthInfo {
     super.photo,
   });
 
-  factory User.from(dynamic source) {
+  factory User.from(Object? source) {
     return User(
       id: source.entityId,
+      timeMills: source.entityTimeMills,
       email: Entity.value<String>("email", source),
+      password: Entity.value<String>("password", source),
+      phone: Entity.value<String>("phone", source),
+      photo: Entity.value<String>("photo", source),
+      provider: Entity.value<String>("provider", source),
+      name: Entity.value<String>("name", source),
     );
   }
 
@@ -236,7 +210,6 @@ class User extends AuthInfo {
       id: id ?? this.id,
       timeMills: timeMills ?? this.timeMills,
       name: name ?? this.name,
-      price: price ?? this.price,
     );
   }
 
@@ -244,18 +217,6 @@ class User extends AuthInfo {
   Map<String, dynamic> get source {
     return super.source.attach({
       "name": name ?? "Name",
-      "price": price,
-    });
-  }
-
-  static List<User> get carts {
-    return List.generate(5, (index) {
-      return User(
-        id: "ID${index + 1}",
-        timeMills: Entity.ms,
-        name: "Product - ${index + 1}",
-        price: 45 + (index * 5),
-      );
     });
   }
 }

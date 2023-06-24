@@ -9,6 +9,26 @@ abstract class AuthDataSource {
 
   User? get user;
 
+  Future<Response<Credential>> signInWithApple();
+
+  Future<Response<bool>> signInWithBiometric();
+
+  Future<Response<UserCredential>> signInWithEmailNPassword({
+    required String email,
+    required String password,
+  });
+
+  Future<Response<Credential>> signInWithFacebook();
+
+  Future<Response<Credential>> signInWithGithub();
+
+  Future<Response<Credential>> signInWithGoogle();
+
+  Future<Response<UserCredential>> signInWithUsernameNPassword({
+    required String username,
+    required String password,
+  });
+
   Future<Response<UserCredential>> signUpWithCredential({
     required AuthCredential credential,
   });
@@ -18,18 +38,8 @@ abstract class AuthDataSource {
     required String password,
   });
 
-  Future<Response<UserCredential>> signInWithEmailNPassword({
-    required String email,
+  Future<Response<UserCredential>> signUpWithUsernameNPassword({
+    required String username,
     required String password,
   });
-
-  Future<Response<Credential>> signInWithApple();
-
-  Future<Response<Credential>> signInWithFacebook();
-
-  Future<Response<Credential>> signInWithGithub();
-
-  Future<Response<Credential>> signInWithGoogle();
-
-  Future<Response<bool>> signInWithBiometric();
 }

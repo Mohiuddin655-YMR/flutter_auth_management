@@ -1,22 +1,22 @@
 part of 'models.dart';
 
 class Credential {
+  final String? accessToken;
   final OAuthCredential? credential;
-  final String? id;
   final String? email;
+  final String? id;
+  final String? idToken;
   final String? name;
   final String? photo;
-  final String? idToken;
-  final String? accessToken;
 
   const Credential({
+    this.accessToken,
     this.credential,
     this.id,
+    this.idToken,
     this.email,
     this.name,
     this.photo,
-    this.idToken,
-    this.accessToken,
   });
 
   factory Credential.fromMap(Map<String, dynamic> map) {
@@ -38,33 +38,34 @@ class Credential {
   }
 
   Credential copy({
+    String? accessToken,
+    OAuthCredential? credential,
     String? id,
+    String? idToken,
     String? name,
     String? email,
     String? photo,
-    String? accessToken,
-    String? idToken,
-    OAuthCredential? credential,
   }) {
     return Credential(
+      accessToken: accessToken ?? this.accessToken,
       credential: credential ?? this.credential,
       id: id ?? this.id,
+      idToken: idToken ?? this.idToken,
       email: email ?? this.email,
       name: name ?? this.name,
       photo: photo ?? this.photo,
-      accessToken: accessToken ?? this.accessToken,
-      idToken: idToken ?? this.idToken,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      "accessToken": accessToken,
+      "credential": credential,
       "id": id,
+      "idToken": idToken,
       "email": email,
       "name": name,
       "photo": photo,
-      "accessToken": accessToken,
-      "idToken": idToken,
     };
   }
 }

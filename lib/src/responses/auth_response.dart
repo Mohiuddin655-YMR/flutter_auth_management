@@ -1,6 +1,6 @@
 part of 'responses.dart';
 
-class AuthResponse<T extends AuthInfo> {
+class AuthResponse<T extends Authenticator> {
   final bool? _initial;
   final bool? _loading;
   final bool? _authenticated;

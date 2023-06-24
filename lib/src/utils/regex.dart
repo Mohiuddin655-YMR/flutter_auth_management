@@ -7,6 +7,6 @@ class Regs {
   static final RegExp email = RegExp(Patterns.email);
   static final RegExp path = RegExp(Patterns.path);
   static final RegExp phone = RegExp(Patterns.phone);
-  static final RegExp name = RegExp(Patterns.phone);
   static final RegExp url = RegExp(Patterns.url);
+  static final RegExp username = RegExp(Patterns.username);
 }

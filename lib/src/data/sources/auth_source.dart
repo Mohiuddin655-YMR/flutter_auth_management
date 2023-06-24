@@ -21,6 +21,7 @@ class AuthDataSourceImpl extends AuthDataSource {
     if (provider != null) {
       switch (provider) {
         case AuthProvider.email:
+        case AuthProvider.username:
         case AuthProvider.phone:
           return firebaseAuth.currentUser != null;
         case AuthProvider.facebook:
@@ -45,8 +46,8 @@ class AuthDataSourceImpl extends AuthDataSource {
       if (provider != null) {
         switch (provider) {
           case AuthProvider.email:
-            break;
           case AuthProvider.phone:
+          case AuthProvider.username:
             await firebaseAuth.signOut();
             break;
           case AuthProvider.facebook:
@@ -82,42 +83,34 @@ class AuthDataSourceImpl extends AuthDataSource {
   User? get user => FirebaseAuth.instance.currentUser;
 
   @override
-  Future<Response<UserCredential>> signUpWithEmailNPassword({
-    required String email,
-    required String password,
-  }) async {
-    final response = Response<UserCredential>();
-    try {
-      final result = await firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return response.withData(result, message: "Sign up successful!");
-    } on FirebaseAuthException catch (e) {
-      return response.withException(e.message, status: Status.failure);
-    }
-  }
-
-  @override
-  Future<Response<UserCredential>> signUpWithCredential({
-    required AuthCredential credential,
-  }) async {
-    final response = Response<UserCredential>();
-    try {
-      final result = await firebaseAuth.signInWithCredential(credential);
-      return response.withData(result, message: "Sign up successful!");
-    } on FirebaseAuthException catch (e) {
-      return response.withException(e.message, status: Status.failure);
-    }
-  }
-
-  @override
   Future<Response<Credential>> signInWithApple() async {
     final response = Response<Credential>();
     try {
-      return response.withStatus(Status.undefined);
-    } catch (_) {
-      return response.withException(_, status: Status.failure);
+      final result = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      if (result.identityToken != null) {
+        final credential = OAuthProvider("apple.com").credential(
+          idToken: result.identityToken,
+          accessToken: result.authorizationCode,
+        );
+        return response.withData(Credential(
+          credential: credential,
+          accessToken: result.authorizationCode,
+          idToken: result.identityToken,
+          id: result.userIdentifier,
+          email: result.email,
+          name: result.givenName ?? result.familyName,
+        ));
+      } else {
+        return response.withException('Token not valid!', status: Status.error);
+      }
+    } on SignInWithAppleAuthorizationException catch (_) {
+      return response.withException(_.message, status: Status.failure);
     }
   }
 
@@ -172,8 +165,8 @@ class AuthDataSourceImpl extends AuthDataSource {
         password: password,
       );
       return response.withData(result, message: "Sign in successful!");
-    } on FirebaseAuthException catch (e) {
-      return response.withException(e.message, status: Status.failure);
+    } on FirebaseAuthException catch (_) {
+      return response.withException(_.message, status: Status.failure);
     }
   }
 
@@ -208,8 +201,8 @@ class AuthDataSourceImpl extends AuthDataSource {
       } else {
         return response.withException('Token not valid!', status: Status.error);
       }
-    } on FirebaseAuthException catch (e) {
-      return response.withException(e.message, status: Status.failure);
+    } on FirebaseAuthException catch (_) {
+      return response.withException(_.message, status: Status.failure);
     }
   }
 
@@ -264,6 +257,80 @@ class AuthDataSourceImpl extends AuthDataSource {
       }
     } on FirebaseAuthException catch (_) {
       return response.withException(_.message, status: Status.failure);
+    }
+  }
+
+  @override
+  Future<Response<UserCredential>> signInWithUsernameNPassword({
+    required String username,
+    required String password,
+  }) async {
+    final response = Response<UserCredential>();
+    var mail = Converter.toMail(username, "user", "org");
+    if (Validator.isValidEmail(mail)) {
+      try {
+        final result = await firebaseAuth.signInWithEmailAndPassword(
+          email: mail ?? "example@user.org",
+          password: password,
+        );
+        return response.withData(result, message: "Sign in successful!");
+      } on FirebaseAuthException catch (_) {
+        return response.withException(_.message, status: Status.failure);
+      }
+    } else {
+      return response.withException("Username isn't valid!");
+    }
+  }
+
+  @override
+  Future<Response<UserCredential>> signUpWithCredential({
+    required AuthCredential credential,
+  }) async {
+    final response = Response<UserCredential>();
+    try {
+      final result = await firebaseAuth.signInWithCredential(credential);
+      return response.withData(result, message: "Sign up successful!");
+    } on FirebaseAuthException catch (_) {
+      return response.withException(_.message, status: Status.failure);
+    }
+  }
+
+  @override
+  Future<Response<UserCredential>> signUpWithEmailNPassword({
+    required String email,
+    required String password,
+  }) async {
+    final response = Response<UserCredential>();
+    try {
+      final result = await firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return response.withData(result, message: "Sign up successful!");
+    } on FirebaseAuthException catch (_) {
+      return response.withException(_.message, status: Status.failure);
+    }
+  }
+
+  @override
+  Future<Response<UserCredential>> signUpWithUsernameNPassword({
+    required String username,
+    required String password,
+  }) async {
+    final response = Response<UserCredential>();
+    var mail = Converter.toMail(username, "user", "org");
+    if (Validator.isValidEmail(mail)) {
+      try {
+        final result = await firebaseAuth.createUserWithEmailAndPassword(
+          email: mail ?? "example@user.org",
+          password: password,
+        );
+        return response.withData(result, message: "Sign up successful!");
+      } on FirebaseAuthException catch (_) {
+        return response.withException(_.message, status: Status.failure);
+      }
+    } else {
+      return response.withException("Username isn't valid!");
     }
   }
 }

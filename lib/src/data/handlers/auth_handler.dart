@@ -33,7 +33,7 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<UserCredential>> signInWithEmail({
+  Future<Response<UserCredential>> signInWithEmailNPassword({
     required String email,
     required String password,
   }) {
@@ -75,9 +75,15 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<void>> signOut([AuthProvider? provider]) {
+  Future<Response<UserCredential>> signInWithUsernameNPassword({
+    required String username,
+    required String password,
+  }) {
     try {
-      return repository.signOut(provider);
+      return repository.signInWithUsernameNPassword(
+        username: username,
+        password: password,
+      );
     } catch (_) {
       return Future.error("$_");
     }
@@ -106,6 +112,30 @@ class AuthHandlerImpl extends AuthHandler {
         email: email,
         password: password,
       );
+    } catch (_) {
+      return Future.error("$_");
+    }
+  }
+
+  @override
+  Future<Response<UserCredential>> signUpWithUsernameNPassword({
+    required String username,
+    required String password,
+  }) {
+    try {
+      return repository.signUpWithUsernameNPassword(
+        username: username,
+        password: password,
+      );
+    } catch (_) {
+      return Future.error("$_");
+    }
+  }
+
+  @override
+  Future<Response<void>> signOut([AuthProvider? provider]) {
+    try {
+      return repository.signOut(provider);
     } catch (_) {
       return Future.error("$_");
     }

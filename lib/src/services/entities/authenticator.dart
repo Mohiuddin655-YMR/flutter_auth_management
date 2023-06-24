@@ -1,88 +1,77 @@
 part of 'entities.dart';
 
-class AuthInfo extends Entity {
+class Authenticator extends Entity {
   final String? email;
   final String? name;
   final String? password;
   final String? phone;
   final String? photo;
   final String? provider;
+  final String? username;
 
-  AuthInfo({
+  Authenticator({
     super.id,
+    super.timeMills,
     this.email,
     this.name,
     this.password,
     this.phone,
     this.photo,
     this.provider,
+    this.username,
   });
 
-  AuthInfo copy({
+  Authenticator copy({
     String? id,
+    int? timeMills,
     String? email,
     String? name,
     String? password,
     String? phone,
     String? photo,
     String? provider,
+    String? username,
   }) {
-    return AuthInfo(
+    return Authenticator(
       id: id ?? this.id,
+      timeMills: timeMills ?? this.timeMills,
       email: email ?? this.email,
       name: name ?? this.name,
       password: password ?? this.password,
       phone: phone ?? this.phone,
       photo: photo ?? this.photo,
       provider: provider ?? this.provider,
+      username: username ?? this.username,
     );
   }
 
-  factory AuthInfo.from(dynamic data) {
-    dynamic id, email, name, password, phone, photo, provider;
-    if (data is Map) {
-      try {
-        id = data['id'];
-        email = data['email'];
-        name = data['name'];
-        password = data['password'];
-        phone = data['phone'];
-        photo = data['photo'];
-        provider = data['provider'];
-        return AuthInfo(
-          id: id is String ? id : "",
-          email: email is String ? email : "",
-          name: name is String ? name : "",
-          password: password is String ? password : "",
-          phone: phone is String ? phone : "",
-          photo: photo is String ? photo : "",
-          provider: provider is String ? provider : "",
-        );
-      } catch (e) {
-        log(e.toString());
-      }
-    }
-    return AuthInfo();
+  factory Authenticator.from(Object? source) {
+    return Authenticator(
+      id: source.entityId,
+      timeMills: source.entityTimeMills,
+      email: Entity.value<String>("email", source),
+      name: Entity.value<String>("name", source),
+      password: Entity.value<String>("password", source),
+      phone: Entity.value<String>("phone", source),
+      photo: Entity.value<String>("photo", source),
+      provider: Entity.value<String>("provider", source),
+      username: Entity.value<String>("username", source),
+    );
   }
 
   bool get isCurrentUid => id == AuthHelper.uid;
 
   @override
   Map<String, dynamic> get source {
-    return {
-      "id": id,
+    return super.source.attach({
       "email": email,
       "name": name,
       "password": password,
       "phone": phone,
       "photo": photo,
       "provider": provider,
-    };
-  }
-
-  @override
-  String toString() {
-    return source.toString();
+      "username": username,
+    });
   }
 }
 
@@ -96,4 +85,5 @@ enum AuthProvider {
   google,
   phone,
   twitter,
+  username,
 }
