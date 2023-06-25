@@ -1,5 +1,4 @@
 import 'package:auth_management/core.dart';
-import 'package:data_management/core.dart';
 import 'package:example/authentication_test.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -42,13 +41,9 @@ class Application extends StatelessWidget {
       home: Scaffold(
         body: SafeArea(
           child: Center(
-            child: MultiBlocProvider(
-              providers: [
-                BlocProvider(
-                  create: (context) => locator<AuthController<Authenticator>>(),
-                ),
-              ],
-              child:  const AuthenticationTest(),
+            child: BlocProvider(
+              create: (context) => locator<AuthController>(),
+              child: const AuthenticationTest(),
             ),
           ),
         ),

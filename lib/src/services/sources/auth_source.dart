@@ -1,6 +1,7 @@
 part of 'sources.dart';
 
 abstract class AuthDataSource {
+
   Future<bool> isSignIn([AuthProvider? provider]);
 
   Future<Response> signOut([AuthProvider? provider]);

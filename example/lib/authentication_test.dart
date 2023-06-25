@@ -11,7 +11,7 @@ class AuthenticationTest extends StatefulWidget {
 }
 
 class _AuthenticationTestState extends State<AuthenticationTest> {
-  late AuthController<Authenticator> controller = context.read();
+  late AuthController<Authenticator> controller = context.read<AuthController<Authenticator>>();
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +108,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                 ),
               ],
             ),
-            BlocConsumer<AuthController<Authenticator>, AuthResponse<Authenticator>>(
+            BlocConsumer<AuthController, AuthResponse<Authenticator>>(
               builder: (context, state) {
                 return Container(
                   width: double.infinity,
@@ -117,7 +117,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   color: Colors.grey.withAlpha(50),
                   margin: const EdgeInsets.symmetric(vertical: 24),
                   child: Text(
-                    state.beautify,
+                    state.toString(),
                     textAlign: TextAlign.center,
                   ),
                 );

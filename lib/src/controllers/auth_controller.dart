@@ -7,42 +7,40 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
   final DataHandler<T> dataHandler;
   final IdentityBuilder? identityBuilder;
 
-  AuthController._({
+  AuthController.custom({
     required this.authHandler,
     required this.dataHandler,
     this.identityBuilder,
   }) : super(AuthResponse.initial());
 
-  factory AuthController.locally({
-    IdentityBuilder? identityBuilder,
+  AuthController.locally({
+    this.identityBuilder,
+    AuthDataSource? auth,
     LocalDataSource<T>? backup,
-  }) {
-    return AuthController._(
-      identityBuilder: identityBuilder,
-      authHandler: AuthHandlerImpl.fromSource(AuthDataSourceImpl()),
-      dataHandler: LocalDataHandlerImpl<T>.fromSource(
-        backup ?? BackupDataSource(),
-      ),
-    );
-  }
+  })  : authHandler = AuthHandlerImpl.fromSource(
+          auth ?? AuthDataSourceImpl(),
+        ),
+        dataHandler = LocalDataHandlerImpl<T>.fromSource(
+          backup ?? BackupDataSource(),
+        ),
+        super(AuthResponse.initial());
 
-  factory AuthController.remotely({
-    required RemoteDataSource<T> source,
-    IdentityBuilder? identityBuilder,
+  AuthController.remotely({
+    this.identityBuilder,
+    required RemoteDataSource<T> remote,
     ConnectivityProvider? connectivity,
+    AuthDataSource? auth,
     LocalDataSource<T>? backup,
-  }) {
-    return AuthController._(
-      identityBuilder: identityBuilder,
-      authHandler: AuthHandlerImpl.fromSource(AuthDataSourceImpl()),
-      dataHandler: RemoteDataHandlerImpl<T>.fromSource(
-        source: source,
-        backup: backup ?? BackupDataSource<T>(),
-        connectivity: connectivity,
-        isCacheMode: true,
-      ),
-    );
-  }
+  })  : authHandler = AuthHandlerImpl.fromSource(
+          auth ?? AuthDataSourceImpl(),
+        ),
+        dataHandler = RemoteDataHandlerImpl<T>.fromSource(
+          source: remote,
+          backup: backup ?? BackupDataSource<T>(),
+          connectivity: connectivity,
+          isCacheMode: true,
+        ),
+        super(AuthResponse.initial());
 
   String get uid => user?.uid ?? "uid";
 
@@ -57,8 +55,8 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
       } else {
         emit(AuthResponse.unauthenticated("User logged out!"));
       }
-    } catch (e) {
-      emit(AuthResponse.failure(e.toString()));
+    } catch (_) {
+      emit(AuthResponse.failure(_));
     }
   }
 

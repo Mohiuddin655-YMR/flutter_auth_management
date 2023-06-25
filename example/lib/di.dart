@@ -6,8 +6,8 @@ GetIt locator = GetIt.instance;
 
 Future<void> diInit() async {
   locator.registerFactory<AuthController<Authenticator>>(() {
-    return AuthController<Authenticator>.remotely(
-      source: RemoteAuthDataSource(),
+    return AuthController.remotely(
+      remote: RemoteAuthDataSource(),
     );
   });
   await locator.allReady();
