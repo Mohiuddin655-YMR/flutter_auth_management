@@ -1,7 +1,7 @@
 part of 'repositories.dart';
 
 class AuthRepositoryImpl extends AuthRepository {
-  final AuthDataSource source;
+  final AuthSource source;
 
   AuthRepositoryImpl({
     required this.source,

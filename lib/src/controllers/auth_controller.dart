@@ -15,10 +15,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
 
   AuthController.locally({
     this.identityBuilder,
-    AuthDataSource? auth,
+    AuthSource? auth,
     LocalDataSource<T>? backup,
   })  : authHandler = AuthHandlerImpl.fromSource(
-          auth ?? AuthDataSourceImpl(),
+          auth ?? AuthSourceImpl(),
         ),
         dataHandler = LocalDataHandlerImpl<T>.fromSource(
           backup ?? BackupDataSource(),
@@ -29,10 +29,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     this.identityBuilder,
     required RemoteDataSource<T> remote,
     ConnectivityProvider? connectivity,
-    AuthDataSource? auth,
+    AuthSource? auth,
     LocalDataSource<T>? backup,
   })  : authHandler = AuthHandlerImpl.fromSource(
-          auth ?? AuthDataSourceImpl(),
+          auth ?? AuthSourceImpl(),
         ),
         dataHandler = RemoteDataHandlerImpl<T>.fromSource(
           source: remote,

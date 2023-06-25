@@ -9,7 +9,7 @@ class AuthHandlerImpl extends AuthHandler {
     return AuthHandlerImpl._(repository: repository);
   }
 
-  factory AuthHandlerImpl.fromSource(AuthDataSource source) {
+  factory AuthHandlerImpl.fromSource(AuthSource source) {
     return AuthHandlerImpl._(repository: AuthRepositoryImpl(source: source));
   }
 

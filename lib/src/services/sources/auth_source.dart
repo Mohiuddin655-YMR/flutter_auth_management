@@ -1,6 +1,6 @@
 part of 'sources.dart';
 
-abstract class AuthDataSource {
+abstract class AuthSource {
 
   Future<bool> isSignIn([AuthProvider? provider]);
 

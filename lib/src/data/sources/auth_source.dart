@@ -1,12 +1,12 @@
 part of 'sources.dart';
 
-class AuthDataSourceImpl extends AuthDataSource {
+class AuthSourceImpl extends AuthSource {
   final FacebookAuth facebookAuth;
   final FirebaseAuth firebaseAuth;
   final LocalAuthentication localAuth;
   final GoogleSignIn googleAuth;
 
-  AuthDataSourceImpl({
+  AuthSourceImpl({
     FacebookAuth? facebookAuth,
     FirebaseAuth? firebaseAuth,
     LocalAuthentication? localAuth,
