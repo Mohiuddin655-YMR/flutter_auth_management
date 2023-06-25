@@ -45,7 +45,7 @@ class Application extends StatelessWidget {
             child: MultiBlocProvider(
               providers: [
                 BlocProvider(
-                  create: (context) => locator<DefaultAuthController>(),
+                  create: (context) => locator<AuthController<Authenticator>>(),
                 ),
               ],
               child:  const AuthenticationTest(),

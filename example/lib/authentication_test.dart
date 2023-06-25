@@ -11,7 +11,7 @@ class AuthenticationTest extends StatefulWidget {
 }
 
 class _AuthenticationTestState extends State<AuthenticationTest> {
-  late DefaultAuthController controller = context.read<DefaultAuthController>();
+  late AuthController<Authenticator> controller = context.read();
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +108,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                 ),
               ],
             ),
-            BlocConsumer<DefaultAuthController, AuthResponse<Authenticator>>(
+            BlocConsumer<AuthController<Authenticator>, AuthResponse<Authenticator>>(
               builder: (context, state) {
                 return Container(
                   width: double.infinity,
@@ -146,77 +146,5 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
         ),
       ),
     );
-  }
-}
-
-/// Step-5
-/// Create a data controller for access all place
-class AuthController extends DefaultAuthController<User> {
-  AuthController({
-    required super.authHandler,
-    required super.dataHandler,
-  });
-}
-
-/// Step - 2
-/// When you use local database (ex. SharedPreference)
-/// Use for local data => insert, update, delete, get, gets, live, lives, clear
-class AuthenticatorDataSource extends LocalDataSourceImpl<User> {
-  AuthenticatorDataSource({
-    required super.preferences,
-    super.path = "users",
-  });
-
-  @override
-  User build(source) {
-    return User.from(source);
-  }
-}
-
-/// Step - 1
-/// Use for local or remote user data model
-class User extends Authenticator {
-  User({
-    super.id,
-    super.timeMills,
-    super.email,
-    super.password,
-    super.phone,
-    super.provider,
-    super.name,
-    super.photo,
-  });
-
-  factory User.from(Object? source) {
-    return User(
-      id: source.entityId,
-      timeMills: source.entityTimeMills,
-      email: Entity.value<String>("email", source),
-      password: Entity.value<String>("password", source),
-      phone: Entity.value<String>("phone", source),
-      photo: Entity.value<String>("photo", source),
-      provider: Entity.value<String>("provider", source),
-      name: Entity.value<String>("name", source),
-    );
-  }
-
-  User copyWith({
-    String? id,
-    int? timeMills,
-    String? name,
-    double? price,
-  }) {
-    return User(
-      id: id ?? this.id,
-      timeMills: timeMills ?? this.timeMills,
-      name: name ?? this.name,
-    );
-  }
-
-  @override
-  Map<String, dynamic> get source {
-    return super.source.attach({
-      "name": name ?? "Name",
-    });
   }
 }

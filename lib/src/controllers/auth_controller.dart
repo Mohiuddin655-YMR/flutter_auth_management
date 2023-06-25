@@ -1,35 +1,48 @@
 part of 'controllers.dart';
 
-class DefaultAuthController<T extends Authenticator>
-    extends Cubit<AuthResponse<T>> {
+typedef IdentityBuilder = String Function(String uid);
+
+class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
   final AuthHandler authHandler;
-  final DataHandler<T>? dataHandler;
-  final String Function(String uid)? createUid;
+  final DataHandler<T> dataHandler;
+  final IdentityBuilder? identityBuilder;
 
-  DefaultAuthController._(this.authHandler, this.dataHandler);
+  AuthController._({
+    required this.authHandler,
+    required this.dataHandler,
+    this.identityBuilder,
+  }) : super(AuthResponse.initial());
 
-  factory DefaultAuthController.fromHandler(
-    AuthHandler authHandler,
-    DataHandler<T> dataHandler,
-  ) {
-    return DefaultAuthController._(authHandler, dataHandler);
-  }
-
-  factory DefaultAuthController.fromSource({
-    required AuthDataSource authSource,
-    required AuthenticatorDataSource<T>? dataSource,
+  factory AuthController.locally({
+    IdentityBuilder? identityBuilder,
+    LocalDataSource<T>? backup,
   }) {
-    return DefaultAuthController._(
-      AuthHandlerImpl.fromSource(authSource),
-      AuthenticatorDataSourceImpl<T>(),
+    return AuthController._(
+      identityBuilder: identityBuilder,
+      authHandler: AuthHandlerImpl.fromSource(AuthDataSourceImpl()),
+      dataHandler: LocalDataHandlerImpl<T>.fromSource(
+        backup ?? BackupDataSource(),
+      ),
     );
   }
 
-  DefaultAuthController({
-    required this.authHandler,
-    required this.dataHandler,
-    this.createUid,
-  }) : super(AuthResponse.initial());
+  factory AuthController.remotely({
+    required RemoteDataSource<T> source,
+    IdentityBuilder? identityBuilder,
+    ConnectivityProvider? connectivity,
+    LocalDataSource<T>? backup,
+  }) {
+    return AuthController._(
+      identityBuilder: identityBuilder,
+      authHandler: AuthHandlerImpl.fromSource(AuthDataSourceImpl()),
+      dataHandler: RemoteDataHandlerImpl<T>.fromSource(
+        source: source,
+        backup: backup ?? BackupDataSource<T>(),
+        connectivity: connectivity,
+        isCacheMode: true,
+      ),
+    );
+  }
 
   String get uid => user?.uid ?? "uid";
 
@@ -61,7 +74,7 @@ class DefaultAuthController<T extends Authenticator>
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Authenticator()).copy(
-            id: createUid?.call(currentData?.uid ?? result.id ?? uid) ??
+            id: identityBuilder?.call(currentData?.uid ?? result.id ?? uid) ??
                 currentData?.uid ??
                 result.id,
             email: result.email,
@@ -87,7 +100,8 @@ class DefaultAuthController<T extends Authenticator>
     final response = await authHandler.signInWithBiometric();
     try {
       if (response.isSuccessful) {
-        final userResponse = await dataHandler.get(createUid?.call(uid) ?? uid);
+        final userResponse =
+            await dataHandler.get(identityBuilder?.call(uid) ?? uid);
         final user = userResponse.data;
         if (userResponse.isSuccessful && user is Authenticator) {
           final email = user.email;
@@ -123,14 +137,14 @@ class DefaultAuthController<T extends Authenticator>
       emit(AuthResponse.loading(AuthProvider.email));
       try {
         final response = await authHandler.signInWithEmailNPassword(
-          email: email ?? "example@gmail.com",
-          password: password ?? "password",
+          email: email,
+          password: password,
         );
         if (response.isSuccessful) {
           final result = response.data?.user;
           if (result != null) {
             final user = authenticator.copy(
-              id: createUid?.call(result.uid) ?? result.uid,
+              id: identityBuilder?.call(result.uid) ?? result.uid,
               email: result.email,
               name: result.displayName,
               phone: result.phoneNumber,
@@ -162,7 +176,7 @@ class DefaultAuthController<T extends Authenticator>
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Authenticator()).copy(
-            id: createUid?.call(currentData?.uid ?? result.id ?? uid) ??
+            id: identityBuilder?.call(currentData?.uid ?? result.id ?? uid) ??
                 currentData?.uid ??
                 result.id,
             email: result.email,
@@ -195,7 +209,7 @@ class DefaultAuthController<T extends Authenticator>
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Authenticator()).copy(
-            id: createUid?.call(currentData?.uid ?? result.id ?? uid) ??
+            id: identityBuilder?.call(currentData?.uid ?? result.id ?? uid) ??
                 currentData?.uid ??
                 result.id,
             email: result.email,
@@ -228,7 +242,7 @@ class DefaultAuthController<T extends Authenticator>
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Authenticator()).copy(
-            id: createUid?.call(currentData?.uid ?? result.id ?? uid) ??
+            id: identityBuilder?.call(currentData?.uid ?? result.id ?? uid) ??
                 currentData?.uid ??
                 result.id,
             name: result.name,
@@ -267,7 +281,7 @@ class DefaultAuthController<T extends Authenticator>
           final result = response.data?.user;
           if (result != null) {
             final user = authenticator.copy(
-              id: createUid?.call(result.uid) ?? result.uid,
+              id: identityBuilder?.call(result.uid) ?? result.uid,
               email: result.email,
               name: result.displayName,
               phone: result.phoneNumber,
@@ -293,7 +307,7 @@ class DefaultAuthController<T extends Authenticator>
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
         final userResponse = await dataHandler.delete(
-          createUid?.call(uid) ?? uid,
+          identityBuilder?.call(uid) ?? uid,
         );
         if (userResponse.isSuccessful || userResponse.snapshot != null) {
           emit(AuthResponse.unauthenticated());
@@ -326,7 +340,7 @@ class DefaultAuthController<T extends Authenticator>
           final result = response.data?.user;
           if (result != null) {
             final user = authenticator.copy(
-              id: createUid?.call(result.uid) ?? result.uid,
+              id: identityBuilder?.call(result.uid) ?? result.uid,
               email: result.email,
               name: result.displayName,
               phone: result.phoneNumber,
@@ -365,7 +379,7 @@ class DefaultAuthController<T extends Authenticator>
           final result = response.data?.user;
           if (result != null) {
             final user = authenticator.copy(
-              id: createUid?.call(result.uid) ?? result.uid,
+              id: identityBuilder?.call(result.uid) ?? result.uid,
               email: result.email,
               name: result.displayName,
               phone: result.phoneNumber,
@@ -387,16 +401,8 @@ class DefaultAuthController<T extends Authenticator>
   }
 }
 
-abstract class AuthenticatorDataSource<T extends Authenticator>
-    extends LocalDataSourceImpl<T> {
-  AuthenticatorDataSource({
-    required super.path,
-  });
-}
-
-class AuthenticatorDataSourceImpl<T extends Authenticator>
-    extends AuthenticatorDataSource<T> {
-  AuthenticatorDataSourceImpl({
+class BackupDataSource<T extends Authenticator> extends LocalDataSourceImpl<T> {
+  BackupDataSource({
     super.path = "authenticators",
   });
 
