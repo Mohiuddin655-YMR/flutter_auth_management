@@ -40,7 +40,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   child: const Text("SignIn with Email"),
                   onPressed: () => controller.signInByEmail(
                     EmailAuthenticator(
-                      email: "example@gmail.com",
+                      email: "example.45@gmail.com",
                       password: "123456",
                     ),
                   ),
@@ -79,7 +79,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   child: const Text("SignUp with Email"),
                   onPressed: () => controller.signUpByEmail(
                     EmailAuthenticator(
-                      email: "example@gmail.com",
+                      email: "example.45@gmail.com",
                       password: "123456",
                     ),
                   ),
@@ -88,7 +88,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   child: const Text("SignUp with Username"),
                   onPressed: () => controller.signUpByUsername(
                     UsernameAuthenticator(
-                      username: "username",
+                      username: "username45",
                       password: "123456",
                     ),
                   ),
@@ -123,21 +123,13 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                 );
               },
               listener: (context, state) {
-                if (state.isLoading) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(state.message),
-                  ));
-                } else if (state.isMessage) {
+                if (state.isMessage) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(state.message),
                   ));
                 } else if (state.isError) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(state.error),
-                  ));
-                } else if (state.isValid) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("Valid Data"),
                   ));
                 }
               },

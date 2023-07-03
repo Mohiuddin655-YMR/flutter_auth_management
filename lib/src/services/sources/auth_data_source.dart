@@ -1,20 +1,46 @@
 part of 'sources.dart';
 
-abstract class AuthDataSource<T extends Authenticator> {
-  AuthDataSource({
-    SharedPreferences? preferences,
-  }) : _db = preferences;
+abstract class AuthDataSource {
 
-  SharedPreferences? _db;
+  Future<bool> isSignIn([AuthProvider? provider]);
 
-  Future<SharedPreferences> get preferences async =>
-      _db ??= await SharedPreferences.getInstance();
+  Future<Response> signOut([AuthProvider? provider]);
 
-  Future<Response<T>> create(T data);
+  String? get uid;
 
-  Future<Response<T>> delete(T data);
+  User? get user;
 
-  Future<Response<T>> load();
+  Future<Response<Credential>> signInWithApple();
 
-  T build(dynamic source);
+  Future<Response<bool>> signInWithBiometric();
+
+  Future<Response<UserCredential>> signInWithEmailNPassword({
+    required String email,
+    required String password,
+  });
+
+  Future<Response<Credential>> signInWithFacebook();
+
+  Future<Response<Credential>> signInWithGithub();
+
+  Future<Response<Credential>> signInWithGoogle();
+
+  Future<Response<UserCredential>> signInWithUsernameNPassword({
+    required String username,
+    required String password,
+  });
+
+  Future<Response<UserCredential>> signUpWithCredential({
+    required AuthCredential credential,
+  });
+
+  Future<Response<UserCredential>> signUpWithEmailNPassword({
+    required String email,
+    required String password,
+  });
+
+  Future<Response<UserCredential>> signUpWithUsernameNPassword({
+    required String username,
+    required String password,
+  });
 }

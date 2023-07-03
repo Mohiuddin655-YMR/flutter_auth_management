@@ -15,14 +15,16 @@ class AuthResponse<T extends Authenticator> {
 
   factory AuthResponse.loading([
     AuthProvider? provider,
+    String? message,
   ]) {
-    return AuthResponse._(loading: true, provider: provider);
+    return AuthResponse._(loading: true, provider: provider, message: message);
   }
 
-  factory AuthResponse.authenticated(T? data) {
+  factory AuthResponse.authenticated(T? data, [String? message]) {
     return AuthResponse._(
       authenticated: true,
       data: data,
+      message: message,
     );
   }
 

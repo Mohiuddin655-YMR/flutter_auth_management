@@ -1,20 +1,33 @@
 part of 'sources.dart';
 
-class AuthSourceImpl extends AuthSource {
+class AuthDataSourceImpl extends AuthDataSource {
+  final ConnectivityProvider connectivity;
   final FacebookAuth facebookAuth;
   final FirebaseAuth firebaseAuth;
   final LocalAuthentication localAuth;
   final GoogleSignIn googleAuth;
 
-  AuthSourceImpl({
+  Future<bool> get isConnected async => await connectivity.isConnected;
+
+  Future<bool> get isDisconnected async => !(await isConnected);
+
+  AuthDataSourceImpl({
+    ConnectivityProvider? connectivity,
     FacebookAuth? facebookAuth,
     FirebaseAuth? firebaseAuth,
     LocalAuthentication? localAuth,
     GoogleSignIn? googleAuth,
-  })  : facebookAuth = facebookAuth ?? FacebookAuth.i,
+  })  : connectivity = connectivity ?? ConnectivityProvider.I,
+        facebookAuth = facebookAuth ?? FacebookAuth.i,
         firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
         localAuth = localAuth ?? LocalAuthentication(),
         googleAuth = googleAuth ?? GoogleSignIn(scopes: ['email']);
+
+  @override
+  String? get uid => user?.uid;
+
+  @override
+  User? get user => FirebaseAuth.instance.currentUser;
 
   @override
   Future<bool> isSignIn([AuthProvider? provider]) async {
@@ -43,44 +56,42 @@ class AuthSourceImpl extends AuthSource {
   Future<Response> signOut([AuthProvider? provider]) async {
     final response = Response();
     try {
-      if (provider != null) {
-        switch (provider) {
-          case AuthProvider.email:
-          case AuthProvider.phone:
-          case AuthProvider.username:
-            await firebaseAuth.signOut();
-            break;
-          case AuthProvider.facebook:
-            await facebookAuth.logOut();
-            break;
-          case AuthProvider.google:
-            await googleAuth.signOut();
-            break;
-          case AuthProvider.apple:
-          case AuthProvider.biometric:
-          case AuthProvider.github:
-          case AuthProvider.twitter:
-          case AuthProvider.custom:
-            break;
+      if (await isConnected) {
+        if (provider != null) {
+          switch (provider) {
+            case AuthProvider.email:
+            case AuthProvider.phone:
+            case AuthProvider.username:
+              await firebaseAuth.signOut();
+              break;
+            case AuthProvider.facebook:
+              await facebookAuth.logOut();
+              break;
+            case AuthProvider.google:
+              await googleAuth.signOut();
+              break;
+            case AuthProvider.apple:
+            case AuthProvider.biometric:
+            case AuthProvider.github:
+            case AuthProvider.twitter:
+            case AuthProvider.custom:
+              break;
+          }
+        } else {
+          await firebaseAuth.signOut();
+          if (await googleAuth.isSignedIn()) {
+            googleAuth.disconnect();
+            googleAuth.signOut();
+          }
         }
       } else {
-        await firebaseAuth.signOut();
-        if (await googleAuth.isSignedIn()) {
-          googleAuth.disconnect();
-          googleAuth.signOut();
-        }
+        return response.withStatus(Status.networkError);
       }
     } catch (_) {
       return response.withException(_, status: Status.failure);
     }
     return response.withData(null);
   }
-
-  @override
-  String? get uid => user?.uid;
-
-  @override
-  User? get user => FirebaseAuth.instance.currentUser;
 
   @override
   Future<Response<Credential>> signInWithApple() async {

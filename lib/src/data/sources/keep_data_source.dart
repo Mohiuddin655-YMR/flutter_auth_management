@@ -1,39 +1,56 @@
 part of 'sources.dart';
 
-abstract class BackupSource<T extends Authenticator> extends AuthDataSource<T> {
-  BackupSource({
+class KeepDataSourceImpl<T extends Authenticator> extends BackupDataSource<T> {
+  final String key;
+
+  KeepDataSourceImpl({
+    String? key,
     super.preferences,
-  });
+  }) : key = key ?? "_authorize_id";
 
   @override
-  Future<Response<T>> create(T data) async {
-    final response = Response<T>();
-    var isSuccessful = await preferences.input("uid", data.source);
-    if (isSuccessful) {
-      return response.withStatus(Status.ok);
-    } else {
-      return response.withStatus(Status.failure);
-    }
-  }
+  T build(source) => Authenticator.from(source) as T;
 
   @override
-  Future<Response<T>> delete(T data) async {
+  Future<Response<T>> get() async {
     final response = Response<T>();
-    var isSuccessful = await preferences.input("uid", null);
-    if (isSuccessful) {
-      return response.withStatus(Status.ok);
-    } else {
-      return response.withStatus(Status.failure);
-    }
-  }
-
-  @override
-  Future<Response<T>> load() async {
-    final response = Response<T>();
-    var result = preferences.output("uid");
+    var result = preferences.output(key);
     if (result is Map<String, dynamic>) {
       var data = build(result);
       return response.withData(data);
+    } else {
+      return response.withStatus(Status.failure);
+    }
+  }
+
+  @override
+  Future<Response<T>> set(T data) async {
+    final response = Response<T>();
+    var isSuccessful = await preferences.input(key, data.source);
+    if (isSuccessful) {
+      return response.withStatus(Status.ok);
+    } else {
+      return response.withStatus(Status.failure);
+    }
+  }
+
+  @override
+  Future<Response<T>> delete() async {
+    final response = Response<T>();
+    var isSuccessful = await preferences.input(key, null);
+    if (isSuccessful) {
+      return response.withStatus(Status.ok);
+    } else {
+      return response.withStatus(Status.failure);
+    }
+  }
+
+  @override
+  Future<Response<T>> clear() async {
+    final response = Response<T>();
+    var isSuccessful = await preferences.input(key, null);
+    if (isSuccessful) {
+      return response.withStatus(Status.ok);
     } else {
       return response.withStatus(Status.failure);
     }
