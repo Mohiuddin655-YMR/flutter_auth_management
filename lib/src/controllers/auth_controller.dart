@@ -33,9 +33,14 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
       emit(AuthResponse.loading(provider, _msg.loading));
       final signedIn = await authHandler.isSignIn(provider);
       if (signedIn) {
-        emit(AuthResponse.authenticated(state.data, _msg.signIn));
+        emit(AuthResponse.authenticated(
+          state.data,
+          _msg.loggedIn ?? "User logged in!",
+        ));
       } else {
-        emit(AuthResponse.unauthenticated(_msg.signOut));
+        emit(AuthResponse.unauthenticated(
+          _msg.loggedOut ?? "User logged out!",
+        ));
       }
     } catch (_) {
       emit(AuthResponse.failure(_msg.failure ?? _));
@@ -64,7 +69,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
             provider: AuthProvider.apple.name,
           ) as T;
           await dataHandler.setCache(user);
-          emit(AuthResponse.authenticated(user, _msg.signIn));
+          emit(AuthResponse.authenticated(
+            user,
+            _msg.signIn ?? "Apple sign in successful!",
+          ));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
         }
@@ -117,7 +125,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
           }
         }
         if (loginResponse.isSuccessful) {
-          emit(AuthResponse.authenticated(user, _msg.signIn));
+          emit(AuthResponse.authenticated(
+            user,
+            _msg.signIn ?? "Biometric sign in successful!",
+          ));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? loginResponse.exception));
         }
@@ -155,7 +166,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
               provider: AuthProvider.email.name,
             ) as T;
             await dataHandler.setCache(user);
-            emit(AuthResponse.authenticated(user, _msg.signIn));
+            emit(AuthResponse.authenticated(
+              user,
+              _msg.signIn ?? "Sign in successful!",
+            ));
           } else {
             emit(AuthResponse.failure(_msg.failure ?? response.message));
           }
@@ -190,7 +204,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
             provider: AuthProvider.facebook.name,
           ) as T;
           await dataHandler.setCache(user);
-          emit(AuthResponse.authenticated(user, _msg.signIn));
+          emit(AuthResponse.authenticated(
+            user,
+            _msg.signIn ?? "Facebook sign in successful!",
+          ));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
         }
@@ -224,7 +241,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
             provider: AuthProvider.github.name,
           ) as T;
           await dataHandler.setCache(user);
-          emit(AuthResponse.authenticated(user, _msg.signIn));
+          emit(AuthResponse.authenticated(
+            user,
+            _msg.signIn ?? "Github sign in successful!",
+          ));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
         }
@@ -258,7 +278,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
             provider: AuthProvider.google.name,
           ) as T;
           await dataHandler.setCache(user);
-          emit(AuthResponse.authenticated(user, _msg.signIn));
+          emit(AuthResponse.authenticated(
+            user,
+            _msg.signIn ?? "Google sign in successful!",
+          ));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
         }
@@ -296,7 +319,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
               provider: AuthProvider.username.name,
             ) as T;
             await dataHandler.setCache(user);
-            emit(AuthResponse.authenticated(user, _msg.signIn));
+            emit(AuthResponse.authenticated(
+              user,
+              _msg.signIn ?? "Sign in successful!",
+            ));
           } else {
             emit(AuthResponse.failure(_msg.failure ?? response.exception));
           }
@@ -335,7 +361,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
               provider: AuthProvider.email.name,
             ) as T;
             await dataHandler.setCache(user);
-            emit(AuthResponse.authenticated(user, _msg.signUp));
+            emit(AuthResponse.authenticated(
+              user,
+              _msg.signUp ?? "Sign up successful!",
+            ));
           } else {
             emit(AuthResponse.failure(_msg.failure ?? response.exception));
           }
@@ -374,7 +403,10 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
               provider: AuthProvider.username.name,
             ) as T;
             await dataHandler.setCache(user);
-            emit(AuthResponse.authenticated(user, _msg.signUp));
+            emit(AuthResponse.authenticated(
+              user,
+              _msg.signUp ?? "Sign up successful!",
+            ));
           } else {
             emit(AuthResponse.failure(_msg.failure ?? response.exception));
           }
@@ -393,7 +425,9 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
         await dataHandler.removeCache();
-        emit(AuthResponse.unauthenticated(_msg.signOut));
+        emit(AuthResponse.unauthenticated(
+          _msg.signOut ?? "Sign out successful!",
+        ));
       } else {
         emit(AuthResponse.failure(_msg.failure ?? response.exception));
       }
@@ -405,6 +439,8 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
 
 class AuthMessages {
   final String? loading;
+  final String? loggedIn;
+  final String? loggedOut;
   final String? failure;
 
   final String? signIn;
@@ -413,6 +449,8 @@ class AuthMessages {
 
   const AuthMessages({
     this.loading,
+    this.loggedIn,
+    this.loggedOut,
     this.signIn,
     this.signOut,
     this.failure,

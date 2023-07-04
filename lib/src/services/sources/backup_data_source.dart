@@ -10,6 +10,8 @@ abstract class BackupDataSource<T extends Authenticator> {
   Future<SharedPreferences> get preferences async =>
       _db ??= await SharedPreferences.getInstance();
 
+  final String key = "uid";
+
   Future<T> getCache();
 
   Future<bool> setCache(T data);

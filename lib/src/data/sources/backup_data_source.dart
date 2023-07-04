@@ -2,7 +2,6 @@ part of 'sources.dart';
 
 class BackupDataSourceImpl<T extends Authenticator>
     extends BackupDataSource<T> {
-  final String key = "uid";
 
   BackupDataSourceImpl({
     super.preferences,

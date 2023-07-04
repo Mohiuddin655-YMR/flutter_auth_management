@@ -1,5 +1,4 @@
 import 'package:auth_management/core.dart';
-import 'package:data_management/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,7 +10,12 @@ class AuthenticationTest extends StatefulWidget {
 }
 
 class _AuthenticationTestState extends State<AuthenticationTest> {
-  late AuthController<Authenticator> controller = context.read<AuthController<Authenticator>>();
+  late AuthController<Authenticator> controller =
+      context.read<AuthController<Authenticator>>();
+
+  late TextEditingController email = TextEditingController();
+  late TextEditingController username = TextEditingController();
+  late TextEditingController password = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +26,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            TextField(controller: email,),
             Wrap(
               runSpacing: 12,
               spacing: 12,
@@ -137,6 +142,17 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class EditField extends StatelessWidget {
+  const EditField({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const TextField(
+      decoration: InputDecoration(),
     );
   }
 }
