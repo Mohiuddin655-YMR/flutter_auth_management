@@ -14,10 +14,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     ConnectivityProvider? connectivity,
   })  : _msg = messages ?? const AuthMessages(),
         authHandler = AuthHandlerImpl.fromSource(auth ?? AuthDataSourceImpl()),
-        dataHandler = BackupHandlerImpl<T>(
-          source: backup,
-          connectivity: connectivity,
-        ),
+        dataHandler = BackupHandlerImpl<T>(source: backup),
         super(AuthResponse.initial());
 
   AuthController.fromHandler({
@@ -84,7 +81,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     final response = await authHandler.signInWithBiometric();
     try {
       if (response.isSuccessful) {
-        final user = await dataHandler.getCache(uid);
+        final user = await dataHandler.getCache();
         final token = user.accessToken;
         final provider = user.provider;
         var loginResponse = Response();
@@ -395,7 +392,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     try {
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
-        await dataHandler.clearCache();
+        await dataHandler.removeCache();
         emit(AuthResponse.unauthenticated(_msg.signOut));
       } else {
         emit(AuthResponse.failure(_msg.failure ?? response.exception));

@@ -2,59 +2,25 @@ part of 'repositories.dart';
 
 class BackupRepositoryImpl<T extends Authenticator>
     extends BackupRepository<T> {
-  final String? key;
-  final BackupDataSource<T> _;
-  final BackupDataSource<T>? source;
+  final BackupDataSource<T> source;
 
   BackupRepositoryImpl({
-    super.connectivity,
-    this.key,
-    this.source,
+    BackupDataSource<T>? source,
     SharedPreferences? preferences,
-  }) : _ = KeepDataSourceImpl<T>(key: key, preferences: preferences);
-
-  bool get isRemotely => source != null;
+  }) : source = source ?? BackupDataSourceImpl<T>(preferences: preferences);
 
   @override
-  Future<T> get(String? id) async {
-    if (isRemotely) {
-      if (await isConnected) {
-        return source!.getCache(id ?? uid);
-      } else {
-        return Future.error("Network unavailable!");
-      }
-    } else {
-      return _.getCache(key);
-    }
-  }
+  Future<T> getCache() => source.getCache();
 
   @override
-  Future<bool> set(T data) async {
-    if (isRemotely) {
-      if (await isConnected) {
-        return source!.setCache(data);
-      } else {
-        return Future.error("Network unavailable!");
-      }
-    } else {
-      return _.setCache(data);
-    }
-  }
+  Future<bool> setCache(T data) => source.setCache(data);
 
   @override
-  Future<bool> remove(String? id) async {
-    if (isRemotely) {
-      if (await isConnected) {
-        await _.removeCache(key);
-        return source!.removeCache(id ?? uid);
-      } else {
-        return Future.error("Network unavailable!");
-      }
-    } else {
-      return _.removeCache(key);
-    }
-  }
+  Future<bool> removeCache() => source.removeCache();
 
   @override
-  Future<void> clearCache() => _.clearCache();
+  Future<void> onCreated(T data) async {}
+
+  @override
+  Future<void> onDeleted(String id) async {}
 }

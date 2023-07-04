@@ -1,11 +1,13 @@
 part of 'handlers.dart';
 
 abstract class BackupHandler<T extends Authenticator> {
-  Future<T> getCache(String? id);
+  Future<T> getCache();
 
   Future<bool> setCache(T data);
 
-  Future<bool> remove(String? id);
+  Future<bool> removeCache();
 
-  Future<void> clearCache() async {}
+  Future<void> onCreated(T data);
+
+  Future<void> onDeleted(String id);
 }

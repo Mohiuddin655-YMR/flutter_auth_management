@@ -4,28 +4,30 @@ class BackupHandlerImpl<T extends Authenticator> extends BackupHandler<T> {
   final BackupRepository<T> repository;
 
   BackupHandlerImpl({
-    String? key,
     BackupDataSource<T>? source,
     SharedPreferences? preferences,
-    ConnectivityProvider? connectivity,
-  }) : repository = BackupRepositoryImpl<T>(
-          key: key,
-          source: source,
-          preferences: preferences,
-          connectivity: connectivity,
-        );
+  }) : repository =
+            BackupRepositoryImpl<T>(source: source, preferences: preferences);
 
   BackupHandlerImpl.fromRepository(this.repository);
 
   @override
-  Future<bool> remove(String? id) => repository.remove(id);
+  Future<T> getCache([String? id]) => repository.getCache();
 
   @override
-  Future<T> getCache(String? id) => repository.get(id);
+  Future<bool> setCache(T data) async {
+    try {
+      await onCreated(data);
+    } catch (_) {}
+    return repository.setCache(data);
+  }
 
   @override
-  Future<bool> setCache(T data) => repository.set(data);
+  Future<bool> removeCache([String? id]) => repository.removeCache();
 
   @override
-  Future<void> clearCache() => repository.clearCache();
+  Future<void> onCreated(T data) async {}
+
+  @override
+  Future<void> onDeleted(String id) async {}
 }
