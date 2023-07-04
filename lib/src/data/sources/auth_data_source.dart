@@ -105,12 +105,8 @@ class AuthDataSourceImpl extends AuthDataSource {
       );
 
       if (result.identityToken != null) {
-        final credential = OAuthProvider("apple.com").credential(
-          idToken: result.identityToken,
-          accessToken: result.authorizationCode,
-        );
         return response.withData(Credential(
-          credential: credential,
+          credential: AppleAuthProvider.credential(result.authorizationCode),
           accessToken: result.authorizationCode,
           idToken: result.identityToken,
           id: result.userIdentifier,

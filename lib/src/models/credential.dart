@@ -8,6 +8,7 @@ class Credential {
   final String? idToken;
   final String? name;
   final String? photo;
+  final String? refreshToken;
 
   const Credential({
     this.accessToken,
@@ -17,6 +18,7 @@ class Credential {
     this.email,
     this.name,
     this.photo,
+    this.refreshToken,
   });
 
   factory Credential.fromMap(Map<String, dynamic> map) {
@@ -45,6 +47,7 @@ class Credential {
     String? name,
     String? email,
     String? photo,
+    String? refreshToken,
   }) {
     return Credential(
       accessToken: accessToken ?? this.accessToken,
@@ -54,18 +57,20 @@ class Credential {
       email: email ?? this.email,
       name: name ?? this.name,
       photo: photo ?? this.photo,
+      refreshToken: refreshToken ?? this.refreshToken,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      "accessToken": accessToken,
+      "access_token": accessToken,
       "credential": credential,
       "id": id,
-      "idToken": idToken,
+      "id_token": idToken,
       "email": email,
       "name": name,
       "photo": photo,
+      "refresh_token": refreshToken,
     };
   }
 }

@@ -11,11 +11,15 @@ abstract class BackupRepository<T extends Authenticator> {
 
   Future<bool> get isDisconnected async => !(await isConnected);
 
-  Future<Response<T>> get();
+  String? get uid => user?.uid;
 
-  Future<Response<T>> set(T data);
+  User? get user => FirebaseAuth.instance.currentUser;
 
-  Future<Response<T>> delete();
+  Future<T> get(String? id);
 
-  Future<Response<T>> clear();
+  Future<bool> set(T data);
+
+  Future<bool> remove(String? id);
+
+  Future<void> clearCache() async {}
 }

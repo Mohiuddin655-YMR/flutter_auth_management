@@ -7,14 +7,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
   final AuthHandler authHandler;
   final BackupHandler<T> dataHandler;
 
-  AuthController.fromHandler({
-    required this.authHandler,
-    required this.dataHandler,
-    AuthMessages? messages,
-  })  : _msg = messages ?? const AuthMessages(),
-        super(AuthResponse.initial());
-
-  AuthController.fromSource({
+  AuthController({
     AuthMessages? messages,
     AuthDataSource? auth,
     BackupDataSource<T>? backup,
@@ -25,6 +18,13 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
           source: backup,
           connectivity: connectivity,
         ),
+        super(AuthResponse.initial());
+
+  AuthController.fromHandler({
+    required this.authHandler,
+    required this.dataHandler,
+    AuthMessages? messages,
+  })  : _msg = messages ?? const AuthMessages(),
         super(AuthResponse.initial());
 
   String get uid => user?.uid ?? "uid";
@@ -57,13 +57,16 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Authenticator()).copy(
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            refreshToken: result.refreshToken,
             id: currentData?.uid ?? result.id ?? uid,
             email: result.email,
             name: result.name,
             photo: result.photo,
-            provider: AuthProvider.facebook.name,
+            provider: AuthProvider.apple.name,
           ) as T;
-          await dataHandler.set(user);
+          await dataHandler.setCache(user);
           emit(AuthResponse.authenticated(user, _msg.signIn));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
@@ -81,22 +84,45 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     final response = await authHandler.signInWithBiometric();
     try {
       if (response.isSuccessful) {
-        final userResponse = await dataHandler.get();
-        final user = userResponse.data;
-        if (userResponse.isSuccessful && user is Authenticator) {
-          final email = user.email;
-          final password = user.password;
-          final loginResponse = await authHandler.signInWithEmailNPassword(
-            email: email ?? "example@gmail.com",
-            password: password ?? "password",
-          );
-          if (loginResponse.isSuccessful) {
-            emit(AuthResponse.authenticated(user, _msg.signIn));
-          } else {
-            emit(AuthResponse.failure(_msg.failure ?? loginResponse.exception));
+        final user = await dataHandler.getCache(uid);
+        final token = user.accessToken;
+        final provider = user.provider;
+        var loginResponse = Response();
+        if ((user.email.isValid || user.username.isValid) &&
+            user.password.isValid) {
+          if (provider.isEmail) {
+            loginResponse = await authHandler.signInWithEmailNPassword(
+              email: user.email ?? "example@gmail.com",
+              password: user.password ?? "password",
+            );
+          } else if (provider.isUsername) {
+            loginResponse = await authHandler.signInWithUsernameNPassword(
+              username: user.username ?? "username",
+              password: user.password ?? "password",
+            );
           }
+        } else if (token.isValid || user.idToken.isValid) {
+          if (provider.isApple) {
+            loginResponse = await authHandler.signUpWithCredential(
+              credential: AppleAuthProvider.credential(token.use),
+            );
+          } else if (provider.isFacebook) {
+            loginResponse = await authHandler.signUpWithCredential(
+              credential: FacebookAuthProvider.credential(token.use),
+            );
+          } else if (provider.isGoogle) {
+            loginResponse = await authHandler.signUpWithCredential(
+              credential: GoogleAuthProvider.credential(
+                idToken: user.idToken,
+                accessToken: token,
+              ),
+            );
+          }
+        }
+        if (loginResponse.isSuccessful) {
+          emit(AuthResponse.authenticated(user, _msg.signIn));
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? userResponse.exception));
+          emit(AuthResponse.failure(_msg.failure ?? loginResponse.exception));
         }
       } else {
         emit(AuthResponse.failure(_msg.failure ?? response.exception));
@@ -131,6 +157,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
               photo: result.photoURL,
               provider: AuthProvider.email.name,
             ) as T;
+            await dataHandler.setCache(user);
             emit(AuthResponse.authenticated(user, _msg.signIn));
           } else {
             emit(AuthResponse.failure(_msg.failure ?? response.message));
@@ -156,13 +183,16 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Authenticator()).copy(
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            refreshToken: result.refreshToken,
             id: currentData?.uid ?? result.id ?? uid,
             email: result.email,
             name: result.name,
             photo: result.photo,
             provider: AuthProvider.facebook.name,
           ) as T;
-          await dataHandler.set(user);
+          await dataHandler.setCache(user);
           emit(AuthResponse.authenticated(user, _msg.signIn));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
@@ -187,13 +217,16 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Authenticator()).copy(
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            refreshToken: result.refreshToken,
             id: currentData?.uid ?? result.id ?? uid,
             email: result.email,
             name: result.name,
             photo: result.photo,
-            provider: AuthProvider.facebook.name,
+            provider: AuthProvider.github.name,
           ) as T;
-          await dataHandler.set(user);
+          await dataHandler.setCache(user);
           emit(AuthResponse.authenticated(user, _msg.signIn));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
@@ -218,13 +251,16 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Authenticator()).copy(
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            refreshToken: result.refreshToken,
             id: currentData?.uid ?? result.id ?? uid,
             name: result.name,
             photo: result.photo,
             email: result.email,
             provider: AuthProvider.google.name,
           ) as T;
-          await dataHandler.set(user);
+          await dataHandler.setCache(user);
           emit(AuthResponse.authenticated(user, _msg.signIn));
         } else {
           emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
@@ -262,6 +298,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
               photo: result.photoURL,
               provider: AuthProvider.username.name,
             ) as T;
+            await dataHandler.setCache(user);
             emit(AuthResponse.authenticated(user, _msg.signIn));
           } else {
             emit(AuthResponse.failure(_msg.failure ?? response.exception));
@@ -300,7 +337,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
               photo: result.photoURL,
               provider: AuthProvider.email.name,
             ) as T;
-            await dataHandler.set(user);
+            await dataHandler.setCache(user);
             emit(AuthResponse.authenticated(user, _msg.signUp));
           } else {
             emit(AuthResponse.failure(_msg.failure ?? response.exception));
@@ -337,9 +374,9 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
               name: result.displayName,
               phone: result.phoneNumber,
               photo: result.photoURL,
-              provider: AuthProvider.email.name,
+              provider: AuthProvider.username.name,
             ) as T;
-            await dataHandler.set(user);
+            await dataHandler.setCache(user);
             emit(AuthResponse.authenticated(user, _msg.signUp));
           } else {
             emit(AuthResponse.failure(_msg.failure ?? response.exception));
@@ -358,7 +395,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     try {
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
-        await dataHandler.clear();
+        await dataHandler.clearCache();
         emit(AuthResponse.unauthenticated(_msg.signOut));
       } else {
         emit(AuthResponse.failure(_msg.failure ?? response.exception));

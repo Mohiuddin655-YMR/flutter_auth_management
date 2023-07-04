@@ -12,49 +12,37 @@ class KeepDataSourceImpl<T extends Authenticator> extends BackupDataSource<T> {
   T build(source) => Authenticator.from(source) as T;
 
   @override
-  Future<Response<T>> get() async {
-    final response = Response<T>();
-    var result = preferences.output(key);
-    if (result is Map<String, dynamic>) {
-      var data = build(result);
-      return response.withData(data);
+  Future<T> getCache(String? id) async {
+    var result = await preferences.output(key);
+    if (result.isNotEmpty) {
+      return build(result);
     } else {
-      return response.withStatus(Status.failure);
+      return Future.error("Data not found!");
     }
   }
 
   @override
-  Future<Response<T>> set(T data) async {
-    final response = Response<T>();
+  Future<bool> setCache(T data) async {
     var isSuccessful = await preferences.input(key, data.source);
     if (isSuccessful) {
-      return response.withStatus(Status.ok);
+      return true;
     } else {
-      return response.withStatus(Status.failure);
+      return Future.error("Data not inserted!");
     }
   }
 
   @override
-  Future<Response<T>> delete() async {
-    final response = Response<T>();
+  Future<bool> removeCache(String? id) async {
     var isSuccessful = await preferences.input(key, null);
     if (isSuccessful) {
-      return response.withStatus(Status.ok);
+      return true;
     } else {
-      return response.withStatus(Status.failure);
+      return Future.error("Data not removed!");
     }
   }
 
   @override
-  Future<Response<T>> clear() async {
-    final response = Response<T>();
-    var isSuccessful = await preferences.input(key, null);
-    if (isSuccessful) {
-      return response.withStatus(Status.ok);
-    } else {
-      return response.withStatus(Status.failure);
-    }
-  }
+  Future<void> clearCache() => removeCache(key);
 }
 
 extension _LocalExtension on Future<SharedPreferences> {

@@ -18,14 +18,14 @@ class BackupHandlerImpl<T extends Authenticator> extends BackupHandler<T> {
   BackupHandlerImpl.fromRepository(this.repository);
 
   @override
-  Future<Response<T>> get() => repository.get();
+  Future<bool> remove(String? id) => repository.remove(id);
 
   @override
-  Future<Response<T>> set(T data) => repository.set(data);
+  Future<T> getCache(String? id) => repository.get(id);
 
   @override
-  Future<Response<T>> delete() => repository.delete();
+  Future<bool> setCache(T data) => repository.set(data);
 
   @override
-  Future<Response<T>> clear() => repository.clear();
+  Future<void> clearCache() => repository.clearCache();
 }

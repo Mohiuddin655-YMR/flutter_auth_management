@@ -16,56 +16,45 @@ class BackupRepositoryImpl<T extends Authenticator>
   bool get isRemotely => source != null;
 
   @override
-  Future<Response<T>> get() async {
+  Future<T> get(String? id) async {
     if (isRemotely) {
       if (await isConnected) {
-        return source!.get();
+        return source!.getCache(id ?? uid);
       } else {
-        return Response<T>().withStatus(Status.networkError);
+        return Future.error("Network unavailable!");
       }
     } else {
-      return _.get();
+      return _.getCache(key);
     }
   }
 
   @override
-  Future<Response<T>> set(T data) async {
+  Future<bool> set(T data) async {
     if (isRemotely) {
       if (await isConnected) {
-        return source!.set(data);
+        return source!.setCache(data);
       } else {
-        return Response<T>().withStatus(Status.networkError);
+        return Future.error("Network unavailable!");
       }
     } else {
-      return _.set(data);
+      return _.setCache(data);
     }
   }
 
   @override
-  Future<Response<T>> delete() async {
+  Future<bool> remove(String? id) async {
     if (isRemotely) {
       if (await isConnected) {
-        await _.clear();
-        return source!.delete();
+        await _.removeCache(key);
+        return source!.removeCache(id ?? uid);
       } else {
-        return Response<T>().withStatus(Status.networkError);
+        return Future.error("Network unavailable!");
       }
     } else {
-      return _.clear();
+      return _.removeCache(key);
     }
   }
 
   @override
-  Future<Response<T>> clear() async {
-    if (isRemotely) {
-      if (await isConnected) {
-        await _.clear();
-        return source!.clear();
-      } else {
-        return Response<T>().withStatus(Status.networkError);
-      }
-    } else {
-      return _.clear();
-    }
-  }
+  Future<void> clearCache() => _.clearCache();
 }

@@ -10,13 +10,13 @@ abstract class BackupDataSource<T extends Authenticator> {
   Future<SharedPreferences> get preferences async =>
       _db ??= await SharedPreferences.getInstance();
 
-  Future<Response<T>> set(T data);
+  Future<T> getCache(String? id);
 
-  Future<Response<T>> get();
+  Future<bool> setCache(T data);
 
-  Future<Response<T>> delete();
+  Future<bool> removeCache(String? id);
 
-  Future<Response<T>> clear();
+  Future<void> clearCache() async {}
 
   T build(dynamic source);
 }
