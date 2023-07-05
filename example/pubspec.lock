@@ -39,7 +39,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.1"
+    version: "0.0.3"
   bloc:
     dependency: transitive
     description:
@@ -136,14 +136,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
-  data_management:
-    dependency: "direct main"
-    description:
-      name: data_management
-      sha256: c185f50a27a2e0939e42a0c8937d172f6630ac55566fb6ed2167f99f3988df6e
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.4"
   dbus:
     dependency: transitive
     description:
@@ -152,14 +144,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.8"
-  dio:
-    dependency: transitive
-    description:
-      name: dio
-      sha256: a9d76e72985d7087eb7c5e7903224ae52b337131518d127c554b9405936752b8
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.2.1+1"
   encrypt:
     dependency: transitive
     description:
@@ -277,6 +261,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_andomie:
+    dependency: transitive
+    description:
+      name: flutter_andomie
+      sha256: "99fdd8af6eb41e7d448bccafc68f5edcb170446b142b1bd9f62490690c12ae0d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.1-alpha3"
   flutter_bloc:
     dependency: "direct main"
     description:
@@ -648,7 +640,7 @@ packages:
     source: hosted
     version: "3.2.1"
   shared_preferences:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: shared_preferences
       sha256: "396f85b8afc6865182610c0a2fc470853d56499f75f7499e2a73a9f0539d23d0"
@@ -821,5 +813,5 @@ packages:
     source: hosted
     version: "6.3.0"
 sdks:
-  dart: ">=3.0.1 <4.0.0"
+  dart: ">=3.0.0 <4.0.0"
   flutter: ">=3.10.0"

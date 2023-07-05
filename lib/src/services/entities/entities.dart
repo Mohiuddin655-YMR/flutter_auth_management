@@ -1,8 +1,7 @@
 library entities;
 
-import 'package:data_management/core.dart';
+import 'package:flutter_andomie/core.dart';
 
 import '../../src.dart';
 
-part 'authenticator.dart';
 part 'authorize.dart';

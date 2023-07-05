@@ -1,4 +1,5 @@
 import 'package:auth_management/core.dart';
+import 'package:flutter_andomie/core.dart';
 import 'package:get_it/get_it.dart';
 
 GetIt locator = GetIt.instance;
