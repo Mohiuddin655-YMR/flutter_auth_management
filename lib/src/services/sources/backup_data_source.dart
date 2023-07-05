@@ -1,7 +1,7 @@
 part of 'sources.dart';
 
-abstract class BackupDataSource<T extends Authenticator> {
-  BackupDataSource({
+abstract class BackupSource<T extends Auth> {
+  BackupSource({
     SharedPreferences? preferences,
   }) : _db = preferences;
 

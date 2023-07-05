@@ -1,6 +1,6 @@
 part of 'repositories.dart';
 
-abstract class BackupRepository<T extends Authenticator> {
+abstract class BackupRepository<T extends Auth> {
   Future<T> getCache();
 
   Future<bool> setCache(T data);

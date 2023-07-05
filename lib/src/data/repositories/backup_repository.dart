@@ -1,13 +1,12 @@
 part of 'repositories.dart';
 
-class BackupRepositoryImpl<T extends Authenticator>
-    extends BackupRepository<T> {
-  final BackupDataSource<T> source;
+class BackupRepositoryImpl<T extends Auth> extends BackupRepository<T> {
+  final BackupSource<T> source;
 
   BackupRepositoryImpl({
-    BackupDataSource<T>? source,
+    BackupSource<T>? source,
     SharedPreferences? preferences,
-  }) : source = source ?? BackupDataSourceImpl<T>(preferences: preferences);
+  }) : source = source ?? KeepDataSource<T>(preferences: preferences);
 
   @override
   Future<T> getCache() => source.getCache();
@@ -19,8 +18,8 @@ class BackupRepositoryImpl<T extends Authenticator>
   Future<bool> removeCache() => source.removeCache();
 
   @override
-  Future<void> onCreated(T data) async {}
+  Future<void> onCreated(T data) => source.onCreated(data);
 
   @override
-  Future<void> onDeleted(String id) async {}
+  Future<void> onDeleted(String id) => source.onDeleted(id);
 }

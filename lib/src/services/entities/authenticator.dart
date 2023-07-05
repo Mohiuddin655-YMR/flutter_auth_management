@@ -1,6 +1,6 @@
 part of 'entities.dart';
 
-class Authenticator extends Entity {
+class Auth extends Entity {
   final String? accessToken;
   final String? idToken;
   final String? refreshToken;
@@ -16,7 +16,7 @@ class Authenticator extends Entity {
 
   AuthProvider get provider => AuthProvider.from(_provider);
 
-  Authenticator({
+  Auth({
     super.id,
     super.timeMills,
     this.accessToken,
@@ -31,7 +31,7 @@ class Authenticator extends Entity {
     this.username,
   }) : _provider = provider;
 
-  Authenticator copy({
+  Auth copy({
     String? id,
     int? timeMills,
     String? accessToken,
@@ -45,7 +45,7 @@ class Authenticator extends Entity {
     String? provider,
     String? username,
   }) {
-    return Authenticator(
+    return Auth(
       id: id ?? this.id,
       timeMills: timeMills ?? this.timeMills,
       accessToken: accessToken ?? this.accessToken,
@@ -61,8 +61,8 @@ class Authenticator extends Entity {
     );
   }
 
-  factory Authenticator.from(Object? source) {
-    return Authenticator(
+  factory Auth.from(Object? source) {
+    return Auth(
       id: source.entityId,
       timeMills: source.entityTimeMills,
       accessToken: Entity.value<String>("access_token", source),

@@ -10,8 +10,8 @@ class AuthenticationTest extends StatefulWidget {
 }
 
 class _AuthenticationTestState extends State<AuthenticationTest> {
-  late AuthController<Authenticator> controller =
-      context.read<AuthController<Authenticator>>();
+  late AuthController<Auth> controller =
+      context.read<AuthController<Auth>>();
 
   late TextEditingController email = TextEditingController();
   late TextEditingController username = TextEditingController();
@@ -142,7 +142,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                 ),
               ],
             ),
-            BlocConsumer<AuthController, AuthResponse<Authenticator>>(
+            BlocConsumer<AuthController, AuthResponse<Auth>>(
               builder: (context, state) {
                 return Container(
                   width: double.infinity,

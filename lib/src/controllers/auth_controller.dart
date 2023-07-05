@@ -2,7 +2,7 @@ part of 'controllers.dart';
 
 typedef IdentityBuilder = String Function(String uid);
 
-class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
+class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
   final AuthMessages _msg;
   final AuthHandler authHandler;
   final BackupHandler<T> dataHandler;
@@ -10,8 +10,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
   AuthController({
     AuthMessages? messages,
     AuthDataSource? auth,
-    BackupDataSource<T>? backup,
-    ConnectivityProvider? connectivity,
+    BackupSource<T>? backup,
   })  : _msg = messages ?? const AuthMessages(),
         authHandler = AuthHandlerImpl.fromSource(auth ?? AuthDataSourceImpl()),
         dataHandler = BackupHandlerImpl<T>(source: backup),
@@ -47,7 +46,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signInByApple([Authenticator? authenticator]) async {
+  Future signInByApple([Auth? authenticator]) async {
     emit(AuthResponse.loading(AuthProvider.apple, _msg.loading));
     try {
       final response = await authHandler.signInWithApple();
@@ -58,7 +57,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = (authenticator ?? Authenticator()).copy(
+          final user = (authenticator ?? Auth()).copy(
             accessToken: result.accessToken,
             idToken: result.idToken,
             refreshToken: result.refreshToken,
@@ -182,7 +181,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signInByFacebook([Authenticator? authenticator]) async {
+  Future signInByFacebook([Auth? authenticator]) async {
     emit(AuthResponse.loading(AuthProvider.facebook, _msg.loading));
     try {
       final response = await authHandler.signInWithFacebook();
@@ -193,7 +192,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = (authenticator ?? Authenticator()).copy(
+          final user = (authenticator ?? Auth()).copy(
             accessToken: result.accessToken,
             idToken: result.idToken,
             refreshToken: result.refreshToken,
@@ -219,7 +218,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signInByGithub([Authenticator? authenticator]) async {
+  Future signInByGithub([Auth? authenticator]) async {
     emit(AuthResponse.loading(AuthProvider.github, _msg.loading));
     try {
       final response = await authHandler.signInWithGithub();
@@ -230,7 +229,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = (authenticator ?? Authenticator()).copy(
+          final user = (authenticator ?? Auth()).copy(
             accessToken: result.accessToken,
             idToken: result.idToken,
             refreshToken: result.refreshToken,
@@ -256,7 +255,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
     }
   }
 
-  Future signInByGoogle([Authenticator? authenticator]) async {
+  Future signInByGoogle([Auth? authenticator]) async {
     emit(AuthResponse.loading(AuthProvider.google, _msg.loading));
     try {
       final response = await authHandler.signInWithGoogle();
@@ -267,7 +266,7 @@ class AuthController<T extends Authenticator> extends Cubit<AuthResponse<T>> {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = (authenticator ?? Authenticator()).copy(
+          final user = (authenticator ?? Auth()).copy(
             accessToken: result.accessToken,
             idToken: result.idToken,
             refreshToken: result.refreshToken,

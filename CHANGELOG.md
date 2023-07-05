@@ -1,5 +1,7 @@
-## 0.0.2-alpha1
+## 0.0.2
+* Finally this version activated
 
+## 0.0.2-alpha1
 * Add apple auth
 * Add biometric auth
 * Add facebook auth
@@ -7,5 +9,4 @@
 * Add google auth
 
 ## 0.0.1
-
 * initial release.

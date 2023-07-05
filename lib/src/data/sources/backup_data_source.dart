@@ -1,17 +1,9 @@
 part of 'sources.dart';
 
-class BackupDataSourceImpl<T extends Authenticator>
-    extends BackupDataSource<T> {
-
-  BackupDataSourceImpl({
+abstract class BackupSourceImpl<T extends Auth> extends BackupSource<T> {
+  BackupSourceImpl({
     super.preferences,
   });
-
-  @override
-  Future<void> onCreated(T data) async {}
-
-  @override
-  Future<void> onDeleted(String id) async {}
 
   @override
   Future<T> getCache() async {
@@ -19,7 +11,7 @@ class BackupDataSourceImpl<T extends Authenticator>
     if (result.isNotEmpty) {
       return build(result);
     } else {
-      return Future.error("Data not found!");
+      return Future.error("Data not initialized!");
     }
   }
 
@@ -42,7 +34,4 @@ class BackupDataSourceImpl<T extends Authenticator>
       return Future.error("Data not removed!");
     }
   }
-
-  @override
-  T build(source) => Authenticator.from(source) as T;
 }

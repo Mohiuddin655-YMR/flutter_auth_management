@@ -1,6 +1,6 @@
 part of 'handlers.dart';
 
-abstract class BackupHandler<T extends Authenticator> {
+abstract class BackupHandler<T extends Auth> {
   Future<T> getCache();
 
   Future<bool> setCache(T data);
