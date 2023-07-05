@@ -18,6 +18,14 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
   late TextEditingController password = TextEditingController();
 
   @override
+  void initState() {
+    email.text = "mohiuddin655.1@gmail.com";
+    username.text = "mohiuddin655.1";
+    password.text = "123456";
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -26,7 +34,28 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            TextField(controller: email,),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 24,
+                horizontal: 24,
+              ),
+              child: Column(
+                children: [
+                  EditField(
+                    controller: email,
+                    hint: "Email",
+                  ),
+                  EditField(
+                    controller: username,
+                    hint: "Username",
+                  ),
+                  EditField(
+                    controller: password,
+                    hint: "Password",
+                  ),
+                ],
+              ),
+            ),
             Wrap(
               runSpacing: 12,
               spacing: 12,
@@ -45,8 +74,8 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   child: const Text("SignIn with Email"),
                   onPressed: () => controller.signInByEmail(
                     EmailAuthenticator(
-                      email: "example.45@gmail.com",
-                      password: "123456",
+                      email: email.text,
+                      password: password.text,
                     ),
                   ),
                 ),
@@ -66,8 +95,8 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   child: const Text("SignIn with Username"),
                   onPressed: () => controller.signInByUsername(
                     UsernameAuthenticator(
-                      username: "username",
-                      password: "123456",
+                      username: username.text,
+                      password: password.text,
                     ),
                   ),
                 ),
@@ -84,8 +113,8 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   child: const Text("SignUp with Email"),
                   onPressed: () => controller.signUpByEmail(
                     EmailAuthenticator(
-                      email: "example.45@gmail.com",
-                      password: "123456",
+                      email: email.text,
+                      password: password.text,
                     ),
                   ),
                 ),
@@ -93,8 +122,8 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                   child: const Text("SignUp with Username"),
                   onPressed: () => controller.signUpByUsername(
                     UsernameAuthenticator(
-                      username: "username45",
-                      password: "123456",
+                      username: username.text,
+                      password: password.text,
                     ),
                   ),
                 ),
@@ -147,12 +176,25 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
 }
 
 class EditField extends StatelessWidget {
-  const EditField({super.key});
+  final String hint;
+  final TextEditingController controller;
+
+  const EditField({
+    super.key,
+    required this.hint,
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const TextField(
-      decoration: InputDecoration(),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          hintText: hint,
+        ),
+      ),
     );
   }
 }

@@ -9,4 +9,5 @@ class Regs {
   static final RegExp phone = RegExp(Patterns.phone);
   static final RegExp url = RegExp(Patterns.url);
   static final RegExp username = RegExp(Patterns.username);
+  static final RegExp usernameWithDot = RegExp(Patterns.usernameWithDot);
 }

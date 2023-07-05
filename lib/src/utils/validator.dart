@@ -77,10 +77,16 @@ class Validator {
     return email != null && email.isNotEmpty && Regs.email.hasMatch(email);
   }
 
-  static bool isValidUsername(String? username) {
-    return username != null &&
-        username.isNotEmpty &&
-        Regs.username.hasMatch(username);
+  static bool isValidUsername(String? username, [bool withDot = true]) {
+    if (username != null && username.isNotEmpty) {
+      if (withDot) {
+        return Regs.usernameWithDot.hasMatch(username);
+      } else {
+        return Regs.username.hasMatch(username);
+      }
+    } else {
+      return false;
+    }
   }
 
   static bool isValidPassword(String? password, [int minLength = 6]) {
