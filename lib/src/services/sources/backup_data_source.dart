@@ -1,26 +1,23 @@
 part of 'sources.dart';
 
-abstract class BackupSource<T extends Auth> {
+abstract class BackupSource {
   BackupSource({
-    SharedPreferences? preferences,
-  }) : _db = preferences;
+    LocalDatabase? database,
+  }) : _db = database;
 
-  SharedPreferences? _db;
+  LocalDatabase? _db;
 
-  Future<SharedPreferences> get preferences async =>
-      _db ??= await SharedPreferences.getInstance();
+  Future<LocalDatabase> get database async => _db ??= await LocalDatabaseImpl.I;
 
   final String key = "uid";
 
-  Future<T> getCache();
+  Future<Auth> getCache();
 
-  Future<bool> setCache(T data);
+  Future<bool> setCache(Auth data);
 
   Future<bool> removeCache();
 
-  Future<void> onCreated(T data);
+  Future<void> onCreated(Auth data);
 
   Future<void> onDeleted(String id);
-
-  T build(dynamic source);
 }

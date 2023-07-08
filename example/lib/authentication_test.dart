@@ -1,6 +1,5 @@
 import 'package:auth_management/core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_andomie/core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AuthenticationTest extends StatefulWidget {
@@ -11,7 +10,7 @@ class AuthenticationTest extends StatefulWidget {
 }
 
 class _AuthenticationTestState extends State<AuthenticationTest> {
-  late AuthController<Auth> controller = context.read<AuthController<Auth>>();
+  late AuthController controller = context.read<AuthController>();
 
   late TextEditingController email = TextEditingController();
   late TextEditingController username = TextEditingController();
@@ -142,7 +141,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                 ),
               ],
             ),
-            BlocConsumer<AuthController, AuthResponse<Auth>>(
+            BlocConsumer<AuthController, AuthResponse>(
               builder: (context, state) {
                 return Container(
                   width: double.infinity,

@@ -1,6 +1,6 @@
 part of 'responses.dart';
 
-class AuthResponse<T extends Auth> {
+class AuthResponse {
   final bool? _initial;
   final bool? _loading;
   final bool? _authenticated;
@@ -8,7 +8,7 @@ class AuthResponse<T extends Auth> {
   final bool? _failure;
   final String? _message;
   final String? _error;
-  final T? data;
+  final Auth? data;
   final AuthProvider? _provider;
 
   factory AuthResponse.initial() => const AuthResponse._(initial: true);
@@ -20,7 +20,7 @@ class AuthResponse<T extends Auth> {
     return AuthResponse._(loading: true, provider: provider, message: message);
   }
 
-  factory AuthResponse.authenticated(T? data, [String? message]) {
+  factory AuthResponse.authenticated(Auth? data, [String? message]) {
     return AuthResponse._(
       authenticated: true,
       data: data,

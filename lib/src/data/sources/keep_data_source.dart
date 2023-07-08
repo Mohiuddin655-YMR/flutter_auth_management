@@ -1,16 +1,13 @@
 part of 'sources.dart';
 
-class KeepDataSource<T extends Auth> extends BackupSourceImpl<T> {
+class KeepDataSource extends BackupSourceImpl {
   KeepDataSource({
-    super.preferences,
+    super.database,
   });
 
   @override
-  Future<void> onCreated(T data) async {}
+  Future<void> onCreated(Auth auth) async {}
 
   @override
   Future<void> onDeleted(String id) async {}
-
-  @override
-  T build(source) => Auth.from(source) as T;
 }

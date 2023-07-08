@@ -1,3 +1,6 @@
+## 0.0.4
+* Add user remotely bug fixed
+
 ## 0.0.3
 * Stable version
 

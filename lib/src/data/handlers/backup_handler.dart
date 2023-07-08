@@ -1,21 +1,20 @@
 part of 'handlers.dart';
 
-class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
-  final BackupRepository<T> repository;
+class BackupHandlerImpl extends BackupHandler {
+  final BackupRepository repository;
 
   BackupHandlerImpl({
-    BackupSource<T>? source,
-    SharedPreferences? preferences,
-  }) : repository =
-            BackupRepositoryImpl<T>(source: source, preferences: preferences);
+    BackupSource? source,
+    LocalDatabase? database,
+  }) : repository = BackupRepositoryImpl(source: source, database: database);
 
   BackupHandlerImpl.fromRepository(this.repository);
 
   @override
-  Future<T> getCache([String? id]) => repository.getCache();
+  Future<Auth> getCache([String? id]) => repository.getCache();
 
   @override
-  Future<bool> setCache(T data) async {
+  Future<bool> setCache(Auth data) async {
     try {
       await onCreated(data);
     } catch (_) {}
@@ -26,7 +25,7 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   Future<bool> removeCache([String? id]) => repository.removeCache();
 
   @override
-  Future<void> onCreated(T data) => repository.onCreated(data);
+  Future<void> onCreated(Auth data) => repository.onCreated(data);
 
   @override
   Future<void> onDeleted(String id) => repository.onDeleted(id);

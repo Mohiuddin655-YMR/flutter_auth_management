@@ -1,23 +1,23 @@
 part of 'sources.dart';
 
-abstract class BackupSourceImpl<T extends Auth> extends BackupSource<T> {
+abstract class BackupSourceImpl extends BackupSource {
   BackupSourceImpl({
-    super.preferences,
+    super.database,
   });
 
   @override
-  Future<T> getCache() async {
-    var result = await preferences.output(key);
+  Future<Auth> getCache() async {
+    var result = await database.output(key);
     if (result.isNotEmpty) {
-      return build(result);
+      return Auth.from(result);
     } else {
       return Future.error("Data not initialized!");
     }
   }
 
   @override
-  Future<bool> setCache(T data) async {
-    var isSuccessful = await preferences.input(key, data.source);
+  Future<bool> setCache(Auth data) async {
+    var isSuccessful = await database.input(key, data.source);
     if (isSuccessful) {
       return true;
     } else {
@@ -27,7 +27,7 @@ abstract class BackupSourceImpl<T extends Auth> extends BackupSource<T> {
 
   @override
   Future<bool> removeCache() async {
-    var isSuccessful = await preferences.input(key, null);
+    var isSuccessful = await database.input(key, null);
     if (isSuccessful) {
       return true;
     } else {

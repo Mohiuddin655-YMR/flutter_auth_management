@@ -2,18 +2,18 @@ part of 'controllers.dart';
 
 typedef IdentityBuilder = String Function(String uid);
 
-class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
+class AuthController extends Cubit<AuthResponse> {
   final AuthMessages _msg;
   final AuthHandler authHandler;
-  final BackupHandler<T> dataHandler;
+  final BackupHandler dataHandler;
 
   AuthController({
     AuthMessages? messages,
     AuthDataSource? auth,
-    BackupSource<T>? backup,
+    BackupSource? backup,
   })  : _msg = messages ?? const AuthMessages(),
         authHandler = AuthHandlerImpl.fromSource(auth ?? AuthDataSourceImpl()),
-        dataHandler = BackupHandlerImpl<T>(source: backup),
+        dataHandler = BackupHandlerImpl(source: backup),
         super(AuthResponse.initial());
 
   AuthController.fromHandler({
@@ -66,7 +66,7 @@ class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
             name: result.name,
             photo: result.photo,
             provider: AuthProvider.apple.name,
-          ) as T;
+          );
           await dataHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
@@ -163,7 +163,7 @@ class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
               phone: result.phoneNumber,
               photo: result.photoURL,
               provider: AuthProvider.email.name,
-            ) as T;
+            );
             await dataHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
@@ -201,7 +201,7 @@ class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
             name: result.name,
             photo: result.photo,
             provider: AuthProvider.facebook.name,
-          ) as T;
+          );
           await dataHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
@@ -238,7 +238,7 @@ class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
             name: result.name,
             photo: result.photo,
             provider: AuthProvider.github.name,
-          ) as T;
+          );
           await dataHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
@@ -275,7 +275,7 @@ class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
             photo: result.photo,
             email: result.email,
             provider: AuthProvider.google.name,
-          ) as T;
+          );
           await dataHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
@@ -316,7 +316,7 @@ class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
               phone: result.phoneNumber,
               photo: result.photoURL,
               provider: AuthProvider.username.name,
-            ) as T;
+            );
             await dataHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
@@ -358,7 +358,7 @@ class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
               phone: result.phoneNumber,
               photo: result.photoURL,
               provider: AuthProvider.email.name,
-            ) as T;
+            );
             await dataHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
@@ -400,7 +400,7 @@ class AuthController<T extends Auth> extends Cubit<AuthResponse<T>> {
               phone: result.phoneNumber,
               photo: result.photoURL,
               provider: AuthProvider.username.name,
-            ) as T;
+            );
             await dataHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
