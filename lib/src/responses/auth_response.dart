@@ -184,6 +184,16 @@ class Auth extends Entity {
     );
   }
 
+  factory Auth.fromUser(User? user) {
+    return Auth(
+      id: user?.uid,
+      email: user?.email,
+      name: user?.displayName,
+      phone: user?.phoneNumber,
+      photo: user?.photoURL,
+    );
+  }
+
   @override
   Map<String, dynamic> get source {
     return super.source.attach({

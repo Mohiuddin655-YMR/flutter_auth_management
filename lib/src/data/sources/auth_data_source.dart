@@ -53,8 +53,9 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response> signOut([AuthProvider? provider]) async {
-    final response = Response();
+  Future<Response<Auth>> signOut([AuthProvider? provider]) async {
+    final response = Response<Auth>();
+    var data = Auth.fromUser(user);
     try {
       if (await isConnected) {
         if (provider != null) {
@@ -90,7 +91,7 @@ class AuthDataSourceImpl extends AuthDataSource {
     } catch (_) {
       return response.withException(_, status: Status.failure);
     }
-    return response.withData(null);
+    return response.withData(data);
   }
 
   @override

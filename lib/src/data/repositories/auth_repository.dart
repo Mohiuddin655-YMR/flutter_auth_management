@@ -17,7 +17,7 @@ class AuthRepositoryImpl extends AuthRepository {
   Future<bool> isSignIn([AuthProvider? provider]) => source.isSignIn();
 
   @override
-  Future<Response> signOut([AuthProvider? provider]) => source.signOut();
+  Future<Response<Auth>> signOut([AuthProvider? provider]) => source.signOut();
 
   @override
   Future<Response<Credential>> signInWithApple() {

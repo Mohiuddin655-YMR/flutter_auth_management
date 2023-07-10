@@ -135,7 +135,7 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<void>> signOut([AuthProvider? provider]) {
+  Future<Response<Auth>> signOut([AuthProvider? provider]) {
     try {
       return repository.signOut(provider);
     } catch (_) {

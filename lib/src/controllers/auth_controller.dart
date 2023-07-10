@@ -1,6 +1,7 @@
 part of 'controllers.dart';
 
 typedef IdentityBuilder = String Function(String uid);
+typedef SignOutCallback = Future Function(Response<Auth>);
 
 class AuthController extends Cubit<AuthResponse> {
   final AuthMessages _msg;
@@ -418,12 +419,12 @@ class AuthController extends Cubit<AuthResponse> {
     }
   }
 
-  Future signOut([AuthProvider? provider]) async {
+  Future signOut({AuthProvider? provider, SignOutCallback? callback}) async {
     emit(AuthResponse.loading(provider, _msg.loading));
     try {
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
-        await dataHandler.removeCache();
+        await callback?.call(response);
         emit(AuthResponse.unauthenticated(
           _msg.signOut ?? "Sign out successful!",
         ));

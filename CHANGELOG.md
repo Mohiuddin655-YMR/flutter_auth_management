@@ -1,3 +1,6 @@
+## 0.0.5-alpha1
+* Biometric sign in bug fixed
+
 ## 0.0.4
 * Add user remotely bug fixed
 
