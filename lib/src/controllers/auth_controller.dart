@@ -2,7 +2,6 @@ part of 'controllers.dart';
 
 typedef IdentityBuilder = String Function(String uid);
 typedef SignOutCallback = Future Function(Auth);
-typedef ClearCallback = Future<bool> Function(Auth);
 
 class AuthController extends Cubit<AuthResponse> {
   final AuthMessages _msg;
@@ -486,7 +485,6 @@ class AuthController extends Cubit<AuthResponse> {
   Future signOut({
     AuthProvider? provider,
     SignOutCallback? callback,
-    ClearCallback? clearCallback,
   }) async {
     emit(AuthResponse.loading(provider, _msg.loading));
     try {
@@ -494,10 +492,7 @@ class AuthController extends Cubit<AuthResponse> {
       if (response.isSuccessful) {
         var data = await backupHandler.getCache();
         if (callback != null) await callback(data.copy(id: response.data?.id));
-        var clear = await clearCallback?.call(data.copy(id: response.data?.id));
-        if (!data.biometric || (clear ?? false)) {
-          await backupHandler.removeCache();
-        }
+        if (!data.biometric) await backupHandler.removeCache();
         emit(AuthResponse.unauthenticated(_msg.signOut.done));
       } else {
         emit(AuthResponse.failure(_msg.signOut.failure ?? response.exception));
@@ -537,43 +532,33 @@ class AuthMessages {
     ),
     this.signInWithApple = const AuthMessage(
       done: "Apple sign in successful!",
-      failure: "Apple sign in unsuccessful!",
     ),
     this.signInWithBiometric = const AuthMessage(
       done: "Biometric sign in successful!",
-      failure: "Biometric sign in unsuccessful!",
     ),
     this.signInWithEmail = const AuthMessage(
       done: "Sign in successful!",
-      failure: "Sign in unsuccessful!",
     ),
     this.signInWithFacebook = const AuthMessage(
       done: "Facebook sign in successful!",
-      failure: "Facebook sign in unsuccessful!",
     ),
     this.signInWithGithub = const AuthMessage(
       done: "Github sign in successful!",
-      failure: "Github sign in unsuccessful!",
     ),
     this.signInWithGoogle = const AuthMessage(
       done: "Google sign in successful!",
-      failure: "Google sign in unsuccessful!",
     ),
     this.signInWithUsername = const AuthMessage(
       done: "Sign in successful!",
-      failure: "Sign in unsuccessful!",
     ),
     this.signUpWithEmail = const AuthMessage(
       done: "Sign up successful!",
-      failure: "Sign up unsuccessful!",
     ),
     this.signUpWithUsername = const AuthMessage(
       done: "Sign up successful!",
-      failure: "Sign up unsuccessful!",
     ),
     this.signOut = const AuthMessage(
       done: "Sign out successful!",
-      failure: "Sign out unsuccessful!",
     ),
   });
 }

@@ -1,2 +1,2 @@
-## 0.0.8
-* Biometric and message bug fixed
+## 0.0.9
+* Auth inner library bug fixed

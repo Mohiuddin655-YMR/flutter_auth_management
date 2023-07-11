@@ -155,8 +155,8 @@ Future<void> main() async {
             projectId: "flutter-ui-kits",
             storageBucket: "flutter-ui-kits.appspot.com",
             messagingSenderId: "807732577100",
-            appId: "1:807732577100:web:c6e2766be76043102945e9",
-            measurementId: "G-SW8PH1RQ0B",
+            appId: "1:807732577100:web:ee043c33d35bddeb2945e9",
+            measurementId: "G-D2Q97HYEEQ",
           ),
   );
   await diInit();
@@ -262,6 +262,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                       email: email.text,
                       password: password.text,
                     ),
+                    biometric: true,
                   ),
                 ),
                 ElevatedButton(
@@ -283,6 +284,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                       username: username.text,
                       password: password.text,
                     ),
+                    biometric: true,
                   ),
                 ),
               ],
@@ -301,6 +303,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                       email: email.text,
                       password: password.text,
                     ),
+                    biometric: true,
                   ),
                 ),
                 ElevatedButton(
@@ -310,6 +313,7 @@ class _AuthenticationTestState extends State<AuthenticationTest> {
                       username: username.text,
                       password: password.text,
                     ),
+                    biometric: true,
                   ),
                 ),
               ],
