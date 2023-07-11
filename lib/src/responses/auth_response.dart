@@ -107,9 +107,9 @@ class AuthResponse {
 }
 
 class Auth extends Entity {
+  final bool biometric;
   final String? accessToken;
   final String? idToken;
-  final String? refreshToken;
   final String? email;
   final String? name;
   final String? password;
@@ -125,9 +125,9 @@ class Auth extends Entity {
   Auth({
     super.id,
     super.timeMills,
+    this.biometric = false,
     this.accessToken,
     this.idToken,
-    this.refreshToken,
     this.email,
     this.name,
     this.password,
@@ -140,9 +140,9 @@ class Auth extends Entity {
   Auth copy({
     String? id,
     int? timeMills,
+    bool? biometric,
     String? accessToken,
     String? idToken,
-    String? refreshToken,
     String? email,
     String? name,
     String? password,
@@ -154,9 +154,9 @@ class Auth extends Entity {
     return Auth(
       id: id ?? this.id,
       timeMills: timeMills ?? this.timeMills,
+      biometric: biometric ?? this.biometric,
       accessToken: accessToken ?? this.accessToken,
       idToken: idToken ?? this.idToken,
-      refreshToken: refreshToken ?? this.refreshToken,
       email: email ?? this.email,
       name: name ?? this.name,
       password: password ?? this.password,
@@ -171,9 +171,9 @@ class Auth extends Entity {
     return Auth(
       id: source.entityId,
       timeMills: source.entityTimeMills,
+      biometric: Entity.value<bool>("biometric", source) ?? false,
       accessToken: Entity.value<String>("access_token", source),
       idToken: Entity.value<String>("id_token", source),
-      refreshToken: Entity.value<String>("refresh_token", source),
       email: Entity.value<String>("email", source),
       name: Entity.value<String>("name", source),
       password: Entity.value<String>("password", source),
@@ -197,9 +197,9 @@ class Auth extends Entity {
   @override
   Map<String, dynamic> get source {
     return super.source.attach({
+      "biometric": biometric,
       "access_token": accessToken,
       "id_token": idToken,
-      "refresh_token": refreshToken,
       "email": email,
       "name": name,
       "password": password,

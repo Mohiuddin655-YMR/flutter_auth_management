@@ -1,2 +1,2 @@
-## 0.0.7
-* Web bug fixed
+## 0.0.8
+* Biometric and message bug fixed

@@ -1,7 +1,8 @@
 part of 'controllers.dart';
 
 typedef IdentityBuilder = String Function(String uid);
-typedef SignOutCallback = Future Function(Response<Auth>);
+typedef SignOutCallback = Future Function(Auth);
+typedef ClearCallback = Future<bool> Function(Auth);
 
 class AuthController extends Cubit<AuthResponse> {
   final AuthMessages _msg;
@@ -28,19 +29,22 @@ class AuthController extends Cubit<AuthResponse> {
       if (signedIn) {
         emit(AuthResponse.authenticated(
           state.data,
-          _msg.loggedIn ?? "User logged in!",
+          _msg.loggedIn.done,
         ));
       } else {
         emit(AuthResponse.unauthenticated(
-          _msg.loggedOut ?? "User logged out!",
+          _msg.loggedOut.done,
         ));
       }
     } catch (_) {
-      emit(AuthResponse.failure(_msg.failure ?? _));
+      emit(AuthResponse.failure(_msg.loggedIn.failure ?? _));
     }
   }
 
-  Future signInByApple([Auth? authenticator]) async {
+  Future signInByApple({
+    Auth? authenticator,
+    bool biometric = false,
+  }) async {
     emit(AuthResponse.loading(AuthProvider.apple, _msg.loading));
     try {
       final response = await authHandler.signInWithApple();
@@ -52,9 +56,9 @@ class AuthController extends Cubit<AuthResponse> {
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Auth()).copy(
-            accessToken: result.accessToken,
-            idToken: result.idToken,
-            refreshToken: result.refreshToken,
+            biometric: biometric,
+            accessToken: biometric ? result.accessToken : null,
+            idToken: biometric ? result.idToken : null,
             id: currentData?.uid ?? result.id ?? uid,
             email: result.email,
             name: result.name,
@@ -64,76 +68,93 @@ class AuthController extends Cubit<AuthResponse> {
           await backupHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
-            _msg.signIn ?? "Apple sign in successful!",
+            _msg.signInWithApple.done,
           ));
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
+          emit(AuthResponse.failure(
+            _msg.signInWithApple.failure ?? finalResponse.exception,
+          ));
         }
       } else {
-        emit(AuthResponse.failure(_msg.failure ?? response.exception));
+        emit(AuthResponse.failure(
+          _msg.signInWithApple.failure ?? response.exception,
+        ));
       }
     } catch (_) {
-      emit(AuthResponse.failure(_msg.failure ?? _));
+      emit(AuthResponse.failure(_msg.signInWithApple.failure ?? _));
     }
   }
 
   Future signInByBiometric() async {
     emit(AuthResponse.loading(AuthProvider.biometric, _msg.loading));
-    final response = await authHandler.signInWithBiometric();
     try {
-      if (response.isSuccessful) {
-        final user = await backupHandler.getCache();
-        final token = user.accessToken;
-        final provider = user.provider;
-        var loginResponse = Response();
-        if ((user.email.isValid || user.username.isValid) &&
-            user.password.isValid) {
-          if (provider.isEmail) {
-            loginResponse = await authHandler.signInWithEmailNPassword(
-              email: user.email ?? "example@gmail.com",
-              password: user.password ?? "password",
-            );
-          } else if (provider.isUsername) {
-            loginResponse = await authHandler.signInWithUsernameNPassword(
-              username: user.username ?? "username",
-              password: user.password ?? "password",
-            );
+      final user = await backupHandler.getCache();
+      if (user.biometric) {
+        final response = await authHandler.signInWithBiometric();
+        if (response.isSuccessful) {
+          final token = user.accessToken;
+          final provider = user.provider;
+          var loginResponse = Response();
+          if ((user.email.isValid || user.username.isValid) &&
+              user.password.isValid) {
+            if (provider.isEmail) {
+              loginResponse = await authHandler.signInWithEmailNPassword(
+                email: user.email ?? "example@gmail.com",
+                password: user.password ?? "password",
+              );
+            } else if (provider.isUsername) {
+              loginResponse = await authHandler.signInWithUsernameNPassword(
+                username: user.username ?? "username",
+                password: user.password ?? "password",
+              );
+            }
+          } else if (token.isValid || user.idToken.isValid) {
+            if (provider.isApple) {
+              loginResponse = await authHandler.signUpWithCredential(
+                credential: AppleAuthProvider.credential(token.use),
+              );
+            } else if (provider.isFacebook) {
+              loginResponse = await authHandler.signUpWithCredential(
+                credential: FacebookAuthProvider.credential(token.use),
+              );
+            } else if (provider.isGoogle) {
+              loginResponse = await authHandler.signUpWithCredential(
+                credential: GoogleAuthProvider.credential(
+                  idToken: user.idToken,
+                  accessToken: token,
+                ),
+              );
+            }
           }
-        } else if (token.isValid || user.idToken.isValid) {
-          if (provider.isApple) {
-            loginResponse = await authHandler.signUpWithCredential(
-              credential: AppleAuthProvider.credential(token.use),
-            );
-          } else if (provider.isFacebook) {
-            loginResponse = await authHandler.signUpWithCredential(
-              credential: FacebookAuthProvider.credential(token.use),
-            );
-          } else if (provider.isGoogle) {
-            loginResponse = await authHandler.signUpWithCredential(
-              credential: GoogleAuthProvider.credential(
-                idToken: user.idToken,
-                accessToken: token,
-              ),
-            );
+          if (loginResponse.isSuccessful) {
+            emit(AuthResponse.authenticated(
+              user,
+              _msg.signInWithBiometric.done,
+            ));
+          } else {
+            emit(AuthResponse.failure(
+              _msg.signInWithBiometric.failure ?? loginResponse.exception,
+            ));
           }
-        }
-        if (loginResponse.isSuccessful) {
-          emit(AuthResponse.authenticated(
-            user,
-            _msg.signIn ?? "Biometric sign in successful!",
-          ));
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? loginResponse.exception));
+          emit(AuthResponse.failure(
+            _msg.signInWithBiometric.failure ?? response.exception,
+          ));
         }
       } else {
-        emit(AuthResponse.failure(_msg.failure ?? response.exception));
+        emit(AuthResponse.failure(
+          _msg.signInWithBiometric.failure ?? "Biometric not initialized!",
+        ));
       }
     } catch (_) {
-      emit(AuthResponse.failure(_msg.failure ?? _));
+      emit(AuthResponse.failure(_msg.signInWithBiometric.failure ?? _));
     }
   }
 
-  Future signInByEmail(EmailAuthenticator authenticator) async {
+  Future signInByEmail(
+    EmailAuthenticator authenticator, {
+    bool biometric = false,
+  }) async {
     final email = authenticator.email;
     final password = authenticator.password;
     if (!Validator.isValidEmail(email)) {
@@ -151,6 +172,7 @@ class AuthController extends Cubit<AuthResponse> {
           final result = response.data?.user;
           if (result != null) {
             final user = authenticator.copy(
+              biometric: biometric,
               id: result.uid,
               email: result.email,
               name: result.displayName,
@@ -161,21 +183,28 @@ class AuthController extends Cubit<AuthResponse> {
             await backupHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
-              _msg.signIn ?? "Sign in successful!",
+              _msg.signInWithEmail.done,
             ));
           } else {
-            emit(AuthResponse.failure(_msg.failure ?? response.message));
+            emit(AuthResponse.failure(
+              _msg.signInWithEmail.failure ?? response.message,
+            ));
           }
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? response.exception));
+          emit(AuthResponse.failure(
+            _msg.signInWithEmail.failure ?? response.exception,
+          ));
         }
       } catch (_) {
-        emit(AuthResponse.failure(_msg.failure ?? _));
+        emit(AuthResponse.failure(_msg.signInWithEmail.failure ?? _));
       }
     }
   }
 
-  Future signInByFacebook([Auth? authenticator]) async {
+  Future signInByFacebook({
+    Auth? authenticator,
+    bool biometric = false,
+  }) async {
     emit(AuthResponse.loading(AuthProvider.facebook, _msg.loading));
     try {
       final response = await authHandler.signInWithFacebook();
@@ -187,9 +216,9 @@ class AuthController extends Cubit<AuthResponse> {
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Auth()).copy(
-            accessToken: result.accessToken,
-            idToken: result.idToken,
-            refreshToken: result.refreshToken,
+            biometric: biometric,
+            accessToken: biometric ? result.accessToken : null,
+            idToken: biometric ? result.idToken : null,
             id: currentData?.uid ?? result.id ?? uid,
             email: result.email,
             name: result.name,
@@ -199,20 +228,27 @@ class AuthController extends Cubit<AuthResponse> {
           await backupHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
-            _msg.signIn ?? "Facebook sign in successful!",
+            _msg.signInWithFacebook.done,
           ));
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
+          emit(AuthResponse.failure(
+            _msg.signInWithFacebook.failure ?? finalResponse.exception,
+          ));
         }
       } else {
-        emit(AuthResponse.failure(_msg.failure ?? response.exception));
+        emit(AuthResponse.failure(
+          _msg.signInWithFacebook.failure ?? response.exception,
+        ));
       }
     } catch (_) {
-      emit(AuthResponse.failure(_msg.failure ?? _));
+      emit(AuthResponse.failure(_msg.signInWithFacebook.failure ?? _));
     }
   }
 
-  Future signInByGithub([Auth? authenticator]) async {
+  Future signInByGithub({
+    Auth? authenticator,
+    bool biometric = false,
+  }) async {
     emit(AuthResponse.loading(AuthProvider.github, _msg.loading));
     try {
       final response = await authHandler.signInWithGithub();
@@ -224,9 +260,9 @@ class AuthController extends Cubit<AuthResponse> {
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Auth()).copy(
-            accessToken: result.accessToken,
-            idToken: result.idToken,
-            refreshToken: result.refreshToken,
+            biometric: biometric,
+            accessToken: biometric ? result.accessToken : null,
+            idToken: biometric ? result.idToken : null,
             id: currentData?.uid ?? result.id ?? uid,
             email: result.email,
             name: result.name,
@@ -236,20 +272,27 @@ class AuthController extends Cubit<AuthResponse> {
           await backupHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
-            _msg.signIn ?? "Github sign in successful!",
+            _msg.signInWithGithub.done,
           ));
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
+          emit(AuthResponse.failure(
+            _msg.signInWithGithub.failure ?? finalResponse.exception,
+          ));
         }
       } else {
-        emit(AuthResponse.failure(_msg.failure ?? response.exception));
+        emit(AuthResponse.failure(
+          _msg.signInWithGithub.failure ?? response.exception,
+        ));
       }
     } catch (_) {
-      emit(AuthResponse.failure(_msg.failure ?? _));
+      emit(AuthResponse.failure(_msg.signInWithGithub.failure ?? _));
     }
   }
 
-  Future signInByGoogle([Auth? authenticator]) async {
+  Future signInByGoogle({
+    Auth? authenticator,
+    bool biometric = false,
+  }) async {
     emit(AuthResponse.loading(AuthProvider.google, _msg.loading));
     try {
       final response = await authHandler.signInWithGoogle();
@@ -261,9 +304,9 @@ class AuthController extends Cubit<AuthResponse> {
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
           final user = (authenticator ?? Auth()).copy(
-            accessToken: result.accessToken,
-            idToken: result.idToken,
-            refreshToken: result.refreshToken,
+            biometric: biometric,
+            accessToken: biometric ? result.accessToken : null,
+            idToken: biometric ? result.idToken : null,
             id: currentData?.uid ?? result.id ?? uid,
             name: result.name,
             photo: result.photo,
@@ -273,20 +316,27 @@ class AuthController extends Cubit<AuthResponse> {
           await backupHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
-            _msg.signIn ?? "Google sign in successful!",
+            _msg.signInWithGoogle.done,
           ));
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? finalResponse.exception));
+          emit(AuthResponse.failure(
+            _msg.signInWithGoogle.failure ?? finalResponse.exception,
+          ));
         }
       } else {
-        emit(AuthResponse.failure(_msg.failure ?? response.exception));
+        emit(AuthResponse.failure(
+          _msg.signInWithGoogle.failure ?? response.exception,
+        ));
       }
     } catch (_) {
-      emit(AuthResponse.failure(_msg.failure ?? _));
+      emit(AuthResponse.failure(_msg.signInWithGoogle.failure ?? _));
     }
   }
 
-  Future signInByUsername(UsernameAuthenticator authenticator) async {
+  Future signInByUsername(
+    UsernameAuthenticator authenticator, {
+    bool biometric = false,
+  }) async {
     final username = authenticator.username;
     final password = authenticator.password;
     if (!Validator.isValidUsername(username)) {
@@ -304,6 +354,7 @@ class AuthController extends Cubit<AuthResponse> {
           final result = response.data?.user;
           if (result != null) {
             final user = authenticator.copy(
+              biometric: biometric,
               id: result.uid,
               email: result.email,
               name: result.displayName,
@@ -314,21 +365,28 @@ class AuthController extends Cubit<AuthResponse> {
             await backupHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
-              _msg.signIn ?? "Sign in successful!",
+              _msg.signInWithUsername.done,
             ));
           } else {
-            emit(AuthResponse.failure(_msg.failure ?? response.exception));
+            emit(AuthResponse.failure(
+              _msg.signInWithUsername.failure ?? response.exception,
+            ));
           }
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? response.exception));
+          emit(AuthResponse.failure(
+            _msg.signInWithUsername.failure ?? response.exception,
+          ));
         }
       } catch (_) {
-        emit(AuthResponse.failure(_msg.failure ?? _));
+        emit(AuthResponse.failure(_msg.signInWithUsername.failure ?? _));
       }
     }
   }
 
-  Future signUpByEmail(EmailAuthenticator authenticator) async {
+  Future signUpByEmail(
+    EmailAuthenticator authenticator, {
+    bool biometric = false,
+  }) async {
     final email = authenticator.email;
     final password = authenticator.password;
     if (!Validator.isValidEmail(email)) {
@@ -346,6 +404,7 @@ class AuthController extends Cubit<AuthResponse> {
           final result = response.data?.user;
           if (result != null) {
             final user = authenticator.copy(
+              biometric: biometric,
               id: result.uid,
               email: result.email,
               name: result.displayName,
@@ -356,21 +415,28 @@ class AuthController extends Cubit<AuthResponse> {
             await backupHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
-              _msg.signUp ?? "Sign up successful!",
+              _msg.signUpWithEmail.done,
             ));
           } else {
-            emit(AuthResponse.failure(_msg.failure ?? response.exception));
+            emit(AuthResponse.failure(
+              _msg.signUpWithEmail.failure ?? response.exception,
+            ));
           }
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? response.exception));
+          emit(AuthResponse.failure(
+            _msg.signUpWithEmail.failure ?? response.exception,
+          ));
         }
       } catch (_) {
-        emit(AuthResponse.failure(_msg.failure ?? _));
+        emit(AuthResponse.failure(_msg.signUpWithEmail.failure ?? _));
       }
     }
   }
 
-  Future signUpByUsername(UsernameAuthenticator authenticator) async {
+  Future signUpByUsername(
+    UsernameAuthenticator authenticator, {
+    bool biometric = false,
+  }) async {
     final username = authenticator.username;
     final password = authenticator.password;
     if (!Validator.isValidUsername(username)) {
@@ -378,7 +444,7 @@ class AuthController extends Cubit<AuthResponse> {
     } else if (!Validator.isValidPassword(password)) {
       emit(AuthResponse.failure("Password isn't valid!"));
     } else {
-      emit(AuthResponse.loading(AuthProvider.email, _msg.loading));
+      emit(AuthResponse.loading(AuthProvider.username, _msg.loading));
       try {
         final response = await authHandler.signUpWithUsernameNPassword(
           username: username.use,
@@ -388,6 +454,7 @@ class AuthController extends Cubit<AuthResponse> {
           final result = response.data?.user;
           if (result != null) {
             final user = authenticator.copy(
+              biometric: biometric,
               id: result.uid,
               email: result.email,
               name: result.displayName,
@@ -398,55 +465,125 @@ class AuthController extends Cubit<AuthResponse> {
             await backupHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
-              _msg.signUp ?? "Sign up successful!",
+              _msg.signUpWithUsername.done,
             ));
           } else {
-            emit(AuthResponse.failure(_msg.failure ?? response.exception));
+            emit(AuthResponse.failure(
+              _msg.signUpWithUsername.failure ?? response.exception,
+            ));
           }
         } else {
-          emit(AuthResponse.failure(_msg.failure ?? response.exception));
+          emit(AuthResponse.failure(
+            _msg.signUpWithUsername.failure ?? response.exception,
+          ));
         }
       } catch (_) {
-        emit(AuthResponse.failure(_msg.failure ?? _));
+        emit(AuthResponse.failure(_msg.signUpWithUsername.failure ?? _));
       }
     }
   }
 
-  Future signOut({AuthProvider? provider, SignOutCallback? callback}) async {
+  Future signOut({
+    AuthProvider? provider,
+    SignOutCallback? callback,
+    ClearCallback? clearCallback,
+  }) async {
     emit(AuthResponse.loading(provider, _msg.loading));
     try {
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
-        await callback?.call(response);
-        emit(AuthResponse.unauthenticated(
-          _msg.signOut ?? "Sign out successful!",
-        ));
+        var data = await backupHandler.getCache();
+        if (callback != null) await callback(data.copy(id: response.data?.id));
+        var clear = await clearCallback?.call(data.copy(id: response.data?.id));
+        if (!data.biometric || (clear ?? false)) {
+          await backupHandler.removeCache();
+        }
+        emit(AuthResponse.unauthenticated(_msg.signOut.done));
       } else {
-        emit(AuthResponse.failure(_msg.failure ?? response.exception));
+        emit(AuthResponse.failure(_msg.signOut.failure ?? response.exception));
       }
     } catch (_) {
-      emit(AuthResponse.failure(_msg.failure ?? _));
+      emit(AuthResponse.failure(_msg.signOut.failure ?? _));
     }
   }
 }
 
 class AuthMessages {
   final String? loading;
-  final String? loggedIn;
-  final String? loggedOut;
-  final String? failure;
 
-  final String? signIn;
-  final String? signOut;
-  final String? signUp;
+  final AuthMessage loggedIn;
+  final AuthMessage loggedOut;
+
+  final AuthMessage signInWithApple;
+  final AuthMessage signInWithBiometric;
+  final AuthMessage signInWithEmail;
+  final AuthMessage signInWithFacebook;
+  final AuthMessage signInWithGithub;
+  final AuthMessage signInWithGoogle;
+  final AuthMessage signInWithUsername;
+
+  final AuthMessage signUpWithEmail;
+  final AuthMessage signUpWithUsername;
+
+  final AuthMessage signOut;
 
   const AuthMessages({
     this.loading,
-    this.loggedIn,
-    this.loggedOut,
-    this.signIn,
-    this.signOut,
+    this.loggedIn = const AuthMessage(
+      done: "User logged in!",
+    ),
+    this.loggedOut = const AuthMessage(
+      done: "User logged out!",
+    ),
+    this.signInWithApple = const AuthMessage(
+      done: "Apple sign in successful!",
+      failure: "Apple sign in unsuccessful!",
+    ),
+    this.signInWithBiometric = const AuthMessage(
+      done: "Biometric sign in successful!",
+      failure: "Biometric sign in unsuccessful!",
+    ),
+    this.signInWithEmail = const AuthMessage(
+      done: "Sign in successful!",
+      failure: "Sign in unsuccessful!",
+    ),
+    this.signInWithFacebook = const AuthMessage(
+      done: "Facebook sign in successful!",
+      failure: "Facebook sign in unsuccessful!",
+    ),
+    this.signInWithGithub = const AuthMessage(
+      done: "Github sign in successful!",
+      failure: "Github sign in unsuccessful!",
+    ),
+    this.signInWithGoogle = const AuthMessage(
+      done: "Google sign in successful!",
+      failure: "Google sign in unsuccessful!",
+    ),
+    this.signInWithUsername = const AuthMessage(
+      done: "Sign in successful!",
+      failure: "Sign in unsuccessful!",
+    ),
+    this.signUpWithEmail = const AuthMessage(
+      done: "Sign up successful!",
+      failure: "Sign up unsuccessful!",
+    ),
+    this.signUpWithUsername = const AuthMessage(
+      done: "Sign up successful!",
+      failure: "Sign up unsuccessful!",
+    ),
+    this.signOut = const AuthMessage(
+      done: "Sign out successful!",
+      failure: "Sign out unsuccessful!",
+    ),
+  });
+}
+
+class AuthMessage {
+  final String? done;
+  final String? failure;
+
+  const AuthMessage({
+    this.done,
     this.failure,
-    this.signUp,
   });
 }
