@@ -1,4 +1,4 @@
-## 0.0.5-alpha1
+## 0.0.5
 * Biometric sign in bug fixed
 
 ## 0.0.4
