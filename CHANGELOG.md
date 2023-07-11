@@ -1,3 +1,6 @@
+## 0.0.6-alpha1
+* AuthController constructor model changed
+
 ## 0.0.5
 * Biometric sign in bug fixed
 

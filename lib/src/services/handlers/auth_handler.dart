@@ -3,9 +3,7 @@ part of 'handlers.dart';
 abstract class AuthHandler {
   final AuthRepository repository;
 
-  const AuthHandler({
-    required this.repository,
-  });
+  const AuthHandler(this.repository);
 
   String? get uid;
 

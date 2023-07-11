@@ -1,11 +1,13 @@
 part of 'handlers.dart';
 
 class AuthHandlerImpl extends AuthHandler {
-  const AuthHandlerImpl.fromRepository(AuthRepository repository)
-      : super(repository: repository);
+  AuthHandlerImpl({
+    AuthDataSource? source,
+  }) : super(AuthRepositoryImpl(source: source ?? AuthDataSourceImpl()));
 
-  AuthHandlerImpl.fromSource(AuthDataSource source)
-      : super(repository: AuthRepositoryImpl(source: source));
+  AuthHandlerImpl.fromRepository({
+    AuthRepository? repository,
+  }) : super(repository ?? AuthRepositoryImpl(source: AuthDataSourceImpl()));
 
   @override
   Future<bool> isSignIn([AuthProvider? provider]) {

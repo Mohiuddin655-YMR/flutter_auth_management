@@ -6,22 +6,15 @@ typedef SignOutCallback = Future Function(Response<Auth>);
 class AuthController extends Cubit<AuthResponse> {
   final AuthMessages _msg;
   final AuthHandler authHandler;
-  final BackupHandler dataHandler;
+  final BackupHandler backupHandler;
 
   AuthController({
-    AuthMessages? messages,
-    AuthDataSource? auth,
-    BackupSource? backup,
-  })  : _msg = messages ?? const AuthMessages(),
-        authHandler = AuthHandlerImpl.fromSource(auth ?? AuthDataSourceImpl()),
-        dataHandler = BackupHandlerImpl(source: backup),
-        super(AuthResponse.initial());
-
-  AuthController.fromHandler({
-    required this.authHandler,
-    required this.dataHandler,
+    AuthHandler? authHandler,
+    BackupHandler? backupHandler,
     AuthMessages? messages,
   })  : _msg = messages ?? const AuthMessages(),
+        authHandler = authHandler ?? AuthHandlerImpl(),
+        backupHandler = backupHandler ?? BackupHandlerImpl(),
         super(AuthResponse.initial());
 
   String get uid => user?.uid ?? "uid";
@@ -68,7 +61,7 @@ class AuthController extends Cubit<AuthResponse> {
             photo: result.photo,
             provider: AuthProvider.apple.name,
           );
-          await dataHandler.setCache(user);
+          await backupHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
             _msg.signIn ?? "Apple sign in successful!",
@@ -89,7 +82,7 @@ class AuthController extends Cubit<AuthResponse> {
     final response = await authHandler.signInWithBiometric();
     try {
       if (response.isSuccessful) {
-        final user = await dataHandler.getCache();
+        final user = await backupHandler.getCache();
         final token = user.accessToken;
         final provider = user.provider;
         var loginResponse = Response();
@@ -165,7 +158,7 @@ class AuthController extends Cubit<AuthResponse> {
               photo: result.photoURL,
               provider: AuthProvider.email.name,
             );
-            await dataHandler.setCache(user);
+            await backupHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
               _msg.signIn ?? "Sign in successful!",
@@ -203,7 +196,7 @@ class AuthController extends Cubit<AuthResponse> {
             photo: result.photo,
             provider: AuthProvider.facebook.name,
           );
-          await dataHandler.setCache(user);
+          await backupHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
             _msg.signIn ?? "Facebook sign in successful!",
@@ -240,7 +233,7 @@ class AuthController extends Cubit<AuthResponse> {
             photo: result.photo,
             provider: AuthProvider.github.name,
           );
-          await dataHandler.setCache(user);
+          await backupHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
             _msg.signIn ?? "Github sign in successful!",
@@ -277,7 +270,7 @@ class AuthController extends Cubit<AuthResponse> {
             email: result.email,
             provider: AuthProvider.google.name,
           );
-          await dataHandler.setCache(user);
+          await backupHandler.setCache(user);
           emit(AuthResponse.authenticated(
             user,
             _msg.signIn ?? "Google sign in successful!",
@@ -318,7 +311,7 @@ class AuthController extends Cubit<AuthResponse> {
               photo: result.photoURL,
               provider: AuthProvider.username.name,
             );
-            await dataHandler.setCache(user);
+            await backupHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
               _msg.signIn ?? "Sign in successful!",
@@ -360,7 +353,7 @@ class AuthController extends Cubit<AuthResponse> {
               photo: result.photoURL,
               provider: AuthProvider.email.name,
             );
-            await dataHandler.setCache(user);
+            await backupHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
               _msg.signUp ?? "Sign up successful!",
@@ -402,7 +395,7 @@ class AuthController extends Cubit<AuthResponse> {
               photo: result.photoURL,
               provider: AuthProvider.username.name,
             );
-            await dataHandler.setCache(user);
+            await backupHandler.setCache(user);
             emit(AuthResponse.authenticated(
               user,
               _msg.signUp ?? "Sign up successful!",
