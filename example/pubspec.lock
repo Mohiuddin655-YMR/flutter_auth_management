@@ -39,7 +39,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.9"
+    version: "0.1.0-alpha1"
   bloc:
     dependency: transitive
     description:
@@ -281,10 +281,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_andomie
-      sha256: af81985af946f3d3b0aca7dc21d4ae3a2a0d56b89e8a980e94527d699c8f7d74
+      sha256: "752d39005b803a112491031954d7d4803534ef44c562bdce54c4d2dd740cb8c3"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.8"
+    version: "0.4.9-alpha1"
   flutter_bloc:
     dependency: "direct main"
     description:
