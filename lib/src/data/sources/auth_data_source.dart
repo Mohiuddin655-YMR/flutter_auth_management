@@ -1,11 +1,23 @@
 part of 'sources.dart';
 
 class AuthDataSourceImpl extends AuthDataSource {
-  final ConnectivityProvider connectivity;
-  final FacebookAuth facebookAuth;
-  final FirebaseAuth firebaseAuth;
-  final LocalAuthentication localAuth;
-  final GoogleSignIn googleAuth;
+  ConnectivityProvider? _connectivity;
+  FacebookAuth? _facebookAuth;
+  FirebaseAuth? _firebaseAuth;
+  LocalAuthentication? _localAuth;
+  GoogleSignIn? _googleAuth;
+
+  ConnectivityProvider get connectivity =>
+      _connectivity ??= ConnectivityProvider.I;
+
+  FacebookAuth get facebookAuth => _facebookAuth ??= FacebookAuth.i;
+
+  FirebaseAuth get firebaseAuth => _firebaseAuth ??= FirebaseAuth.instance;
+
+  LocalAuthentication get localAuth => _localAuth ??= LocalAuthentication();
+
+  GoogleSignIn get googleAuth =>
+      _googleAuth ??= GoogleSignIn(scopes: ['email']);
 
   Future<bool> get isConnected async => await connectivity.isConnected;
 
@@ -17,11 +29,11 @@ class AuthDataSourceImpl extends AuthDataSource {
     FirebaseAuth? firebaseAuth,
     LocalAuthentication? localAuth,
     GoogleSignIn? googleAuth,
-  })  : connectivity = connectivity ?? ConnectivityProvider.I,
-        facebookAuth = facebookAuth ?? FacebookAuth.i,
-        firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        localAuth = localAuth ?? LocalAuthentication(),
-        googleAuth = googleAuth ?? GoogleSignIn(scopes: ['email']);
+  })  : _connectivity = connectivity,
+        _facebookAuth = facebookAuth,
+        _firebaseAuth = firebaseAuth,
+        _localAuth = localAuth,
+        _googleAuth = googleAuth;
 
   @override
   String? get uid => user?.uid;

@@ -1,2 +1,3 @@
-## 0.0.9
-* Auth inner library bug fixed
+## 0.1.0-alpha2
+
+* Alpha version
