@@ -1,3 +1,3 @@
-## 0.1.0-alpha2
+## 0.1.0-alpha3
 
-* Alpha version
+* Alpha version [remove facebook auth]
