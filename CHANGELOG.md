@@ -1,3 +1,3 @@
-## 0.1.0-alpha3
+## 0.1.0
 
-* Alpha version [remove facebook auth]
+* Stable version

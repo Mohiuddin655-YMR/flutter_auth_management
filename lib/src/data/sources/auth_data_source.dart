@@ -2,7 +2,7 @@ part of 'sources.dart';
 
 class AuthDataSourceImpl extends AuthDataSource {
   ConnectivityProvider? _connectivity;
-  /// FacebookAuth? _facebookAuth;
+  FacebookAuth? _facebookAuth;
   FirebaseAuth? _firebaseAuth;
   LocalAuthentication? _localAuth;
   GoogleSignIn? _googleAuth;
@@ -10,7 +10,7 @@ class AuthDataSourceImpl extends AuthDataSource {
   ConnectivityProvider get connectivity =>
       _connectivity ??= ConnectivityProvider.I;
 
-  /// FacebookAuth get facebookAuth => _facebookAuth ??= FacebookAuth.i;
+  FacebookAuth get facebookAuth => _facebookAuth ??= FacebookAuth.i;
 
   FirebaseAuth get firebaseAuth => _firebaseAuth ??= FirebaseAuth.instance;
 
@@ -25,12 +25,12 @@ class AuthDataSourceImpl extends AuthDataSource {
 
   AuthDataSourceImpl({
     ConnectivityProvider? connectivity,
-    /// FacebookAuth? facebookAuth,
+    FacebookAuth? facebookAuth,
     FirebaseAuth? firebaseAuth,
     LocalAuthentication? localAuth,
     GoogleSignIn? googleAuth,
   })  : _connectivity = connectivity,
-        /// _facebookAuth = facebookAuth,
+        _facebookAuth = facebookAuth,
         _firebaseAuth = firebaseAuth,
         _localAuth = localAuth,
         _googleAuth = googleAuth;
@@ -50,7 +50,7 @@ class AuthDataSourceImpl extends AuthDataSource {
         case AuthProvider.phone:
           return firebaseAuth.currentUser != null;
         case AuthProvider.facebook:
-          /// return (await facebookAuth.accessToken) != null;
+          return (await facebookAuth.accessToken) != null;
         case AuthProvider.google:
           return googleAuth.isSignedIn();
         case AuthProvider.apple:
@@ -77,13 +77,12 @@ class AuthDataSourceImpl extends AuthDataSource {
             case AuthProvider.username:
               await firebaseAuth.signOut();
               break;
-            /// case AuthProvider.facebook:
-            ///   await facebookAuth.logOut();
-            ///   break;
+            case AuthProvider.facebook:
+              await facebookAuth.logOut();
+              break;
             case AuthProvider.google:
               await googleAuth.signOut();
               break;
-            case AuthProvider.facebook:
             case AuthProvider.apple:
             case AuthProvider.biometric:
             case AuthProvider.github:
@@ -119,8 +118,14 @@ class AuthDataSourceImpl extends AuthDataSource {
       );
 
       if (result.identityToken != null) {
+
+        final credential = OAuthProvider("apple.com").credential(
+          idToken: result.identityToken,
+          accessToken: result.authorizationCode,
+        );
+
         return response.withData(Credential(
-          credential: AppleAuthProvider.credential(result.authorizationCode),
+          credential: credential,
           accessToken: result.authorizationCode,
           idToken: result.identityToken,
           id: result.userIdentifier,
@@ -195,42 +200,36 @@ class AuthDataSourceImpl extends AuthDataSource {
   Future<Response<Credential>> signInWithFacebook() async {
     final response = Response<Credential>();
     try {
-      return response.withStatus(Status.undefined);
-    } catch (_) {
-      return response.withException(_, status: Status.failure);
+      final token = await facebookAuth.accessToken;
+      LoginResult? result;
+
+      result = token == null
+          ? await facebookAuth.login(permissions: ['public_profile', 'email'])
+          : null;
+
+      final status = result?.status ?? LoginStatus.failed;
+
+      if (token != null || status == LoginStatus.success) {
+        final accessToken = result?.accessToken ?? token;
+        if (accessToken != null) {
+          final credential = FacebookAuthProvider.credential(accessToken.token);
+          final fbData = await facebookAuth.getUserData();
+          return response.withData(Credential.fromMap(fbData).copy(
+            accessToken: accessToken.token,
+            credential: credential,
+          ));
+        } else {
+          return response.withException(
+            'Token not valid!',
+            status: Status.error,
+          );
+        }
+      } else {
+        return response.withException('Token not valid!', status: Status.error);
+      }
+    } on FirebaseAuthException catch (_) {
+      return response.withException(_.message, status: Status.failure);
     }
-    // final response = Response<Credential>();
-    // try {
-    //   final token = await facebookAuth.accessToken;
-    //   LoginResult? result;
-    //
-    //   result = token == null
-    //       ? await facebookAuth.login(permissions: ['public_profile', 'email'])
-    //       : null;
-    //
-    //   final status = result?.status ?? LoginStatus.failed;
-    //
-    //   if (token != null || status == LoginStatus.success) {
-    //     final accessToken = result?.accessToken ?? token;
-    //     if (accessToken != null) {
-    //       final credential = FacebookAuthProvider.credential(accessToken.token);
-    //       final fbData = await facebookAuth.getUserData();
-    //       return response.withData(Credential.fromMap(fbData).copy(
-    //         accessToken: accessToken.token,
-    //         credential: credential,
-    //       ));
-    //     } else {
-    //       return response.withException(
-    //         'Token not valid!',
-    //         status: Status.error,
-    //       );
-    //     }
-    //   } else {
-    //     return response.withException('Token not valid!', status: Status.error);
-    //   }
-    // } on FirebaseAuthException catch (_) {
-    //   return response.withException(_.message, status: Status.failure);
-    // }
   }
 
   @override

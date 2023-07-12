@@ -110,7 +110,10 @@ class AuthController extends Cubit<AuthResponse> {
           } else if (token.isValid || user.idToken.isValid) {
             if (provider.isApple) {
               loginResponse = await authHandler.signUpWithCredential(
-                credential: AppleAuthProvider.credential(token.use),
+                credential: OAuthProvider("apple.com").credential(
+                  idToken: user.idToken,
+                  accessToken: token,
+                ),
               );
             } else if (provider.isFacebook) {
               loginResponse = await authHandler.signUpWithCredential(
