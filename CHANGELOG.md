@@ -1,3 +1,8 @@
-## 0.1.1
+## 0.1.3
+* Stable version
 
+## 0.1.2
+* Stable version
+* 
+## 0.1.1
 * Stable version
