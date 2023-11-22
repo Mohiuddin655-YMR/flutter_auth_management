@@ -1,3 +1,6 @@
+## 0.1.4
+* Update necessary libraries
+
 ## 0.1.3
 * Stable version
 
