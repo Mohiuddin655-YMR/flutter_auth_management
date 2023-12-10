@@ -9,38 +9,21 @@ class AuthResponse {
   final String? _message;
   final String? _error;
   final Auth? data;
-  final AuthProvider? _provider;
+  final AuthType? _provider;
 
-  factory AuthResponse.initial() => const AuthResponse._(initial: true);
+  const AuthResponse.initial() : this._(initial: true);
 
-  factory AuthResponse.loading([
-    AuthProvider? provider,
-    String? message,
-  ]) {
-    return AuthResponse._(loading: true, provider: provider, message: message);
-  }
+  const AuthResponse.loading([AuthType? provider, String? message])
+      : this._(loading: true, provider: provider, message: message);
 
-  factory AuthResponse.authenticated(Auth? data, [String? message]) {
-    return AuthResponse._(
-      authenticated: true,
-      data: data,
-      message: message,
-    );
-  }
+  const AuthResponse.authenticated(Auth? data, [String? message])
+      : this._(authenticated: true, data: data, message: message);
 
-  factory AuthResponse.unauthenticated([String? message]) {
-    return AuthResponse._(
-      unauthenticated: true,
-      message: message,
-    );
-  }
+  const AuthResponse.unauthenticated([String? message])
+      : this._(unauthenticated: true, message: message);
 
-  factory AuthResponse.failure(dynamic message) {
-    return AuthResponse._(
-      failure: true,
-      error: message != null ? "$message" : null,
-    );
-  }
+  const AuthResponse.failure(dynamic message)
+      : this._(failure: true, error: message != null ? "$message" : null);
 
   const AuthResponse._({
     this.data,
@@ -51,7 +34,7 @@ class AuthResponse {
     bool? failure,
     String? error,
     String? message,
-    AuthProvider? provider,
+    AuthType? provider,
   })  : _initial = initial,
         _loading = loading,
         _authenticated = authenticated,
@@ -75,13 +58,13 @@ class AuthResponse {
 
   bool get isMessage => message.isNotEmpty;
 
-  bool isCurrentProvider(AuthProvider value) => provider == value;
+  bool isCurrentProvider(AuthType value) => provider == value;
 
   String get error => _error ?? "";
 
   String get message => _message ?? "";
 
-  AuthProvider get provider => _provider ?? AuthProvider.email;
+  AuthType get provider => _provider ?? AuthType.email;
 
   Map<String, dynamic> get source {
     return {
@@ -97,13 +80,8 @@ class AuthResponse {
     };
   }
 
-  String get beautify =>
-      toString().replaceAll(",", "\n").replaceAll("{", "").replaceAll("}", "");
-
   @override
-  String toString() {
-    return source.toString();
-  }
+  String toString() => "AuthResponse($source)";
 }
 
 class Auth extends Entity {
@@ -120,7 +98,7 @@ class Auth extends Entity {
 
   bool get isCurrentUid => id == AuthHelper.uid;
 
-  AuthProvider get provider => AuthProvider.from(_provider);
+  AuthType get provider => AuthType.from(_provider);
 
   Auth({
     super.id,
@@ -211,7 +189,7 @@ class Auth extends Entity {
   }
 }
 
-enum AuthProvider {
+enum AuthType {
   apple,
   biometric,
   email,
@@ -223,55 +201,47 @@ enum AuthProvider {
   username,
   custom;
 
-  factory AuthProvider.from(String? source) {
+  factory AuthType.from(String? source) {
     if (source == apple.name) {
-      return AuthProvider.apple;
+      return AuthType.apple;
     } else if (source == biometric.name) {
-      return AuthProvider.biometric;
+      return AuthType.biometric;
     } else if (source == email.name) {
-      return AuthProvider.email;
+      return AuthType.email;
     } else if (source == facebook.name) {
-      return AuthProvider.facebook;
+      return AuthType.facebook;
     } else if (source == github.name) {
-      return AuthProvider.github;
+      return AuthType.github;
     } else if (source == google.name) {
-      return AuthProvider.google;
+      return AuthType.google;
     } else if (source == phone.name) {
-      return AuthProvider.phone;
+      return AuthType.phone;
     } else if (source == twitter.name) {
-      return AuthProvider.twitter;
+      return AuthType.twitter;
     } else if (source == username.name) {
-      return AuthProvider.username;
+      return AuthType.username;
     } else {
-      return AuthProvider.custom;
+      return AuthType.custom;
     }
   }
-}
 
-enum AuthType {
-  email,
-  google,
-  unauthenticated,
-}
+  bool get isApple => this == AuthType.apple;
 
-extension AuthProviderExtension on AuthProvider {
-  bool get isApple => this == AuthProvider.apple;
+  bool get isBiometric => this == AuthType.biometric;
 
-  bool get isBiometric => this == AuthProvider.biometric;
+  bool get isEmail => this == AuthType.email;
 
-  bool get isEmail => this == AuthProvider.email;
+  bool get isFacebook => this == AuthType.facebook;
 
-  bool get isFacebook => this == AuthProvider.facebook;
+  bool get isGithub => this == AuthType.github;
 
-  bool get isGithub => this == AuthProvider.github;
+  bool get isGoogle => this == AuthType.google;
 
-  bool get isGoogle => this == AuthProvider.google;
+  bool get isPhone => this == AuthType.phone;
 
-  bool get isPhone => this == AuthProvider.phone;
+  bool get isTwitter => this == AuthType.twitter;
 
-  bool get isTwitter => this == AuthProvider.twitter;
+  bool get isUsername => this == AuthType.username;
 
-  bool get isUsername => this == AuthProvider.username;
-
-  bool get isCustom => this == AuthProvider.custom;
+  bool get isCustom => this == AuthType.custom;
 }

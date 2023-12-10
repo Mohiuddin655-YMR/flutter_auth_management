@@ -1,9 +1,9 @@
 part of 'handlers.dart';
 
 abstract class BackupHandler {
-  Future<Auth> getCache();
+  Future<Auth?> getCache();
 
-  Future<bool> setCache(Auth data);
+  Future<bool> setCache(Auth? data);
 
   Future<bool> removeCache();
 

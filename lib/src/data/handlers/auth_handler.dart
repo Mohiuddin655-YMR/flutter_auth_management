@@ -10,7 +10,7 @@ class AuthHandlerImpl extends AuthHandler {
   }) : super(repository ?? AuthRepositoryImpl(source: AuthDataSourceImpl()));
 
   @override
-  Future<bool> isSignIn([AuthProvider? provider]) {
+  Future<bool> isSignIn([AuthType? provider]) {
     try {
       return repository.isSignIn(provider);
     } catch (_) {
@@ -137,7 +137,7 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<Auth>> signOut([AuthProvider? provider]) {
+  Future<Response<Auth>> signOut([AuthType? provider]) {
     try {
       return repository.signOut(provider);
     } catch (_) {

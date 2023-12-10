@@ -4,20 +4,22 @@ class BackupHandlerImpl extends BackupHandler {
   final BackupRepository repository;
 
   BackupHandlerImpl({
-    BackupSource? source,
+    BackupDataSource? source,
     LocalDatabase? database,
   }) : repository = BackupRepositoryImpl(source: source, database: database);
 
   BackupHandlerImpl.fromRepository(this.repository);
 
   @override
-  Future<Auth> getCache([String? id]) => repository.getCache();
+  Future<Auth?> getCache([String? id]) => repository.getCache();
 
   @override
-  Future<bool> setCache(Auth data) async {
-    try {
-      await onCreated(data);
-    } catch (_) {}
+  Future<bool> setCache(Auth? data) async {
+    if (data != null) {
+      try {
+        await onCreated(data);
+      } catch (_) {}
+    }
     return repository.setCache(data);
   }
 

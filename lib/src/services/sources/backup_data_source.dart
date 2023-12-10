@@ -1,7 +1,7 @@
 part of 'sources.dart';
 
-abstract class BackupSource {
-  BackupSource({
+abstract class BackupDataSource {
+  BackupDataSource({
     LocalDatabase? database,
   }) : _db = database;
 
@@ -11,9 +11,9 @@ abstract class BackupSource {
 
   final String key = "uid";
 
-  Future<Auth> getCache();
+  Future<Auth?> getCache();
 
-  Future<bool> setCache(Auth data);
+  Future<bool> setCache(Auth? data);
 
   Future<bool> removeCache();
 

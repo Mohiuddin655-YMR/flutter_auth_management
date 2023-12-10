@@ -1,18 +1,18 @@
 part of 'repositories.dart';
 
 class BackupRepositoryImpl extends BackupRepository {
-  final BackupSource source;
+  final BackupDataSource source;
 
   BackupRepositoryImpl({
-    BackupSource? source,
+    BackupDataSource? source,
     LocalDatabase? database,
   }) : source = source ?? KeepDataSource(database: database);
 
   @override
-  Future<Auth> getCache() => source.getCache();
+  Future<Auth?> getCache() => source.getCache();
 
   @override
-  Future<bool> setCache(Auth data) => source.setCache(data);
+  Future<bool> setCache(Auth? data) => source.setCache(data);
 
   @override
   Future<bool> removeCache() => source.removeCache();

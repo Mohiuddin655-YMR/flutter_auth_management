@@ -42,22 +42,22 @@ class AuthDataSourceImpl extends AuthDataSource {
   User? get user => FirebaseAuth.instance.currentUser;
 
   @override
-  Future<bool> isSignIn([AuthProvider? provider]) async {
+  Future<bool> isSignIn([AuthType? provider]) async {
     if (provider != null) {
       switch (provider) {
-        case AuthProvider.email:
-        case AuthProvider.username:
-        case AuthProvider.phone:
+        case AuthType.email:
+        case AuthType.username:
+        case AuthType.phone:
           return firebaseAuth.currentUser != null;
-        case AuthProvider.facebook:
+        case AuthType.facebook:
           return (await facebookAuth.accessToken) != null;
-        case AuthProvider.google:
+        case AuthType.google:
           return googleAuth.isSignedIn();
-        case AuthProvider.apple:
-        case AuthProvider.biometric:
-        case AuthProvider.github:
-        case AuthProvider.twitter:
-        case AuthProvider.custom:
+        case AuthType.apple:
+        case AuthType.biometric:
+        case AuthType.github:
+        case AuthType.twitter:
+        case AuthType.custom:
           return false;
       }
     }
@@ -65,29 +65,29 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response<Auth>> signOut([AuthProvider? provider]) async {
+  Future<Response<Auth>> signOut([AuthType? provider]) async {
     final response = Response<Auth>();
     var data = Auth.fromUser(user);
     try {
       if (await isConnected) {
         if (provider != null) {
           switch (provider) {
-            case AuthProvider.email:
-            case AuthProvider.phone:
-            case AuthProvider.username:
+            case AuthType.email:
+            case AuthType.phone:
+            case AuthType.username:
               await firebaseAuth.signOut();
               break;
-            case AuthProvider.facebook:
+            case AuthType.facebook:
               await facebookAuth.logOut();
               break;
-            case AuthProvider.google:
+            case AuthType.google:
               await googleAuth.signOut();
               break;
-            case AuthProvider.apple:
-            case AuthProvider.biometric:
-            case AuthProvider.github:
-            case AuthProvider.twitter:
-            case AuthProvider.custom:
+            case AuthType.apple:
+            case AuthType.biometric:
+            case AuthType.github:
+            case AuthType.twitter:
+            case AuthType.custom:
               break;
           }
         } else {
