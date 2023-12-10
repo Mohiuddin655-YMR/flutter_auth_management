@@ -14,7 +14,7 @@ class AuthManager {
   static AuthManager get _i => _proxy ??= AuthManager._();
 
   static void init(BuildContext context) {
-    _i.observer ??= context.findAuthProvider();
+    _i.observer = context.findAuthProvider();
   }
 
   static void onStatusChange(AuthResponse response) {

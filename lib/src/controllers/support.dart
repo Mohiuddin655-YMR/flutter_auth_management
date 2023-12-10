@@ -12,35 +12,11 @@ class _Support extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AuthManager.init(context);
-    return _Secondary(
-      controller: controller,
-      child: child,
+    return FutureBuilder(
+      future: controller.isLoggedIn(),
+      builder: (context, snapshot) {
+        return child;
+      },
     );
-  }
-}
-
-class _Secondary extends StatefulWidget {
-  final AuthController controller;
-  final Widget child;
-
-  const _Secondary({
-    required this.controller,
-    required this.child,
-  });
-
-  @override
-  State<_Secondary> createState() => _SecondaryState();
-}
-
-class _SecondaryState extends State<_Secondary> {
-  @override
-  void initState() {
-    widget.controller.isLoggedIn();
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
   }
 }

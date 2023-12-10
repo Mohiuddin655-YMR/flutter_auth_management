@@ -31,7 +31,6 @@ class AuthController {
   User? get user => FirebaseAuth.instance.currentUser;
 
   Future<AuthResponse> isLoggedIn([AuthType? provider]) async {
-    AuthManager.emit(AuthResponse.loading(provider, _msg.loading));
     try {
       final signedIn = await authHandler.isSignIn(provider);
       final data = signedIn ? await backupHandler.getCache() : null;

@@ -1,17 +1,29 @@
 import 'dart:developer';
 
 import 'package:auth_management/core.dart';
-import 'package:example/home_activity.dart';
+import 'package:example/home_page.dart';
+import 'package:example/login_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_androssy/core.dart';
-
-import 'login_activity.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   runApp(const Application());
+}
+
+class UserBackup extends BackupDataSourceImpl {
+  @override
+  Future<void> onCreated(Auth data) async {
+    // Store authorized user data in remote server
+    log("Authorized user data : $data");
+  }
+
+  @override
+  Future<void> onDeleted(String id) async {
+    // Clear unauthorized user data from remote server
+    log("Unauthorized user id : $id");
+  }
 }
 
 class Application extends StatelessWidget {
@@ -21,7 +33,7 @@ class Application extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuthProvider(
       controller: AuthController(backup: UserBackup()),
-      child: AndrossyApp(
+      child: MaterialApp(
         title: 'Auth Management',
         home: AuthObserver(
           listener: (context, value) {
@@ -38,27 +50,13 @@ class Application extends StatelessWidget {
           },
           builder: (context, value) {
             if (value.isAuthenticated) {
-              return const HomeActivity();
+              return const HomePage();
             } else {
-              return const LoginActivity();
+              return const LoginPage();
             }
           },
         ),
       ),
     );
-  }
-}
-
-class UserBackup extends BackupDataSourceImpl {
-  @override
-  Future<void> onCreated(Auth data) async {
-    // Store authorized user data in remote server
-    log("Authorized user data : $data");
-  }
-
-  @override
-  Future<void> onDeleted(String id) async {
-    // Clear unauthorized user data from remote server
-    log("Unauthorized user id : $id");
   }
 }
