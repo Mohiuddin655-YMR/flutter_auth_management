@@ -1,3 +1,7 @@
+## 0.1.7
+
+* Libraries update and isLoggedIn, and isSignedIn service update
+
 ## 0.1.6
 
 * Core listener and consumer add

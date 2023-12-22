@@ -30,19 +30,21 @@ class AuthController {
 
   User? get user => FirebaseAuth.instance.currentUser;
 
-  Future<AuthResponse> isLoggedIn([AuthType? provider]) async {
+  Future<bool> isLoggedIn([AuthType? provider]) {
+    return isSignIn(provider).then((value) => value.isAuthenticated);
+  }
+
+  Future<AuthResponse> isSignIn([AuthType? provider]) async {
     try {
       final signedIn = await authHandler.isSignIn(provider);
       final data = signedIn ? await backupHandler.getCache() : null;
       if (data != null) {
-        return AuthManager.emit(AuthResponse.authenticated(data));
+        return AuthResponse.authenticated(data);
       } else {
-        return AuthManager.emit(const AuthResponse.unauthenticated());
+        return const AuthResponse.unauthenticated();
       }
     } catch (_) {
-      return AuthManager.emit(AuthResponse.failure(
-        _msg.loggedIn.failure ?? _,
-      ));
+      return AuthResponse.failure(_msg.loggedIn.failure ?? _);
     }
   }
 
