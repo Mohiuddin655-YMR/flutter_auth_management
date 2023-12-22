@@ -1,34 +1,74 @@
 part of 'controllers.dart';
 
-/// to listen auth status anywhere with [AuthObserver]
-class AuthObserver extends StatelessWidget {
-  final void Function(BuildContext context, AuthResponse state)? listener;
-  final Widget Function(BuildContext context, AuthResponse state) builder;
+typedef OnAuthListener = void Function(
+  BuildContext context,
+  AuthResponse response,
+);
 
-  const AuthObserver({
+class AuthListener extends StatelessWidget {
+  final OnAuthListener listener;
+  final Widget child;
+
+  const AuthListener({
     super.key,
-    this.listener,
-    required this.builder,
+    required this.listener,
+    required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
-    var provider = context.findAuthProvider();
+    final provider = AuthProvider.of(context);
     if (provider != null) {
-      return ValueListenableBuilder(
-        valueListenable: provider.notifier,
-        builder: (context, value, old) {
-          if (listener != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              listener!(context, value);
-              AuthManager.onStatusChange(value);
-            });
-          }
-          return builder(context, value);
-        },
+      return _Listener(
+        observer: provider.notifier,
+        listener: listener,
+        child: child,
       );
     } else {
       throw UnimplementedError("Auth provider not found!");
     }
   }
+}
+
+class _Listener extends StatefulWidget {
+  final ValueListenable<AuthResponse> observer;
+  final OnAuthListener listener;
+  final Widget child;
+
+  const _Listener({
+    required this.observer,
+    required this.listener,
+    required this.child,
+  });
+
+  @override
+  State<_Listener> createState() => _ListenerState();
+}
+
+class _ListenerState extends State<_Listener> {
+  @override
+  void initState() {
+    super.initState();
+    widget.observer.addListener(_change);
+  }
+
+  @override
+  void didUpdateWidget(_Listener oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.observer != widget.observer) {
+      oldWidget.observer.removeListener(_change);
+      widget.observer.addListener(_change);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.observer.removeListener(_change);
+    super.dispose();
+  }
+
+  void _change() => widget.listener(context, widget.observer.value);
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

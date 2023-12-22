@@ -35,7 +35,7 @@ class Application extends StatelessWidget {
       controller: AuthController(backup: UserBackup()),
       child: MaterialApp(
         title: 'Auth Management',
-        home: AuthObserver(
+        home: AuthConsumer(
           listener: (context, value) {
             if (value.isError) {
               ScaffoldMessenger.of(context).showSnackBar(

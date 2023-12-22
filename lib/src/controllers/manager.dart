@@ -6,36 +6,27 @@ class AuthManager {
   AuthManager._();
 
   Auth? auth;
-  AuthProvider? observer;
-  AuthServiceStatus? status;
+  AuthProvider? provider;
 
   static AuthManager? _proxy;
 
   static AuthManager get _i => _proxy ??= AuthManager._();
 
   static void init(BuildContext context) {
-    _i.observer = context.findAuthProvider();
-  }
-
-  static void onStatusChange(AuthResponse response) {
-    if (_i.status != null) _i.status?.call(response);
+    _i.provider = context.findAuthProvider();
   }
 
   static AuthResponse emit(AuthResponse value) {
     try {
       _i.auth = value.data;
-      _i.observer?.notify(value);
+      _i.provider?.notify(value);
     } catch (_) {
       throw UnimplementedError("Auth provider not implemented!");
     }
     return value;
   }
 
-  static void listen(AuthServiceStatus status) {
-    _i.status = status;
-  }
-
   static Auth? get data => _i.auth ?? state?.data;
 
-  static AuthResponse? get state => _i.observer?.notifier.value;
+  static AuthResponse? get state => _i.provider?.notifier.value;
 }

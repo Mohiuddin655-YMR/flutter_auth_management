@@ -12,11 +12,6 @@ class _Support extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AuthManager.init(context);
-    return FutureBuilder(
-      future: controller.isLoggedIn(),
-      builder: (context, snapshot) {
-        return child;
-      },
-    );
+    return child;
   }
 }
