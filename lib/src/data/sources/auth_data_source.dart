@@ -140,35 +140,35 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response<bool>> signInWithBiometric() async {
+  Future<Response<bool>> signInWithBiometric({
+    BiometricConfig? config,
+  }) async {
     final response = Response<bool>();
+    final mConfig = config ?? const BiometricConfig();
     try {
       if (!await localAuth.isDeviceSupported()) {
         return response.withException(
-          "Device isn't supported!",
+          mConfig.deviceException,
           status: Status.notSupported,
         );
       } else {
         if (await localAuth.canCheckBiometrics) {
           final authenticated = await localAuth.authenticate(
-            localizedReason:
-                'Scan your fingerprint (or face or whatever) to authenticate',
-            options: const AuthenticationOptions(
-              stickyAuth: true,
-              biometricOnly: true,
-            ),
+            localizedReason: mConfig.localizedReason,
+            authMessages: mConfig.authMessages,
+            options: mConfig.options,
           );
           if (authenticated) {
             return response.withData(true);
           } else {
             return response.withException(
-              "Biometric matching failed!",
+              mConfig.failureException,
               status: Status.notFound,
             );
           }
         } else {
           return response.withException(
-            "Can not check bio metrics!",
+            mConfig.checkingException,
             status: Status.undetected,
           );
         }

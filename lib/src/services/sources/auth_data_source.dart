@@ -11,7 +11,9 @@ abstract class AuthDataSource {
 
   Future<Response<Credential>> signInWithApple();
 
-  Future<Response<bool>> signInWithBiometric();
+  Future<Response<bool>> signInWithBiometric({
+    BiometricConfig? config,
+  });
 
   Future<Response<UserCredential>> signInWithEmailNPassword({
     required String email,

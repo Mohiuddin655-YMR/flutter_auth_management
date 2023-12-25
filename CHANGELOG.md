@@ -1,3 +1,7 @@
+## 0.1.8
+
+* Biometric configuration added
+
 ## 0.1.7
 
 * Libraries update and isLoggedIn, and isSignedIn service update

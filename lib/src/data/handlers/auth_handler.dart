@@ -28,9 +28,11 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<bool>> signInWithBiometric() {
+  Future<Response<bool>> signInWithBiometric({
+    BiometricConfig? config,
+  }) {
     try {
-      return repository.signInWithBiometric();
+      return repository.signInWithBiometric(config: config);
     } catch (_) {
       return Future.error("$_");
     }
