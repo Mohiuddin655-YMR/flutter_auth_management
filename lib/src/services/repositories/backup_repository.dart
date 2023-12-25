@@ -1,13 +1,13 @@
 part of 'repositories.dart';
 
 abstract class BackupRepository {
-  Future<Auth?> getCache();
+  Future<Authorizer?> getCache();
 
-  Future<bool> setCache(Auth? data);
+  Future<bool> setCache(Authorizer? data);
 
   Future<bool> removeCache();
 
-  Future<void> onCreated(Auth data);
+  Future<void> onCreated(Authorizer data);
 
   Future<void> onDeleted(String id);
 }

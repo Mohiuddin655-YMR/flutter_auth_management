@@ -14,7 +14,7 @@ Future<void> main() async {
 
 class UserBackup extends BackupDataSourceImpl {
   @override
-  Future<void> onCreated(Auth data) async {
+  Future<void> onCreated(Authorizer data) async {
     // Store authorized user data in remote server
     log("Authorized user data : $data");
   }

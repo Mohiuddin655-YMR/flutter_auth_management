@@ -6,7 +6,7 @@ class KeepDataSource extends BackupDataSourceImpl {
   });
 
   @override
-  Future<void> onCreated(Auth data) async {}
+  Future<void> onCreated(Authorizer data) async {}
 
   @override
   Future<void> onDeleted(String id) async {}

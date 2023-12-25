@@ -1,8 +1,8 @@
 part of 'controllers.dart';
 
 typedef IdentityBuilder = String Function(String uid);
-typedef SignOutCallback = Future Function(Auth);
-typedef SignByBiometricCallback = Future<bool> Function(Auth);
+typedef SignOutCallback = Future Function(Authorizer);
+typedef SignByBiometricCallback = Future<bool> Function(Authorizer);
 
 class AuthController {
   final AuthMessages _msg;
@@ -27,9 +27,28 @@ class AuthController {
         authHandler = authHandler ?? AuthHandlerImpl(),
         backupHandler = backupHandler ?? BackupHandlerImpl();
 
-  String get uid => user?.uid ?? "uid";
+  String get _id => _user?.uid ?? "uid";
 
-  User? get user => FirebaseAuth.instance.currentUser;
+  User? get _user => FirebaseAuth.instance.currentUser;
+
+  Future<Authorizer?> get authorizer => backupHandler.getCache();
+
+  Future<bool> get isBiometricEnabled async {
+    return authorizer.then((value) => value != null && value.biometric);
+  }
+
+  Future<bool> biometricEnable(bool enabled) async {
+    final auth = await authorizer;
+    if (auth != null) {
+      try {
+        return backupHandler.setCache(auth.copy(biometric: enabled));
+      } catch (_) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
 
   Future<bool> isLoggedIn([AuthType? provider]) {
     return isSignIn(provider).then((value) => value.isAuthenticated);
@@ -50,8 +69,7 @@ class AuthController {
   }
 
   Future<AuthResponse> signInByApple({
-    Auth? authenticator,
-    bool biometric = false,
+    Authorizer? authenticator,
     SignByBiometricCallback? onBiometric,
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.apple, _msg.loading));
@@ -64,19 +82,23 @@ class AuthController {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = (authenticator ?? Auth()).copy(
-            id: currentData?.uid ?? result.id ?? uid,
+          final user = (authenticator ?? Authorizer()).copy(
+            id: currentData?.uid ?? result.id ?? _id,
             email: result.email,
             name: result.name,
             photo: result.photo,
             provider: AuthType.apple.name,
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            biometric: await isBiometricEnabled,
           );
-          final isBiometric = await onBiometric?.call(user) ?? biometric;
-          await backupHandler.setCache(user.copy(
-            biometric: isBiometric,
-            accessToken: isBiometric ? result.accessToken : null,
-            idToken: isBiometric ? result.idToken : null,
-          ));
+          if (onBiometric != null && !user.biometric) {
+            await backupHandler.setCache(user.copy(
+              biometric: await onBiometric(user),
+            ));
+          } else {
+            await backupHandler.setCache(user);
+          }
           return AuthManager.emit(AuthResponse.authenticated(
             user,
             _msg.signInWithApple.done,
@@ -103,7 +125,7 @@ class AuthController {
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.biometric, _msg.loading));
     try {
-      final user = await backupHandler.getCache();
+      final user = await authorizer;
       if (user != null && user.biometric) {
         final response = await authHandler.signInWithBiometric(config: config);
         if (response.isSuccessful) {
@@ -173,7 +195,6 @@ class AuthController {
 
   Future<AuthResponse> signInByEmail(
     EmailAuthenticator authenticator, {
-    bool biometric = false,
     SignByBiometricCallback? onBiometric,
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.email, _msg.loading));
@@ -203,9 +224,15 @@ class AuthController {
               phone: result.phoneNumber,
               photo: result.photoURL,
               provider: AuthType.email.name,
+              biometric: await isBiometricEnabled,
             );
-            final isBiometric = await onBiometric?.call(user) ?? biometric;
-            await backupHandler.setCache(user.copy(biometric: isBiometric));
+            if (onBiometric != null && !user.biometric) {
+              await backupHandler.setCache(user.copy(
+                biometric: await onBiometric(user),
+              ));
+            } else {
+              await backupHandler.setCache(user);
+            }
             return AuthManager.emit(AuthResponse.authenticated(
               user,
               _msg.signInWithEmail.done,
@@ -229,8 +256,7 @@ class AuthController {
   }
 
   Future<AuthResponse> signInByFacebook({
-    Auth? authenticator,
-    bool biometric = false,
+    Authorizer? authenticator,
     SignByBiometricCallback? onBiometric,
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.facebook, _msg.loading));
@@ -243,19 +269,23 @@ class AuthController {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = (authenticator ?? Auth()).copy(
-            id: currentData?.uid ?? result.id ?? uid,
+          final user = (authenticator ?? Authorizer()).copy(
+            id: currentData?.uid ?? result.id ?? _id,
             email: result.email,
             name: result.name,
             photo: result.photo,
             provider: AuthType.facebook.name,
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            biometric: await isBiometricEnabled,
           );
-          final isBiometric = await onBiometric?.call(user) ?? biometric;
-          await backupHandler.setCache(user.copy(
-            biometric: isBiometric,
-            accessToken: isBiometric ? result.accessToken : null,
-            idToken: isBiometric ? result.idToken : null,
-          ));
+          if (onBiometric != null && !user.biometric) {
+            await backupHandler.setCache(user.copy(
+              biometric: await onBiometric(user),
+            ));
+          } else {
+            await backupHandler.setCache(user);
+          }
           return AuthManager.emit(AuthResponse.authenticated(
             user,
             _msg.signInWithFacebook.done,
@@ -278,8 +308,7 @@ class AuthController {
   }
 
   Future<AuthResponse> signInByGithub({
-    Auth? authenticator,
-    bool biometric = false,
+    Authorizer? authenticator,
     SignByBiometricCallback? onBiometric,
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.github, _msg.loading));
@@ -292,19 +321,23 @@ class AuthController {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = (authenticator ?? Auth()).copy(
-            id: currentData?.uid ?? result.id ?? uid,
+          final user = (authenticator ?? Authorizer()).copy(
+            id: currentData?.uid ?? result.id ?? _id,
             email: result.email,
             name: result.name,
             photo: result.photo,
             provider: AuthType.github.name,
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            biometric: await isBiometricEnabled,
           );
-          final isBiometric = await onBiometric?.call(user) ?? biometric;
-          await backupHandler.setCache(user.copy(
-            biometric: isBiometric,
-            accessToken: isBiometric ? result.accessToken : null,
-            idToken: isBiometric ? result.idToken : null,
-          ));
+          if (onBiometric != null && !user.biometric) {
+            await backupHandler.setCache(user.copy(
+              biometric: await onBiometric(user),
+            ));
+          } else {
+            await backupHandler.setCache(user);
+          }
           return AuthManager.emit(AuthResponse.authenticated(
             user,
             _msg.signInWithGithub.done,
@@ -327,8 +360,7 @@ class AuthController {
   }
 
   Future<AuthResponse> signInByGoogle({
-    Auth? authenticator,
-    bool biometric = false,
+    Authorizer? authenticator,
     SignByBiometricCallback? onBiometric,
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.google, _msg.loading));
@@ -341,19 +373,23 @@ class AuthController {
         );
         if (finalResponse.isSuccessful) {
           final currentData = finalResponse.data?.user;
-          final user = (authenticator ?? Auth()).copy(
-            id: currentData?.uid ?? result.id ?? uid,
+          final user = (authenticator ?? Authorizer()).copy(
+            id: currentData?.uid ?? result.id ?? _id,
             name: result.name,
             photo: result.photo,
             email: result.email,
             provider: AuthType.google.name,
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            biometric: await isBiometricEnabled,
           );
-          final isBiometric = await onBiometric?.call(user) ?? biometric;
-          await backupHandler.setCache(user.copy(
-            biometric: isBiometric,
-            accessToken: isBiometric ? result.accessToken : null,
-            idToken: isBiometric ? result.idToken : null,
-          ));
+          if (onBiometric != null && !user.biometric) {
+            await backupHandler.setCache(user.copy(
+              biometric: await onBiometric(user),
+            ));
+          } else {
+            await backupHandler.setCache(user);
+          }
           return AuthManager.emit(AuthResponse.authenticated(
             user,
             _msg.signInWithGoogle.done,
@@ -377,7 +413,6 @@ class AuthController {
 
   Future<AuthResponse> signInByUsername(
     UsernameAuthenticator authenticator, {
-    bool biometric = false,
     SignByBiometricCallback? onBiometric,
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.username, _msg.loading));
@@ -407,9 +442,15 @@ class AuthController {
               phone: result.phoneNumber,
               photo: result.photoURL,
               provider: AuthType.username.name,
+              biometric: await isBiometricEnabled,
             );
-            final isBiometric = await onBiometric?.call(user) ?? biometric;
-            await backupHandler.setCache(user.copy(biometric: isBiometric));
+            if (onBiometric != null && !user.biometric) {
+              await backupHandler.setCache(user.copy(
+                biometric: await onBiometric(user),
+              ));
+            } else {
+              await backupHandler.setCache(user);
+            }
             return AuthManager.emit(AuthResponse.authenticated(
               user,
               _msg.signInWithUsername.done,
@@ -434,7 +475,6 @@ class AuthController {
 
   Future<AuthResponse> signUpByEmail(
     EmailAuthenticator authenticator, {
-    bool biometric = false,
     SignByBiometricCallback? onBiometric,
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.email, _msg.loading));
@@ -465,8 +505,13 @@ class AuthController {
               photo: result.photoURL,
               provider: AuthType.email.name,
             );
-            final isBiometric = await onBiometric?.call(user) ?? biometric;
-            await backupHandler.setCache(user.copy(biometric: isBiometric));
+            if (onBiometric != null) {
+              await backupHandler.setCache(user.copy(
+                biometric: await onBiometric(user),
+              ));
+            } else {
+              await backupHandler.setCache(user);
+            }
             return AuthManager.emit(AuthResponse.authenticated(
               user,
               _msg.signUpWithEmail.done,
@@ -491,7 +536,6 @@ class AuthController {
 
   Future<AuthResponse> signUpByUsername(
     UsernameAuthenticator authenticator, {
-    bool biometric = false,
     SignByBiometricCallback? onBiometric,
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.username, _msg.loading));
@@ -522,8 +566,13 @@ class AuthController {
               photo: result.photoURL,
               provider: AuthType.username.name,
             );
-            final isBiometric = await onBiometric?.call(user) ?? biometric;
-            await backupHandler.setCache(user.copy(biometric: isBiometric));
+            if (onBiometric != null) {
+              await backupHandler.setCache(user.copy(
+                biometric: await onBiometric(user),
+              ));
+            } else {
+              await backupHandler.setCache(user);
+            }
             return AuthManager.emit(AuthResponse.authenticated(
               user,
               _msg.signUpWithUsername.done,

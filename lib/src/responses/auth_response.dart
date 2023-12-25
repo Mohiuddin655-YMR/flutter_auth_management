@@ -8,7 +8,7 @@ class AuthResponse {
   final bool? _failure;
   final String? _message;
   final String? _error;
-  final Auth? data;
+  final Authorizer? data;
   final AuthType? _provider;
 
   const AuthResponse.initial() : this._(initial: true);
@@ -16,7 +16,7 @@ class AuthResponse {
   const AuthResponse.loading([AuthType? provider, String? message])
       : this._(loading: true, provider: provider, message: message);
 
-  const AuthResponse.authenticated(Auth? data, [String? message])
+  const AuthResponse.authenticated(Authorizer? data, [String? message])
       : this._(authenticated: true, data: data, message: message);
 
   const AuthResponse.unauthenticated([String? message])
@@ -84,7 +84,7 @@ class AuthResponse {
   String toString() => "AuthResponse($source)";
 }
 
-class Auth extends Entity {
+class Authorizer extends Entity {
   final bool biometric;
   final String? accessToken;
   final String? idToken;
@@ -100,7 +100,7 @@ class Auth extends Entity {
 
   AuthType get provider => AuthType.from(_provider);
 
-  Auth({
+  Authorizer({
     super.id,
     super.timeMills,
     this.biometric = false,
@@ -115,7 +115,7 @@ class Auth extends Entity {
     this.username,
   }) : _provider = provider;
 
-  Auth copy({
+  Authorizer copy({
     String? id,
     int? timeMills,
     bool? biometric,
@@ -129,7 +129,7 @@ class Auth extends Entity {
     String? provider,
     String? username,
   }) {
-    return Auth(
+    return Authorizer(
       id: id ?? this.id,
       timeMills: timeMills ?? this.timeMills,
       biometric: biometric ?? this.biometric,
@@ -145,8 +145,8 @@ class Auth extends Entity {
     );
   }
 
-  factory Auth.from(Object? source) {
-    return Auth(
+  factory Authorizer.from(Object? source) {
+    return Authorizer(
       id: source.entityId,
       timeMills: source.entityTimeMills,
       biometric: Entity.value<bool>("biometric", source) ?? false,
@@ -162,8 +162,8 @@ class Auth extends Entity {
     );
   }
 
-  factory Auth.fromUser(User? user) {
-    return Auth(
+  factory Authorizer.fromUser(User? user) {
+    return Authorizer(
       id: user?.uid,
       email: user?.email,
       name: user?.displayName,

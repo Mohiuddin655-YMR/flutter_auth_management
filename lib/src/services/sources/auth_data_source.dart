@@ -3,7 +3,7 @@ part of 'sources.dart';
 abstract class AuthDataSource {
   Future<bool> isSignIn([AuthType? provider]);
 
-  Future<Response<Auth>> signOut([AuthType? provider]);
+  Future<Response<Authorizer>> signOut([AuthType? provider]);
 
   String? get uid;
 

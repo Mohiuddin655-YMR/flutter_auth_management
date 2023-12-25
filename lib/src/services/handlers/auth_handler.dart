@@ -11,7 +11,7 @@ abstract class AuthHandler {
 
   Future<bool> isSignIn([AuthType? provider]);
 
-  Future<Response<Auth>> signOut([AuthType? provider]);
+  Future<Response<Authorizer>> signOut([AuthType? provider]);
 
   Future<Response<Credential>> signInWithApple();
 

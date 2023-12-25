@@ -5,7 +5,7 @@ typedef AuthServiceStatus = void Function(AuthResponse response);
 class AuthManager {
   AuthManager._();
 
-  Auth? auth;
+  Authorizer? auth;
   AuthProvider? provider;
 
   static AuthManager? _proxy;
@@ -26,7 +26,7 @@ class AuthManager {
     return value;
   }
 
-  static Auth? get data => _i.auth ?? state?.data;
+  static Authorizer? get data => _i.auth ?? state?.data;
 
   static AuthResponse? get state => _i.provider?.notifier.value;
 }

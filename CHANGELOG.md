@@ -1,3 +1,7 @@
+## 0.1.9
+
+* Biometric permission updated
+
 ## 0.1.8
 
 * Biometric configuration added

@@ -65,9 +65,9 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response<Auth>> signOut([AuthType? provider]) async {
-    final response = Response<Auth>();
-    var data = Auth.fromUser(user);
+  Future<Response<Authorizer>> signOut([AuthType? provider]) async {
+    final response = Response<Authorizer>();
+    var data = Authorizer.fromUser(user);
     try {
       if (await isConnected) {
         if (provider != null) {

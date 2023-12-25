@@ -139,7 +139,7 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<Auth>> signOut([AuthType? provider]) {
+  Future<Response<Authorizer>> signOut([AuthType? provider]) {
     try {
       return repository.signOut(provider);
     } catch (_) {

@@ -13,9 +13,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../core.dart';
 
 part 'auth_data_source.dart';
-
 part 'backup_data_source.dart';
-
 part 'keep_data_source.dart';
 
 extension _LocalExtension on Future<LocalDatabase> {

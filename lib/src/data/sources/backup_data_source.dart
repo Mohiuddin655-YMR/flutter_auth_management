@@ -6,17 +6,17 @@ abstract class BackupDataSourceImpl extends BackupDataSource {
   });
 
   @override
-  Future<Auth?> getCache() async {
+  Future<Authorizer?> getCache() async {
     var result = await database.output(key);
     if (result.isNotEmpty) {
-      return Auth.from(result);
+      return Authorizer.from(result);
     } else {
       return null;
     }
   }
 
   @override
-  Future<bool> setCache(Auth? data) async {
+  Future<bool> setCache(Authorizer? data) async {
     var isSuccessful = await database.input(key, data?.source);
     return isSuccessful;
   }

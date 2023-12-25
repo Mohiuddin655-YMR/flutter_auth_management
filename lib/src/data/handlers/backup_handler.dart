@@ -11,10 +11,10 @@ class BackupHandlerImpl extends BackupHandler {
   BackupHandlerImpl.fromRepository(this.repository);
 
   @override
-  Future<Auth?> getCache([String? id]) => repository.getCache();
+  Future<Authorizer?> getCache([String? id]) => repository.getCache();
 
   @override
-  Future<bool> setCache(Auth? data) async {
+  Future<bool> setCache(Authorizer? data) async {
     if (data != null) {
       try {
         await onCreated(data);
@@ -27,7 +27,7 @@ class BackupHandlerImpl extends BackupHandler {
   Future<bool> removeCache([String? id]) => repository.removeCache();
 
   @override
-  Future<void> onCreated(Auth data) => repository.onCreated(data);
+  Future<void> onCreated(Authorizer data) => repository.onCreated(data);
 
   @override
   Future<void> onDeleted(String id) => repository.onDeleted(id);

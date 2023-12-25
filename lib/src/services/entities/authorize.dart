@@ -1,6 +1,6 @@
 part of 'entities.dart';
 
-class EmailAuthenticator extends Auth {
+class EmailAuthenticator extends Authorizer {
   EmailAuthenticator({
     required String email,
     required String password,
@@ -20,7 +20,7 @@ class EmailAuthenticator extends Auth {
   String get password => super.password ?? "123456";
 }
 
-class UsernameAuthenticator extends Auth {
+class UsernameAuthenticator extends Authorizer {
   UsernameAuthenticator({
     required String username,
     required String password,

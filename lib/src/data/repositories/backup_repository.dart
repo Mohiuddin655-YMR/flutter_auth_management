@@ -9,16 +9,16 @@ class BackupRepositoryImpl extends BackupRepository {
   }) : source = source ?? KeepDataSource(database: database);
 
   @override
-  Future<Auth?> getCache() => source.getCache();
+  Future<Authorizer?> getCache() => source.getCache();
 
   @override
-  Future<bool> setCache(Auth? data) => source.setCache(data);
+  Future<bool> setCache(Authorizer? data) => source.setCache(data);
 
   @override
   Future<bool> removeCache() => source.removeCache();
 
   @override
-  Future<void> onCreated(Auth data) => source.onCreated(data);
+  Future<void> onCreated(Authorizer data) => source.onCreated(data);
 
   @override
   Future<void> onDeleted(String id) => source.onDeleted(id);
