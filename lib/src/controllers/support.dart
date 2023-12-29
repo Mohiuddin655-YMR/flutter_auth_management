@@ -14,11 +14,6 @@ class _Support extends StatefulWidget {
 }
 
 class _SupportState extends State<_Support> {
-  @override
-  void initState() {
-    AuthManager.init(context);
-    super.initState();
-  }
 
   @override
   void dispose() {
