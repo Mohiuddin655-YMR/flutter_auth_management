@@ -91,4 +91,7 @@ class AuthRepositoryImpl extends AuthRepository {
       password: password,
     );
   }
+
+  @override
+  Future<Response> delete(User? user) => source.delete(user);
 }

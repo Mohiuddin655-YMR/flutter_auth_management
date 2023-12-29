@@ -1,3 +1,7 @@
+## 0.2.0
+
+* Stable version
+
 ## 0.1.9
 
 * Biometric permission updated

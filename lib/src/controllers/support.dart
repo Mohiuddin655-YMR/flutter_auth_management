@@ -1,6 +1,6 @@
 part of 'controllers.dart';
 
-class _Support extends StatelessWidget {
+class _Support extends StatefulWidget {
   final AuthController controller;
   final Widget child;
 
@@ -10,8 +10,25 @@ class _Support extends StatelessWidget {
   });
 
   @override
+  State<_Support> createState() => _SupportState();
+}
+
+class _SupportState extends State<_Support> {
+  @override
+  void initState() {
+    AuthManager.init(context);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    AuthManager.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     AuthManager.init(context);
-    return child;
+    return widget.child;
   }
 }

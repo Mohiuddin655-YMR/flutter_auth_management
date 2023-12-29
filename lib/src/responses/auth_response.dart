@@ -25,6 +25,9 @@ class AuthResponse {
   const AuthResponse.failure(dynamic message)
       : this._(failure: true, error: message != null ? "$message" : null);
 
+  const AuthResponse.rollback(Authorizer? data, [String? message])
+      : this._(data: data, message: message);
+
   const AuthResponse._({
     this.data,
     bool? initial,
@@ -86,6 +89,7 @@ class AuthResponse {
 
 class Authorizer extends Entity {
   final bool biometric;
+  final bool loggedIn;
   final String? accessToken;
   final String? idToken;
   final String? email;
@@ -104,6 +108,7 @@ class Authorizer extends Entity {
     super.id,
     super.timeMills,
     this.biometric = false,
+    this.loggedIn = false,
     this.accessToken,
     this.idToken,
     this.email,
@@ -119,6 +124,7 @@ class Authorizer extends Entity {
     String? id,
     int? timeMills,
     bool? biometric,
+    bool? loggedIn,
     String? accessToken,
     String? idToken,
     String? email,
@@ -133,6 +139,7 @@ class Authorizer extends Entity {
       id: id ?? this.id,
       timeMills: timeMills ?? this.timeMills,
       biometric: biometric ?? this.biometric,
+      loggedIn: loggedIn ?? this.loggedIn,
       accessToken: accessToken ?? this.accessToken,
       idToken: idToken ?? this.idToken,
       email: email ?? this.email,
@@ -150,6 +157,7 @@ class Authorizer extends Entity {
       id: source.entityId,
       timeMills: source.entityTimeMills,
       biometric: Entity.value<bool>("biometric", source) ?? false,
+      loggedIn: Entity.value<bool>("logged_in", source) ?? false,
       accessToken: Entity.value<String>("access_token", source),
       idToken: Entity.value<String>("id_token", source),
       email: Entity.value<String>("email", source),
@@ -169,6 +177,7 @@ class Authorizer extends Entity {
       name: user?.displayName,
       phone: user?.phoneNumber,
       photo: user?.photoURL,
+      loggedIn: user != null,
     );
   }
 
@@ -176,6 +185,7 @@ class Authorizer extends Entity {
   Map<String, dynamic> get source {
     return super.source.attach({
       "biometric": biometric,
+      "logged_in": loggedIn,
       "access_token": accessToken,
       "id_token": idToken,
       "email": email,

@@ -148,6 +148,9 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
+  Future<Response> delete(User? user) => repository.delete(user);
+
+  @override
   String? get uid => repository.uid;
 
   @override

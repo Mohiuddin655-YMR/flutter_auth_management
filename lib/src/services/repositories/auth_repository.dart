@@ -44,4 +44,6 @@ abstract class AuthRepository {
     required String username,
     required String password,
   });
+
+  Future<Response> delete(User? user);
 }

@@ -358,4 +358,26 @@ class AuthDataSourceImpl extends AuthDataSource {
       return response.withException("Username isn't valid!");
     }
   }
+
+  @override
+  Future<Response> delete(User? user) async {
+    final response = Response();
+    if (user != null) {
+      try {
+        return user.delete().then((value) {
+          return response.withStatus(
+            Status.ok,
+            message: "Account delete successful!",
+          );
+        });
+      } on FirebaseAuthException catch (_) {
+        return response.withException(_.message, status: Status.failure);
+      }
+    } else {
+      return response.withException(
+        "User isn't valid!",
+        status: Status.invalid,
+      );
+    }
+  }
 }

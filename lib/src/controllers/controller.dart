@@ -1,8 +1,9 @@
 part of 'controllers.dart';
 
 typedef IdentityBuilder = String Function(String uid);
-typedef SignOutCallback = Future Function(Authorizer);
-typedef SignByBiometricCallback = Future<bool> Function(Authorizer);
+typedef SignByBiometricCallback = Future<bool> Function(bool biometric);
+typedef SignOutCallback = Future Function(Authorizer authorizer);
+typedef UndoAccountCallback = Future<bool> Function(Authorizer authorizer);
 
 class AuthController {
   final AuthMessages _msg;
@@ -31,17 +32,44 @@ class AuthController {
 
   User? get _user => FirebaseAuth.instance.currentUser;
 
-  Future<Authorizer?> get authorizer => backupHandler.getCache();
+  Future<Authorizer?> get authorizer {
+    return backupHandler.getCache().then((value) {
+      return value != null && value.loggedIn ? value : null;
+    });
+  }
+
+  Future<Authorizer?> get _auth => backupHandler.getCache();
 
   Future<bool> get isBiometricEnabled async {
-    return authorizer.then((value) => value != null && value.biometric);
+    return _auth.then((value) => value != null && value.biometric);
   }
 
   Future<bool> biometricEnable(bool enabled) async {
-    final auth = await authorizer;
-    if (auth != null) {
+    final auth = await _auth;
+    if (auth != null && auth.loggedIn) {
       try {
         return backupHandler.setCache(auth.copy(biometric: enabled));
+      } catch (_) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  Future<bool> addBiometric(
+    bool enabled, {
+    BiometricConfig? config,
+  }) async {
+    final auth = await _auth;
+    if (auth != null && auth.loggedIn) {
+      try {
+        final response = await authHandler.signInWithBiometric(config: config);
+        if (response.isSuccessful) {
+          return backupHandler.setCache(auth.copy(biometric: enabled));
+        } else {
+          return false;
+        }
       } catch (_) {
         return false;
       }
@@ -59,7 +87,7 @@ class AuthController {
       final signedIn = await authHandler.isSignIn(provider);
       final data = signedIn ? await backupHandler.getCache() : null;
       if (data != null) {
-        return AuthResponse.authenticated(data);
+        return AuthResponse.authenticated(data.copy(loggedIn: true));
       } else {
         return const AuthResponse.unauthenticated();
       }
@@ -91,10 +119,11 @@ class AuthController {
             accessToken: result.accessToken,
             idToken: result.idToken,
             biometric: await isBiometricEnabled,
+            loggedIn: true,
           );
-          if (onBiometric != null && !user.biometric) {
+          if (onBiometric != null) {
             await backupHandler.setCache(user.copy(
-              biometric: await onBiometric(user),
+              biometric: await onBiometric(user.biometric),
             ));
           } else {
             await backupHandler.setCache(user);
@@ -125,7 +154,7 @@ class AuthController {
   }) async {
     AuthManager.emit(AuthResponse.loading(AuthType.biometric, _msg.loading));
     try {
-      final user = await authorizer;
+      final user = await _auth;
       if (user != null && user.biometric) {
         final response = await authHandler.signInWithBiometric(config: config);
         if (response.isSuccessful) {
@@ -167,8 +196,9 @@ class AuthController {
             }
           }
           if (loginResponse.isSuccessful) {
+            await backupHandler.setCache(user.copy(loggedIn: true));
             return AuthManager.emit(AuthResponse.authenticated(
-              user,
+              user.copy(loggedIn: true),
               _msg.signInWithBiometric.done,
             ));
           } else {
@@ -225,10 +255,11 @@ class AuthController {
               photo: result.photoURL,
               provider: AuthType.email.name,
               biometric: await isBiometricEnabled,
+              loggedIn: true,
             );
-            if (onBiometric != null && !user.biometric) {
+            if (onBiometric != null) {
               await backupHandler.setCache(user.copy(
-                biometric: await onBiometric(user),
+                biometric: await onBiometric(user.biometric),
               ));
             } else {
               await backupHandler.setCache(user);
@@ -278,10 +309,11 @@ class AuthController {
             accessToken: result.accessToken,
             idToken: result.idToken,
             biometric: await isBiometricEnabled,
+            loggedIn: true,
           );
-          if (onBiometric != null && !user.biometric) {
+          if (onBiometric != null) {
             await backupHandler.setCache(user.copy(
-              biometric: await onBiometric(user),
+              biometric: await onBiometric(user.biometric),
             ));
           } else {
             await backupHandler.setCache(user);
@@ -330,10 +362,11 @@ class AuthController {
             accessToken: result.accessToken,
             idToken: result.idToken,
             biometric: await isBiometricEnabled,
+            loggedIn: true,
           );
-          if (onBiometric != null && !user.biometric) {
+          if (onBiometric != null) {
             await backupHandler.setCache(user.copy(
-              biometric: await onBiometric(user),
+              biometric: await onBiometric(user.biometric),
             ));
           } else {
             await backupHandler.setCache(user);
@@ -382,10 +415,11 @@ class AuthController {
             accessToken: result.accessToken,
             idToken: result.idToken,
             biometric: await isBiometricEnabled,
+            loggedIn: true,
           );
-          if (onBiometric != null && !user.biometric) {
+          if (onBiometric != null) {
             await backupHandler.setCache(user.copy(
-              biometric: await onBiometric(user),
+              biometric: await onBiometric(user.biometric),
             ));
           } else {
             await backupHandler.setCache(user);
@@ -443,10 +477,11 @@ class AuthController {
               photo: result.photoURL,
               provider: AuthType.username.name,
               biometric: await isBiometricEnabled,
+              loggedIn: true,
             );
-            if (onBiometric != null && !user.biometric) {
+            if (onBiometric != null) {
               await backupHandler.setCache(user.copy(
-                biometric: await onBiometric(user),
+                biometric: await onBiometric(user.biometric),
               ));
             } else {
               await backupHandler.setCache(user);
@@ -504,10 +539,11 @@ class AuthController {
               phone: result.phoneNumber,
               photo: result.photoURL,
               provider: AuthType.email.name,
+              loggedIn: true,
             );
             if (onBiometric != null) {
               await backupHandler.setCache(user.copy(
-                biometric: await onBiometric(user),
+                biometric: await onBiometric(user.biometric),
               ));
             } else {
               await backupHandler.setCache(user);
@@ -565,10 +601,11 @@ class AuthController {
               phone: result.phoneNumber,
               photo: result.photoURL,
               provider: AuthType.username.name,
+              loggedIn: true,
             );
             if (onBiometric != null) {
               await backupHandler.setCache(user.copy(
-                biometric: await onBiometric(user),
+                biometric: await onBiometric(user.biometric),
               ));
             } else {
               await backupHandler.setCache(user);
@@ -603,9 +640,13 @@ class AuthController {
     try {
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
-        var data = await backupHandler.getCache();
+        var data = await _auth;
         if (data != null) {
-          if (!data.biometric) await backupHandler.removeCache();
+          if (data.biometric) {
+            await backupHandler.setCache(data.copy(loggedIn: false));
+          } else {
+            await backupHandler.removeCache();
+          }
           if (callback != null) {
             await callback(data.copy(id: response.data?.id));
           }
@@ -621,6 +662,39 @@ class AuthController {
     } catch (_) {
       return AuthManager.emit(AuthResponse.failure(
         _msg.signOut.failure ?? _,
+      ));
+    }
+  }
+
+  Future<AuthResponse> deleteAccount({
+    UndoAccountCallback? callback,
+  }) async {
+    AuthManager.emit(AuthResponse.loading(null, _msg.loading));
+    var data = await authorizer;
+    if (data != null && _user != null) {
+      try {
+        return authHandler.delete(_user).then((response) {
+          if (response.isSuccessful) {
+            return backupHandler.removeCache().then((value) {
+              return backupHandler.onDeleted(data.id).then((value) {
+                return AuthManager.emit(
+                  AuthResponse.unauthenticated(_msg.signOut.done),
+                );
+              });
+            });
+          } else {
+            return AuthManager.emit(
+              AuthResponse.rollback(data, response.message),
+            );
+          }
+        });
+      } catch (_) {
+        return AuthManager.emit(AuthResponse.rollback(data, "$_"));
+      }
+    } else {
+      return AuthManager.emit(AuthResponse.rollback(
+        data,
+        "You're not logged in!",
       ));
     }
   }
