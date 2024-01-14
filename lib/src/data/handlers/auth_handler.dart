@@ -10,7 +10,13 @@ class AuthHandlerImpl extends AuthHandler {
   }) : super(repository ?? AuthRepositoryImpl(source: AuthDataSourceImpl()));
 
   @override
-  Future<bool> isSignIn([AuthType? provider]) {
+  User? get user => repository.user;
+
+  @override
+  Future<Response> get delete => repository.delete;
+
+  @override
+  Future<bool> isSignIn([AuthProviders? provider]) {
     try {
       return repository.isSignIn(provider);
     } catch (_) {
@@ -33,6 +39,19 @@ class AuthHandlerImpl extends AuthHandler {
   }) {
     try {
       return repository.signInWithBiometric(config: config);
+    } catch (_) {
+      return Future.error("$_");
+    }
+  }
+
+  @override
+  Future<Response<UserCredential>> signInWithCredential({
+    required AuthCredential credential,
+  }) async {
+    try {
+      return repository.signInWithCredential(
+        credential: credential,
+      );
     } catch (_) {
       return Future.error("$_");
     }
@@ -96,19 +115,6 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<UserCredential>> signUpWithCredential({
-    required AuthCredential credential,
-  }) async {
-    try {
-      return repository.signUpWithCredential(
-        credential: credential,
-      );
-    } catch (_) {
-      return Future.error("$_");
-    }
-  }
-
-  @override
   Future<Response<UserCredential>> signUpWithEmailNPassword({
     required String email,
     required String password,
@@ -139,7 +145,7 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<Authorizer>> signOut([AuthType? provider]) {
+  Future<Response<Auth>> signOut([AuthProviders? provider]) {
     try {
       return repository.signOut(provider);
     } catch (_) {
@@ -148,11 +154,31 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response> delete(User? user) => repository.delete(user);
-
-  @override
-  String? get uid => repository.uid;
-
-  @override
-  User? get user => repository.user;
+  Future<Response<void>> verifyPhoneNumber({
+    String? phoneNumber,
+    int? forceResendingToken,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(seconds: 30),
+    required void Function(PhoneAuthCredential credential) onComplete,
+    required void Function(FirebaseAuthException exception) onFailed,
+    required void Function(String verId, int? forceResendingToken) onCodeSent,
+    required void Function(String verId) onCodeAutoRetrievalTimeout,
+  }) {
+    try {
+      return repository.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        forceResendingToken: forceResendingToken,
+        multiFactorInfo: multiFactorInfo,
+        multiFactorSession: multiFactorSession,
+        timeout: timeout,
+        onComplete: onComplete,
+        onFailed: onFailed,
+        onCodeSent: onCodeSent,
+        onCodeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+      );
+    } catch (_) {
+      return Future.error("$_");
+    }
+  }
 }

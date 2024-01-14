@@ -36,74 +36,51 @@ class AuthDataSourceImpl extends AuthDataSource {
         _googleAuth = googleAuth;
 
   @override
-  String? get uid => user?.uid;
-
-  @override
   User? get user => FirebaseAuth.instance.currentUser;
 
   @override
-  Future<bool> isSignIn([AuthType? provider]) async {
+  Future<Response> get delete async {
+    final response = Response();
+    if (user != null) {
+      try {
+        return user!.delete().then((value) {
+          return response.withStatus(
+            Status.ok,
+            message: "Account delete successful!",
+          );
+        });
+      } on FirebaseAuthException catch (_) {
+        return response.withException(_.message, status: Status.failure);
+      }
+    } else {
+      return response.withException(
+        "User isn't valid!",
+        status: Status.invalid,
+      );
+    }
+  }
+
+  @override
+  Future<bool> isSignIn([AuthProviders? provider]) async {
     if (provider != null) {
       switch (provider) {
-        case AuthType.email:
-        case AuthType.username:
-        case AuthType.phone:
+        case AuthProviders.email:
+        case AuthProviders.username:
+        case AuthProviders.phone:
           return firebaseAuth.currentUser != null;
-        case AuthType.facebook:
+        case AuthProviders.facebook:
           return (await facebookAuth.accessToken) != null;
-        case AuthType.google:
+        case AuthProviders.google:
           return googleAuth.isSignedIn();
-        case AuthType.apple:
-        case AuthType.biometric:
-        case AuthType.github:
-        case AuthType.twitter:
-        case AuthType.custom:
+        case AuthProviders.apple:
+        case AuthProviders.biometric:
+        case AuthProviders.github:
+        case AuthProviders.twitter:
+        case AuthProviders.none:
           return false;
       }
     }
     return firebaseAuth.currentUser != null;
-  }
-
-  @override
-  Future<Response<Authorizer>> signOut([AuthType? provider]) async {
-    final response = Response<Authorizer>();
-    var data = Authorizer.fromUser(user);
-    try {
-      if (await isConnected) {
-        if (provider != null) {
-          switch (provider) {
-            case AuthType.email:
-            case AuthType.phone:
-            case AuthType.username:
-              await firebaseAuth.signOut();
-              break;
-            case AuthType.facebook:
-              await facebookAuth.logOut();
-              break;
-            case AuthType.google:
-              await googleAuth.signOut();
-              break;
-            case AuthType.apple:
-            case AuthType.biometric:
-            case AuthType.github:
-            case AuthType.twitter:
-            case AuthType.custom:
-              break;
-          }
-        } else {
-          await firebaseAuth.signOut();
-          if (await googleAuth.isSignedIn()) {
-            googleAuth.disconnect();
-            googleAuth.signOut();
-          }
-        }
-      } else {
-        return response.withStatus(Status.networkError);
-      }
-    } catch (_) {
-      return response.withException(_, status: Status.failure);
-    }
-    return response.withData(data);
   }
 
   @override
@@ -175,6 +152,19 @@ class AuthDataSourceImpl extends AuthDataSource {
       }
     } catch (_) {
       return response.withException(_, status: Status.failure);
+    }
+  }
+
+  @override
+  Future<Response<UserCredential>> signInWithCredential({
+    required AuthCredential credential,
+  }) async {
+    final response = Response<UserCredential>();
+    try {
+      final result = await firebaseAuth.signInWithCredential(credential);
+      return response.withData(result, message: "Sign in successful!");
+    } on FirebaseAuthException catch (_) {
+      return response.withException(_.message, status: Status.failure);
     }
   }
 
@@ -308,19 +298,6 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response<UserCredential>> signUpWithCredential({
-    required AuthCredential credential,
-  }) async {
-    final response = Response<UserCredential>();
-    try {
-      final result = await firebaseAuth.signInWithCredential(credential);
-      return response.withData(result, message: "Sign up successful!");
-    } on FirebaseAuthException catch (_) {
-      return response.withException(_.message, status: Status.failure);
-    }
-  }
-
-  @override
   Future<Response<UserCredential>> signUpWithEmailNPassword({
     required String email,
     required String password,
@@ -360,24 +337,79 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response> delete(User? user) async {
-    final response = Response();
-    if (user != null) {
+  Future<Response<Auth>> signOut([AuthProviders? provider]) async {
+    final response = Response<Auth>();
+    var data = Auth.fromUser(user);
+    try {
+      if (await isConnected) {
+        if (provider != null) {
+          switch (provider) {
+            case AuthProviders.email:
+            case AuthProviders.phone:
+            case AuthProviders.username:
+              await firebaseAuth.signOut();
+              break;
+            case AuthProviders.facebook:
+              await facebookAuth.logOut();
+              break;
+            case AuthProviders.google:
+              await googleAuth.signOut();
+              break;
+            case AuthProviders.apple:
+            case AuthProviders.biometric:
+            case AuthProviders.github:
+            case AuthProviders.twitter:
+            case AuthProviders.none:
+              break;
+          }
+        } else {
+          await firebaseAuth.signOut();
+          if (await googleAuth.isSignedIn()) {
+            googleAuth.disconnect();
+            googleAuth.signOut();
+          }
+        }
+      } else {
+        return response.withStatus(Status.networkError);
+      }
+    } catch (_) {
+      return response.withException(_, status: Status.failure);
+    }
+    return response.withData(data);
+  }
+
+  @override
+  Future<Response<void>> verifyPhoneNumber({
+    String? phoneNumber,
+    int? forceResendingToken,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(seconds: 30),
+    required void Function(PhoneAuthCredential credential) onComplete,
+    required void Function(FirebaseAuthException exception) onFailed,
+    required void Function(String verId, int? forceResendingToken) onCodeSent,
+    required void Function(String verId) onCodeAutoRetrievalTimeout,
+  }) async {
+    final response = Response<void>();
+    if (Validator.isValidPhone(phoneNumber)) {
       try {
-        return user.delete().then((value) {
-          return response.withStatus(
-            Status.ok,
-            message: "Account delete successful!",
-          );
-        });
+        firebaseAuth.verifyPhoneNumber(
+          phoneNumber: phoneNumber,
+          forceResendingToken: forceResendingToken,
+          multiFactorInfo: multiFactorInfo,
+          multiFactorSession: multiFactorSession,
+          timeout: timeout,
+          verificationCompleted: onComplete,
+          verificationFailed: onFailed,
+          codeSent: onCodeSent,
+          codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+        );
+        return response;
       } on FirebaseAuthException catch (_) {
         return response.withException(_.message, status: Status.failure);
       }
     } else {
-      return response.withException(
-        "User isn't valid!",
-        status: Status.invalid,
-      );
+      return response.withException("Phone number isn't valid!");
     }
   }
 }

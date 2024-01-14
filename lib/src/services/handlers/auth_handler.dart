@@ -5,13 +5,13 @@ abstract class AuthHandler {
 
   const AuthHandler(this.repository);
 
-  String? get uid;
-
   User? get user;
 
-  Future<bool> isSignIn([AuthType? provider]);
+  Future<Response> get delete;
 
-  Future<Response<Authorizer>> signOut([AuthType? provider]);
+  Future<bool> isSignIn([AuthProviders? provider]);
+
+  Future<Response<Auth>> signOut([AuthProviders? provider]);
 
   Future<Response<Credential>> signInWithApple();
 
@@ -35,7 +35,7 @@ abstract class AuthHandler {
     required String password,
   });
 
-  Future<Response<UserCredential>> signUpWithCredential({
+  Future<Response<UserCredential>> signInWithCredential({
     required AuthCredential credential,
   });
 
@@ -49,5 +49,15 @@ abstract class AuthHandler {
     required String password,
   });
 
-  Future<Response> delete(User? user);
+  Future<Response<void>> verifyPhoneNumber({
+    String? phoneNumber,
+    int? forceResendingToken,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(seconds: 30),
+    required void Function(PhoneAuthCredential credential) onComplete,
+    required void Function(FirebaseAuthException exception) onFailed,
+    required void Function(String verId, int? forceResendingToken) onCodeSent,
+    required void Function(String verId) onCodeAutoRetrievalTimeout,
+  });
 }

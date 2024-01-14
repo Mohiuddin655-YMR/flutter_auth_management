@@ -1,25 +1,39 @@
 part of 'repositories.dart';
 
-class BackupRepositoryImpl extends BackupRepository {
-  final BackupDataSource source;
+class BackupRepositoryImpl<T extends Auth> extends BackupRepository<T> {
+  final BackupDataSource<T> source;
 
   BackupRepositoryImpl({
-    BackupDataSource? source,
+    BackupDataSource<T>? source,
     LocalDatabase? database,
-  }) : source = source ?? KeepDataSource(database: database);
+  }) : source = source ?? KeepDataSource<T>(database: database);
 
   @override
-  Future<Authorizer?> getCache() => source.getCache();
+  Future<T?> get cache => source.cache;
 
   @override
-  Future<bool> setCache(Authorizer? data) => source.setCache(data);
+  Future<bool> set(T? data) => source.set(data);
 
   @override
-  Future<bool> removeCache() => source.removeCache();
+  Future<bool> update(Map<String, dynamic> data) => source.update(data);
 
   @override
-  Future<void> onCreated(Authorizer data) => source.onCreated(data);
+  Future<bool> clear() => source.clear();
 
   @override
-  Future<void> onDeleted(String id) => source.onDeleted(id);
+  Future<T?> onFetchUser(String id) => source.onFetchUser(id);
+
+  @override
+  Future<void> onCreateUser(T data) => source.onCreateUser(data);
+
+  @override
+  Future<void> onUpdateUser(String id, Map<String, dynamic> data) {
+    return source.onUpdateUser(id, data);
+  }
+
+  @override
+  Future<void> onDeleteUser(String id) => source.onDeleteUser(id);
+
+  @override
+  T build(Map<String, dynamic> source) => this.source.build(source);
 }

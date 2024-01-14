@@ -1,29 +1,41 @@
 part of 'sources.dart';
 
-abstract class BackupDataSourceImpl extends BackupDataSource {
+abstract class BackupDataSourceImpl<T extends Auth>
+    extends BackupDataSource<T> {
   BackupDataSourceImpl({
     super.database,
   });
 
   @override
-  Future<Authorizer?> getCache() async {
-    var result = await database.output(key);
-    if (result.isNotEmpty) {
-      return Authorizer.from(result);
-    } else {
-      return null;
-    }
+  Future<T?> get cache {
+    return database.output(key).then((value) {
+      if (value.isNotEmpty) {
+        return build(value);
+      } else {
+        return null;
+      }
+    });
   }
 
   @override
-  Future<bool> setCache(Authorizer? data) async {
-    var isSuccessful = await database.input(key, data?.source);
-    return isSuccessful;
+  Future<bool> set(T? data) {
+    return database.input(key, data?.source);
   }
 
   @override
-  Future<bool> removeCache() async {
-    var isSuccessful = await database.input(key, null);
-    return isSuccessful;
+  Future<bool> update(Map<String, dynamic> data) {
+    return cache.then((value) {
+      if (value != null) {
+        final current = value.source..addAll(data);
+        return database.input(key, current);
+      } else {
+        return false;
+      }
+    });
+  }
+
+  @override
+  Future<bool> clear() {
+    return database.input(key, null);
   }
 }

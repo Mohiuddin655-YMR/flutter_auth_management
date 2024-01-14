@@ -1,18 +1,22 @@
 part of 'repositories.dart';
 
 abstract class AuthRepository {
-  String? get uid;
-
   User? get user;
 
-  Future<bool> isSignIn([AuthType? provider]);
+  Future<Response> get delete;
 
-  Future<Response<Authorizer>> signOut([AuthType? provider]);
+  Future<bool> isSignIn([AuthProviders? provider]);
+
+  Future<Response<Auth>> signOut([AuthProviders? provider]);
 
   Future<Response<Credential>> signInWithApple();
 
   Future<Response<bool>> signInWithBiometric({
     BiometricConfig? config,
+  });
+
+  Future<Response<UserCredential>> signInWithCredential({
+    required AuthCredential credential,
   });
 
   Future<Response<UserCredential>> signInWithEmailNPassword({
@@ -31,10 +35,6 @@ abstract class AuthRepository {
     required String password,
   });
 
-  Future<Response<UserCredential>> signUpWithCredential({
-    required AuthCredential credential,
-  });
-
   Future<Response<UserCredential>> signUpWithEmailNPassword({
     required String email,
     required String password,
@@ -45,5 +45,15 @@ abstract class AuthRepository {
     required String password,
   });
 
-  Future<Response> delete(User? user);
+  Future<Response<void>> verifyPhoneNumber({
+    String? phoneNumber,
+    int? forceResendingToken,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(seconds: 30),
+    required void Function(PhoneAuthCredential credential) onComplete,
+    required void Function(FirebaseAuthException exception) onFailed,
+    required void Function(String verId, int? forceResendingToken) onCodeSent,
+    required void Function(String verId) onCodeAutoRetrievalTimeout,
+  });
 }

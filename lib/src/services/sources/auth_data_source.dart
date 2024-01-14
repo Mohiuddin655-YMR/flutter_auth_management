@@ -1,13 +1,11 @@
 part of 'sources.dart';
 
 abstract class AuthDataSource {
-  Future<bool> isSignIn([AuthType? provider]);
-
-  Future<Response<Authorizer>> signOut([AuthType? provider]);
-
-  String? get uid;
-
   User? get user;
+
+  Future<Response> get delete;
+
+  Future<bool> isSignIn([AuthProviders? provider]);
 
   Future<Response<Credential>> signInWithApple();
 
@@ -31,7 +29,7 @@ abstract class AuthDataSource {
     required String password,
   });
 
-  Future<Response<UserCredential>> signUpWithCredential({
+  Future<Response<UserCredential>> signInWithCredential({
     required AuthCredential credential,
   });
 
@@ -45,5 +43,17 @@ abstract class AuthDataSource {
     required String password,
   });
 
-  Future<Response> delete(User? user);
+  Future<Response<Auth>> signOut([AuthProviders? provider]);
+
+  Future<Response<void>> verifyPhoneNumber({
+    String? phoneNumber,
+    int? forceResendingToken,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(seconds: 30),
+    required void Function(PhoneAuthCredential credential) onComplete,
+    required void Function(FirebaseAuthException exception) onFailed,
+    required void Function(String verId, int? forceResendingToken) onCodeSent,
+    required void Function(String verId) onCodeAutoRetrievalTimeout,
+  });
 }

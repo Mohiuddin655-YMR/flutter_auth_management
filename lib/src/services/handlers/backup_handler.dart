@@ -1,13 +1,21 @@
 part of 'handlers.dart';
 
-abstract class BackupHandler {
-  Future<Authorizer?> getCache();
+abstract class BackupHandler<T extends Auth> {
+  Future<T?> get cache;
 
-  Future<bool> setCache(Authorizer? data);
+  Future<bool> set(T? data);
 
-  Future<bool> removeCache();
+  Future<bool> update(String id, Map<String, dynamic> data);
 
-  Future<void> onCreated(Authorizer data);
+  Future<bool> clear();
 
-  Future<void> onDeleted(String id);
+  Future<T?> onFetchUser(String id);
+
+  Future<void> onCreateUser(T data);
+
+  Future<void> onUpdateUser(String id, Map<String, dynamic> data);
+
+  Future<void> onDeleteUser(String id);
+
+  T build(Map<String, dynamic> source);
 }

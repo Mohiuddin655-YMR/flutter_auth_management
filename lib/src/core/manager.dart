@@ -1,4 +1,4 @@
-part of 'controllers.dart';
+part of 'core.dart';
 
 typedef AuthServiceStatus = void Function(AuthResponse response);
 
@@ -6,10 +6,6 @@ class AuthManager {
   AuthManager._();
 
   AuthProvider? provider;
-
-  final _auth = StreamController<Authorizer?>();
-
-  static Stream<Authorizer?> get auth => _i._auth.stream;
 
   static AuthManager? _proxy;
 
@@ -19,21 +15,34 @@ class AuthManager {
     _i.provider = context.findAuthProvider();
   }
 
-  static void close() => _i._auth.close();
-
   static AuthResponse emit(AuthResponse value) {
     try {
       _i.provider?.notify(value);
-      if (value.isAuthenticated || value.isUnauthenticated) {
-        _i._auth.add(value.data);
-      }
     } catch (_) {
       throw UnimplementedError("Auth provider not implemented!");
     }
     return value;
   }
 
-  static Authorizer? get data => state?.data;
+  static Auth? get data => state?.data;
 
   static AuthResponse? get state => _i.provider?.notifier.value;
+
+  static Future<Auth?> get auth {
+    final controller = _i.provider?.controller;
+    if (controller != null) {
+      return controller.auth;
+    } else {
+      return Future.value(null);
+    }
+  }
+
+  static Stream<Auth?> get liveAuth {
+    final controller = _i.provider?.controller;
+    if (controller != null) {
+      return controller.liveAuth;
+    } else {
+      return Stream.value(null);
+    }
+  }
 }

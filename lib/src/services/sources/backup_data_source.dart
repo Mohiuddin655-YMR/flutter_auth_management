@@ -1,6 +1,6 @@
 part of 'sources.dart';
 
-abstract class BackupDataSource {
+abstract class BackupDataSource<T extends Auth> {
   BackupDataSource({
     LocalDatabase? database,
   }) : _db = database;
@@ -9,15 +9,23 @@ abstract class BackupDataSource {
 
   Future<LocalDatabase> get database async => _db ??= await LocalDatabaseImpl.I;
 
-  final String key = "uid";
+  final String key = AuthKeys.key;
 
-  Future<Authorizer?> getCache();
+  Future<T?> get cache;
 
-  Future<bool> setCache(Authorizer? data);
+  Future<bool> set(T? data);
 
-  Future<bool> removeCache();
+  Future<bool> update(Map<String, dynamic> data);
 
-  Future<void> onCreated(Authorizer data);
+  Future<bool> clear();
 
-  Future<void> onDeleted(String id);
+  Future<T?> onFetchUser(String id);
+
+  Future<void> onCreateUser(T data);
+
+  Future<void> onUpdateUser(String id, Map<String, dynamic> data);
+
+  Future<void> onDeleteUser(String id);
+
+  T build(Map<String, dynamic> source);
 }

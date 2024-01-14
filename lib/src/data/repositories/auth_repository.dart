@@ -8,28 +8,29 @@ class AuthRepositoryImpl extends AuthRepository {
   });
 
   @override
-  String? get uid => source.uid;
-
-  @override
   User? get user => source.user;
 
   @override
-  Future<bool> isSignIn([AuthType? provider]) => source.isSignIn();
+  Future<Response> get delete => source.delete;
 
   @override
-  Future<Response<Authorizer>> signOut([AuthType? provider]) =>
-      source.signOut();
+  Future<bool> isSignIn([AuthProviders? provider]) => source.isSignIn();
 
   @override
-  Future<Response<Credential>> signInWithApple() {
-    return source.signInWithApple();
-  }
+  Future<Response<Credential>> signInWithApple() => source.signInWithApple();
 
   @override
   Future<Response<bool>> signInWithBiometric({
     BiometricConfig? config,
   }) {
     return source.signInWithBiometric(config: config);
+  }
+
+  @override
+  Future<Response<UserCredential>> signInWithCredential({
+    required AuthCredential credential,
+  }) {
+    return source.signInWithCredential(credential: credential);
   }
 
   @override
@@ -67,13 +68,6 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<Response<UserCredential>> signUpWithCredential({
-    required AuthCredential credential,
-  }) {
-    return source.signUpWithCredential(credential: credential);
-  }
-
-  @override
   Future<Response<UserCredential>> signUpWithEmailNPassword({
     required String email,
     required String password,
@@ -93,5 +87,30 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<Response> delete(User? user) => source.delete(user);
+  Future<Response<Auth>> signOut([AuthProviders? provider]) => source.signOut();
+
+  @override
+  Future<Response<void>> verifyPhoneNumber({
+    String? phoneNumber,
+    int? forceResendingToken,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(seconds: 30),
+    required void Function(PhoneAuthCredential credential) onComplete,
+    required void Function(FirebaseAuthException exception) onFailed,
+    required void Function(String verId, int? forceResendingToken) onCodeSent,
+    required void Function(String verId) onCodeAutoRetrievalTimeout,
+  }) {
+    return source.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      forceResendingToken: forceResendingToken,
+      multiFactorInfo: multiFactorInfo,
+      multiFactorSession: multiFactorSession,
+      timeout: timeout,
+      onComplete: onComplete,
+      onFailed: onFailed,
+      onCodeSent: onCodeSent,
+      onCodeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+    );
+  }
 }

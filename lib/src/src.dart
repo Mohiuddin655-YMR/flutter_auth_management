@@ -1,6 +1,6 @@
 library src;
 
-export 'controllers/controllers.dart';
+export 'core/core.dart';
 export 'data/data.dart';
 export 'helpers/helpers.dart';
 export 'models/models.dart';

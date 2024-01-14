@@ -1,6 +1,8 @@
 import 'package:auth_management/core.dart';
 import 'package:flutter/material.dart';
 
+import 'user.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -9,14 +11,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late AuthController controller;
-
-  @override
-  void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller = AuthProvider.controllerOf(context);
-    });
-    super.initState();
+  void _signOut(AuthController<UserModel> controller) {
+    controller.signOut();
   }
 
   @override
@@ -36,11 +32,14 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    controller.signOut();
+                child: AuthBuilder<UserModel>(
+                  action: AuthActions.signOut,
+                  builder: (context, controller, state) {
+                    return ElevatedButton(
+                      onPressed: () => _signOut(controller),
+                      child: const Text("Logout"),
+                    );
                   },
-                  child: const Text("Logout"),
                 ),
               ),
             ],
