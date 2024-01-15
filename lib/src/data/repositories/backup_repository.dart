@@ -1,4 +1,9 @@
-part of 'repositories.dart';
+import 'package:flutter_andomie/core.dart';
+
+import '../../models/auth.dart';
+import '../../services/repositories/backup_repository.dart';
+import '../../services/sources/backup_data_source.dart';
+import '../sources/keep_data_source.dart';
 
 class BackupRepositoryImpl<T extends Auth> extends BackupRepository<T> {
   final BackupDataSource<T> source;

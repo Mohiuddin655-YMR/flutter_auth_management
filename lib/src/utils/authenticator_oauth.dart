@@ -1,4 +1,4 @@
-part of 'entities.dart';
+import 'authenticator.dart';
 
 class OAuthAuthenticator extends Authenticator {
   OAuthAuthenticator({

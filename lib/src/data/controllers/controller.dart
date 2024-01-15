@@ -1,11 +1,34 @@
-part of 'controllers.dart';
+import 'dart:async';
+
+import 'package:auth_management/src/utils/auth_notifier.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_andomie/utils.dart';
+
+import '../../core/messages.dart';
+import '../../core/typedefs.dart';
+import '../../models/auth.dart';
+import '../../models/auth_providers.dart';
+import '../../models/auth_type.dart';
+import '../../models/biometric_config.dart';
+import '../../services/controllers/controller.dart';
+import '../../services/handlers/auth_handler.dart';
+import '../../services/handlers/backup_handler.dart';
+import '../../services/sources/auth_data_source.dart';
+import '../../services/sources/backup_data_source.dart';
+import '../../utils/auth_response.dart';
+import '../../utils/authenticator.dart';
+import '../../utils/authenticator_email.dart';
+import '../../utils/authenticator_oauth.dart';
+import '../../utils/authenticator_phone.dart';
+import '../../utils/authenticator_username.dart';
+import '../handlers/auth_handler.dart';
+import '../handlers/backup_handler.dart';
 
 class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   final AuthMessages msg;
   final AuthHandler authHandler;
   final BackupHandler<T> backupHandler;
-  final _liveAuth = StreamController<T?>();
-  final _liveResponse = StreamController<AuthResponse<T>>();
+  final AuthNotifier<T> notifier = AuthNotifier();
 
   Future<T?> get _auth => backupHandler.cache;
 
@@ -25,7 +48,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     AuthMessages? messages,
   })  : msg = messages ?? const AuthMessages(),
         authHandler = authHandler ?? AuthHandlerImpl(),
-        backupHandler = backupHandler ?? BackupHandlerImpl<T>();
+        backupHandler = backupHandler ?? BackupHandlerImpl<T>(),
+        super(const AuthResponse.initial());
 
   @override
   Future<T?> get auth {
@@ -35,10 +59,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Stream<T?> get liveAuth => _liveAuth.stream;
-
-  @override
-  Stream<AuthResponse<T>> get liveResponse => _liveResponse.stream;
+  AuthNotifier<T> get liveAuth => notifier;
 
   @override
   Future<bool> get isBiometricEnabled async {
@@ -46,24 +67,26 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<bool> get isLoggedIn => auth.then((value) => value != null);
+  Future<bool> get isLoggedIn {
+    return auth.then((value) => value != null && value.isLoggedIn);
+  }
 
   @override
   Future<AuthResponse<T>> emit(AuthResponse<T> data) async {
-    _liveResponse.add(data);
+    value = data;
     return data;
   }
 
   @override
-  void close() {
-    _liveAuth.close();
-    _liveResponse.close();
+  void dispose() {
+    super.dispose();
+    notifier.dispose();
   }
 
   Future<bool> _clear() {
-    return backupHandler.clear().then((value) {
-      if (value) auth.then(_liveAuth.add);
-      return value;
+    return backupHandler.clear().then((clear) {
+      if (clear) notifier.notify(null);
+      return clear;
     });
   }
 
@@ -73,14 +96,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       if (user != null) {
         return backupHandler.update(user.id, data).then((value) {
           return auth.then((update) {
-            _liveAuth.add(update);
+            notifier.notify(update);
             return update;
           });
         });
       } else {
         final current = backupHandler.build(data);
         return backupHandler.set(current).then((value) {
-          _liveAuth.add(current);
+          notifier.notify(current);
           return current;
         });
       }
@@ -89,11 +112,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
 
   @override
   Future<AuthResponse<T>> delete() async {
-    emit(const AuthResponse.loading(
-      AuthActions.delete,
-      AuthProviders.none,
-      AuthType.delete,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.none, AuthType.delete));
     var data = await auth;
     if (data != null) {
       try {
@@ -102,8 +121,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             return _clear().then((value) {
               return backupHandler.onDeleteUser(data.id).then((value) {
                 return emit(AuthResponse.unauthenticated(
-                  AuthActions.delete,
-                  message: msg.delete.done,
+                  msg: msg.delete.done,
                   provider: AuthProviders.none,
                   type: AuthType.delete,
                 ));
@@ -111,9 +129,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             });
           } else {
             return emit(AuthResponse.rollback(
-              AuthActions.delete,
               data,
-              message: response.message,
+              msg: response.message,
               provider: AuthProviders.none,
               type: AuthType.delete,
             ));
@@ -121,18 +138,16 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         });
       } catch (_) {
         return emit(AuthResponse.rollback(
-          AuthActions.delete,
           data,
-          message: msg.delete.failure ?? _,
+          msg: msg.delete.failure ?? _,
           provider: AuthProviders.none,
           type: AuthType.delete,
         ));
       }
     } else {
       return emit(AuthResponse.rollback(
-        AuthActions.delete,
         data,
-        message: msg.loggedIn.failure,
+        msg: msg.loggedIn.failure,
         provider: AuthProviders.none,
         type: AuthType.delete,
       ));
@@ -184,21 +199,18 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       final data = signedIn ? await auth : null;
       if (data != null) {
         return AuthResponse.authenticated(
-          AuthActions.isSignIn,
           data,
           provider: provider,
           type: AuthType.signedIn,
         );
       } else {
         return AuthResponse.unauthenticated(
-          AuthActions.isSignIn,
           provider: provider,
           type: AuthType.signedIn,
         );
       }
     } catch (_) {
       return AuthResponse.failure(
-        AuthActions.isSignIn,
         msg.loggedIn.failure ?? _,
         provider: provider,
         type: AuthType.signedIn,
@@ -208,16 +220,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
 
   @override
   Future<AuthResponse<T>> signInByApple({
-    String? id,
     Authenticator? authenticator,
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signInByApple,
-      AuthProviders.apple,
-      AuthType.oauth,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.apple, AuthType.oauth));
     try {
       final response = await authHandler.signInWithApple();
       final raw = response.data;
@@ -246,9 +253,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByApple,
                   value,
-                  message: msg.signInWithApple.done,
+                  msg: msg.signInWithApple.done,
                   provider: AuthProviders.apple,
                   type: AuthType.oauth,
                 ));
@@ -256,9 +262,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByApple,
                   value,
-                  message: msg.signInWithApple.done,
+                  msg: msg.signInWithApple.done,
                   provider: AuthProviders.apple,
                   type: AuthType.oauth,
                 ));
@@ -266,7 +271,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signInByApple,
               msg.authorization,
               provider: AuthProviders.apple,
               type: AuthType.oauth,
@@ -274,7 +278,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signInByApple,
             current.exception,
             provider: AuthProviders.apple,
             type: AuthType.oauth,
@@ -282,7 +285,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } else {
         return emit(AuthResponse.failure(
-          AuthActions.signInByApple,
           response.exception,
           provider: AuthProviders.apple,
           type: AuthType.oauth,
@@ -290,7 +292,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       }
     } catch (_) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByApple,
         msg.signInWithApple.failure ?? _,
         provider: AuthProviders.apple,
         type: AuthType.oauth,
@@ -303,10 +304,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     BiometricConfig? config,
   }) async {
     emit(const AuthResponse.loading(
-      AuthActions.signInByBiometric,
-      AuthProviders.biometric,
-      AuthType.biometric,
-    ));
+        AuthProviders.biometric, AuthType.biometric));
     try {
       final user = await _auth;
       if (user != null && user.isBiometric) {
@@ -352,16 +350,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           if (current.isSuccessful) {
             return update(user.copy(loggedIn: true).source).then((value) {
               return emit(AuthResponse.authenticated(
-                AuthActions.signInByBiometric,
                 value,
-                message: msg.signInWithBiometric.done,
+                msg: msg.signInWithBiometric.done,
                 provider: AuthProviders.biometric,
                 type: AuthType.biometric,
               ));
             });
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signInByBiometric,
               current.exception,
               provider: AuthProviders.biometric,
               type: AuthType.biometric,
@@ -369,7 +365,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signInByBiometric,
             response.exception,
             provider: AuthProviders.biometric,
             type: AuthType.biometric,
@@ -377,7 +372,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } else {
         return emit(AuthResponse.failure(
-          AuthActions.signInByBiometric,
           msg.biometric,
           provider: AuthProviders.biometric,
           type: AuthType.biometric,
@@ -385,7 +379,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       }
     } catch (_) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByBiometric,
         msg.signInWithBiometric.failure ?? _,
         provider: AuthProviders.biometric,
         type: AuthType.biometric,
@@ -398,23 +391,17 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signInByEmail,
-      AuthProviders.email,
-      AuthType.login,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.email, AuthType.login));
     final email = authenticator.email;
     final password = authenticator.password;
     if (!Validator.isValidEmail(email)) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByEmail,
         msg.email,
         provider: AuthProviders.email,
         type: AuthType.login,
       ));
     } else if (!Validator.isValidPassword(password)) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByEmail,
         msg.password,
         provider: AuthProviders.email,
         type: AuthType.login,
@@ -444,9 +431,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByEmail,
                   value,
-                  message: msg.signInWithEmail.done,
+                  msg: msg.signInWithEmail.done,
                   provider: AuthProviders.email,
                   type: AuthType.login,
                 ));
@@ -454,9 +440,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByEmail,
                   value,
-                  message: msg.signInWithEmail.done,
+                  msg: msg.signInWithEmail.done,
                   provider: AuthProviders.email,
                   type: AuthType.login,
                 ));
@@ -464,7 +449,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signInByEmail,
               msg.authorization,
               provider: AuthProviders.email,
               type: AuthType.login,
@@ -472,7 +456,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signInByEmail,
             response.exception,
             provider: AuthProviders.email,
             type: AuthType.login,
@@ -480,7 +463,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } catch (_) {
         return emit(AuthResponse.failure(
-          AuthActions.signInByEmail,
           msg.signInWithEmail.failure ?? _,
           provider: AuthProviders.email,
           type: AuthType.login,
@@ -495,11 +477,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signInByFacebook,
-      AuthProviders.facebook,
-      AuthType.oauth,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.facebook, AuthType.oauth));
     try {
       final response = await authHandler.signInWithFacebook();
       final raw = response.data;
@@ -528,9 +506,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByFacebook,
                   value,
-                  message: msg.signInWithFacebook.done,
+                  msg: msg.signInWithFacebook.done,
                   provider: AuthProviders.facebook,
                   type: AuthType.oauth,
                 ));
@@ -538,9 +515,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByFacebook,
                   value,
-                  message: msg.signInWithFacebook.done,
+                  msg: msg.signInWithFacebook.done,
                   provider: AuthProviders.facebook,
                   type: AuthType.oauth,
                 ));
@@ -548,7 +524,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signInByFacebook,
               msg.authorization,
               provider: AuthProviders.facebook,
               type: AuthType.oauth,
@@ -556,7 +531,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signInByFacebook,
             current.exception,
             provider: AuthProviders.facebook,
             type: AuthType.oauth,
@@ -564,7 +538,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } else {
         return emit(AuthResponse.failure(
-          AuthActions.signInByFacebook,
           response.exception,
           provider: AuthProviders.facebook,
           type: AuthType.oauth,
@@ -572,7 +545,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       }
     } catch (_) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByFacebook,
         msg.signInWithFacebook.failure ?? _,
         provider: AuthProviders.facebook,
         type: AuthType.oauth,
@@ -586,11 +558,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signInByGithub,
-      AuthProviders.github,
-      AuthType.oauth,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.github, AuthType.oauth));
     try {
       final response = await authHandler.signInWithGithub();
       final raw = response.data;
@@ -619,9 +587,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByGithub,
                   value,
-                  message: msg.signInWithGithub.done,
+                  msg: msg.signInWithGithub.done,
                   provider: AuthProviders.github,
                   type: AuthType.oauth,
                 ));
@@ -629,9 +596,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByGithub,
                   value,
-                  message: msg.signInWithGithub.done,
+                  msg: msg.signInWithGithub.done,
                   provider: AuthProviders.github,
                   type: AuthType.oauth,
                 ));
@@ -639,7 +605,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signInByGithub,
               msg.authorization,
               provider: AuthProviders.github,
               type: AuthType.oauth,
@@ -647,7 +612,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signInByGithub,
             current.exception,
             provider: AuthProviders.github,
             type: AuthType.oauth,
@@ -655,7 +619,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } else {
         return emit(AuthResponse.failure(
-          AuthActions.signInByGithub,
           response.exception,
           provider: AuthProviders.github,
           type: AuthType.oauth,
@@ -663,7 +626,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       }
     } catch (_) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByGithub,
         msg.signInWithGithub.failure ?? _,
         provider: AuthProviders.github,
         type: AuthType.oauth,
@@ -677,11 +639,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signInByGoogle,
-      AuthProviders.google,
-      AuthType.oauth,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.google, AuthType.oauth));
     try {
       final response = await authHandler.signInWithGoogle();
       final raw = response.data;
@@ -710,9 +668,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByGoogle,
                   value,
-                  message: msg.signInWithGoogle.done,
+                  msg: msg.signInWithGoogle.done,
                   provider: AuthProviders.google,
                   type: AuthType.oauth,
                 ));
@@ -720,9 +677,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByGoogle,
                   value,
-                  message: msg.signInWithGoogle.done,
+                  msg: msg.signInWithGoogle.done,
                   provider: AuthProviders.google,
                   type: AuthType.oauth,
                 ));
@@ -730,7 +686,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signInByGoogle,
               msg.authorization,
               provider: AuthProviders.google,
               type: AuthType.oauth,
@@ -738,7 +693,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signInByGoogle,
             current.exception,
             provider: AuthProviders.google,
             type: AuthType.oauth,
@@ -746,7 +700,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } else {
         return emit(AuthResponse.failure(
-          AuthActions.signInByGoogle,
           response.exception,
           provider: AuthProviders.google,
           type: AuthType.oauth,
@@ -754,7 +707,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       }
     } catch (_) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByGoogle,
         msg.signInWithGoogle.failure ?? _,
         provider: AuthProviders.google,
         type: AuthType.oauth,
@@ -768,25 +720,19 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signInByPhone,
-      AuthProviders.phone,
-      AuthType.phone,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.phone, AuthType.phone));
     PhoneAuthCredential? raw = authenticator.credential;
     final isValidCredential = raw != null;
     final verId = authenticator.verificationId;
     final code = authenticator.smsCode;
     if (!Validator.isValidString(verId) && !isValidCredential) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByPhone,
         msg.verificationId,
         provider: AuthProviders.phone,
         type: AuthType.phone,
       ));
     } else if (!Validator.isValidString(code) && !isValidCredential) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByPhone,
         msg.otp,
         provider: AuthProviders.phone,
         type: AuthType.phone,
@@ -822,9 +768,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByPhone,
                   value,
-                  message: msg.signInWithPhone.done,
+                  msg: msg.signInWithPhone.done,
                   provider: AuthProviders.phone,
                   type: AuthType.phone,
                 ));
@@ -832,9 +777,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByPhone,
                   value,
-                  message: msg.signInWithPhone.done,
+                  msg: msg.signInWithPhone.done,
                   provider: AuthProviders.phone,
                   type: AuthType.phone,
                 ));
@@ -842,7 +786,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signInByPhone,
               msg.authorization,
               provider: AuthProviders.phone,
               type: AuthType.phone,
@@ -850,7 +793,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signInByPhone,
             response.exception,
             provider: AuthProviders.phone,
             type: AuthType.phone,
@@ -858,7 +800,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } catch (_) {
         return emit(AuthResponse.failure(
-          AuthActions.signInByPhone,
           msg.signInWithPhone.failure ?? _,
           provider: AuthProviders.phone,
           type: AuthType.phone,
@@ -872,23 +813,17 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signInByUsername,
-      AuthProviders.username,
-      AuthType.login,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.username, AuthType.login));
     final username = authenticator.username;
     final password = authenticator.password;
     if (!Validator.isValidUsername(username)) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByUsername,
         msg.username,
         provider: AuthProviders.username,
         type: AuthType.login,
       ));
     } else if (!Validator.isValidPassword(password)) {
       return emit(AuthResponse.failure(
-        AuthActions.signInByUsername,
         msg.password,
         provider: AuthProviders.username,
         type: AuthType.login,
@@ -918,9 +853,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByUsername,
                   value,
-                  message: msg.signInWithUsername.done,
+                  msg: msg.signInWithUsername.done,
                   provider: AuthProviders.username,
                   type: AuthType.login,
                 ));
@@ -928,9 +862,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signInByUsername,
                   value,
-                  message: msg.signInWithUsername.done,
+                  msg: msg.signInWithUsername.done,
                   provider: AuthProviders.username,
                   type: AuthType.login,
                 ));
@@ -938,7 +871,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signInByUsername,
               msg.authorization,
               provider: AuthProviders.username,
               type: AuthType.login,
@@ -946,7 +878,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signInByUsername,
             response.exception,
             provider: AuthProviders.username,
             type: AuthType.login,
@@ -954,7 +885,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } catch (_) {
         return emit(AuthResponse.failure(
-          AuthActions.signInByUsername,
           msg.signInWithUsername.failure ?? _,
           provider: AuthProviders.username,
           type: AuthType.login,
@@ -968,23 +898,17 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signUpByEmail,
-      AuthProviders.email,
-      AuthType.register,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.email, AuthType.register));
     final email = authenticator.email;
     final password = authenticator.password;
     if (!Validator.isValidEmail(email)) {
       return emit(AuthResponse.failure(
-        AuthActions.signUpByEmail,
         msg.email,
         provider: AuthProviders.email,
         type: AuthType.register,
       ));
     } else if (!Validator.isValidPassword(password)) {
       return emit(AuthResponse.failure(
-        AuthActions.signUpByEmail,
         msg.password,
         provider: AuthProviders.email,
         type: AuthType.register,
@@ -1013,9 +937,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signUpByEmail,
                   value,
-                  message: msg.signUpWithEmail.done,
+                  msg: msg.signUpWithEmail.done,
                   provider: AuthProviders.email,
                   type: AuthType.register,
                 ));
@@ -1023,9 +946,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signUpByEmail,
                   value,
-                  message: msg.signUpWithEmail.done,
+                  msg: msg.signUpWithEmail.done,
                   provider: AuthProviders.email,
                   type: AuthType.register,
                 ));
@@ -1033,7 +955,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signUpByEmail,
               msg.authorization,
               provider: AuthProviders.email,
               type: AuthType.register,
@@ -1041,7 +962,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signUpByEmail,
             response.exception,
             provider: AuthProviders.email,
             type: AuthType.register,
@@ -1049,7 +969,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } catch (_) {
         return emit(AuthResponse.failure(
-          AuthActions.signUpByEmail,
           msg.signUpWithEmail.failure ?? _,
           provider: AuthProviders.email,
           type: AuthType.register,
@@ -1063,23 +982,17 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthActions.signUpByUsername,
-      AuthProviders.username,
-      AuthType.register,
-    ));
+    emit(const AuthResponse.loading(AuthProviders.username, AuthType.register));
     final username = authenticator.username;
     final password = authenticator.password;
     if (!Validator.isValidUsername(username)) {
       return emit(AuthResponse.failure(
-        AuthActions.signUpByUsername,
         msg.username,
         provider: AuthProviders.username,
         type: AuthType.register,
       ));
     } else if (!Validator.isValidPassword(password)) {
       return emit(AuthResponse.failure(
-        AuthActions.signUpByUsername,
         msg.password,
         provider: AuthProviders.username,
         type: AuthType.register,
@@ -1108,9 +1021,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 user.copy(biometric: biometric).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signUpByUsername,
                   value,
-                  message: msg.signUpWithUsername.done,
+                  msg: msg.signUpWithUsername.done,
                   provider: AuthProviders.username,
                   type: AuthType.register,
                 ));
@@ -1118,9 +1030,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return update(user.source).then((value) {
                 return emit(AuthResponse.authenticated(
-                  AuthActions.signUpByUsername,
                   value,
-                  message: msg.signUpWithUsername.done,
+                  msg: msg.signUpWithUsername.done,
                   provider: AuthProviders.username,
                   type: AuthType.register,
                 ));
@@ -1128,7 +1039,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.failure(
-              AuthActions.signUpByUsername,
               msg.authorization,
               provider: AuthProviders.username,
               type: AuthType.register,
@@ -1136,7 +1046,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         } else {
           return emit(AuthResponse.failure(
-            AuthActions.signUpByUsername,
             response.exception,
             provider: AuthProviders.username,
             type: AuthType.register,
@@ -1144,7 +1053,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         }
       } catch (_) {
         return emit(AuthResponse.failure(
-          AuthActions.signUpByUsername,
           msg.signUpWithUsername.failure ?? _,
           provider: AuthProviders.username,
           type: AuthType.register,
@@ -1157,7 +1065,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signOut([
     AuthProviders provider = AuthProviders.none,
   ]) async {
-    emit(AuthResponse.loading(AuthActions.signOut, provider, AuthType.logout));
+    emit(AuthResponse.loading(provider, AuthType.logout));
     try {
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
@@ -1166,8 +1074,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (data.isBiometric) {
               return update(data.copy(loggedIn: false).source).then((value) {
                 return emit(AuthResponse.unauthenticated(
-                  AuthActions.signOut,
-                  message: msg.signOut.done,
+                  msg: msg.signOut.done,
                   provider: provider,
                   type: AuthType.logout,
                 ));
@@ -1175,8 +1082,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return _clear().then((value) {
                 return emit(AuthResponse.unauthenticated(
-                  AuthActions.signOut,
-                  message: msg.signOut.done,
+                  msg: msg.signOut.done,
                   provider: provider,
                   type: AuthType.logout,
                 ));
@@ -1184,8 +1090,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           } else {
             return emit(AuthResponse.unauthenticated(
-              AuthActions.signOut,
-              message: msg.signOut.done,
+              msg: msg.signOut.done,
               provider: provider,
               type: AuthType.logout,
             ));
@@ -1193,7 +1098,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         });
       } else {
         return emit(AuthResponse.failure(
-          AuthActions.signOut,
           response.exception,
           provider: provider,
           type: AuthType.logout,
@@ -1201,7 +1105,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       }
     } catch (_) {
       return emit(AuthResponse.failure(
-        AuthActions.signOut,
         msg.signOut.failure ?? _,
         provider: provider,
         type: AuthType.logout,

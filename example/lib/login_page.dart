@@ -1,7 +1,7 @@
+import 'dart:developer';
+
 import 'package:auth_management/core.dart';
 import 'package:flutter/material.dart';
-
-import 'user.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,20 +16,23 @@ class _LoginPageState extends State<LoginPage> {
 
   bool loading = false;
 
-  void login(AuthController<UserModel> controller) async {
+  void login() async {
+    log("AUTH : login");
     final email = etEmail.text;
     final password = etPassword.text;
-    controller
-        .signInByEmail(EmailAuthenticator(email: email, password: password))
-        .onStatus(indicatorVisible);
+    context.signInByEmail(EmailAuthenticator(
+      email: email,
+      password: password,
+    ));
   }
 
-  void register(AuthController<UserModel> controller) async {
+  void register() async {
     final email = etEmail.text;
     final password = etPassword.text;
-    controller
-        .signUpByEmail(EmailAuthenticator(email: email, password: password))
-        .onStatus(indicatorVisible);
+    context.signUpByEmail(EmailAuthenticator(
+      email: email,
+      password: password,
+    ));
   }
 
   void indicatorVisible(bool value) {
@@ -38,6 +41,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // log("LOGIN PAGE");
     return Scaffold(
       appBar: AppBar(
         title: const Text("Login"),
@@ -73,37 +77,17 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
-                  child: AuthBuilder<UserModel>(
-                    action: AuthActions.signInByEmail,
-                    builder: (context, controller, state) {
-                      if (state.isLoading) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }
-                      return ElevatedButton(
-                        onPressed: () => login(controller),
-                        child: const Text("Login"),
-                      );
-                    },
+                  child: ElevatedButton(
+                    onPressed: () => login(),
+                    child: const Text("Login"),
                   ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  child: AuthBuilder<UserModel>(
-                    action: AuthActions.signUpByEmail,
-                    builder: (context, controller, state) {
-                      if (state.isLoading) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }
-                      return ElevatedButton(
-                        onPressed: () => register(controller),
-                        child: const Text("Register"),
-                      );
-                    },
+                  child: ElevatedButton(
+                    onPressed: () => register(),
+                    child: const Text("Register"),
                   ),
                 ),
               ],

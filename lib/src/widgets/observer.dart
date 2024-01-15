@@ -1,10 +1,12 @@
-part of 'core.dart';
+import 'package:auth_management/core.dart';
+import 'package:auth_management/src/utils/errors.dart';
+import 'package:flutter/material.dart';
 
 class AuthObserver<T extends Auth> extends StatelessWidget {
   final OnAuthErrorListener? onError;
   final OnAuthLoadingListener? onLoading;
   final OnAuthMessageListener? onMessage;
-  final OnAuthStateChangeListener? onStateChange;
+  final OnAuthStateChangeListener? onStatus;
   final OnAuthResponse<T>? onResponse;
   final Widget child;
 
@@ -13,32 +15,33 @@ class AuthObserver<T extends Auth> extends StatelessWidget {
     this.onError,
     this.onLoading,
     this.onMessage,
-    this.onStateChange,
+    this.onStatus,
     this.onResponse,
     required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
-    final provider = AuthProvider.of<T>(context);
-    if (provider != null) {
+    try {
       return _Observer<T>(
-        observer: provider.notifier,
+        controller: context.findAuthController<T>(),
         onError: onError,
         onLoading: onLoading,
         onMessage: onMessage,
-        onStateChange: onStateChange,
+        onStateChange: onStatus,
         onResponse: onResponse,
         child: child,
       );
-    } else {
-      throw UnimplementedError("Auth provider not found!");
+    } catch (_) {
+      throw AuthProviderException(
+        "You should apply like AuthObserver<${AuthProvider.type}>();",
+      );
     }
   }
 }
 
 class _Observer<T extends Auth> extends StatefulWidget {
-  final AuthNotifier<T> observer;
+  final AuthController<T> controller;
   final OnAuthErrorListener? onError;
   final OnAuthLoadingListener? onLoading;
   final OnAuthMessageListener? onMessage;
@@ -47,7 +50,7 @@ class _Observer<T extends Auth> extends StatefulWidget {
   final Widget child;
 
   const _Observer({
-    required this.observer,
+    required this.controller,
     this.onError,
     this.onLoading,
     this.onMessage,
@@ -64,26 +67,26 @@ class _ObserverState<T extends Auth> extends State<_Observer<T>> {
   @override
   void initState() {
     super.initState();
-    widget.observer.addListener(_change);
+    widget.controller.addListener(_change);
   }
 
   @override
   void didUpdateWidget(_Observer<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.observer != widget.observer) {
-      oldWidget.observer.removeListener(_change);
-      widget.observer.addListener(_change);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_change);
+      widget.controller.addListener(_change);
     }
   }
 
   @override
   void dispose() {
-    widget.observer.removeListener(_change);
+    widget.controller.removeListener(_change);
     super.dispose();
   }
 
   void _change() {
-    final data = widget.observer.value;
+    final data = widget.controller.value;
     if (data.isMessage && widget.onMessage != null) {
       widget.onMessage?.call(context, data.message);
     }

@@ -1,4 +1,4 @@
-part of 'helpers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthHelper {
   const AuthHelper._();

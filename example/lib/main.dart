@@ -8,14 +8,10 @@ import 'user.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(
-    AuthProvider<UserModel>(
-      controller: AuthController.getInstance<UserModel>(
-        backup: UserBackup(),
-      ),
-      child: const Application(),
-    ),
-  );
+  runApp(AuthProvider<UserModel>(
+    controller: AuthController.getInstance<UserModel>(backup: UserBackup()),
+    child: const Application(),
+  ));
 }
 
 class Application extends StatelessWidget {

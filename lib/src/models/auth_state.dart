@@ -1,11 +1,7 @@
-part of 'models.dart';
-
 enum AuthState {
-  none,
   guest,
   authenticated,
-  unauthenticated,
-  loading;
+  unauthenticated;
 
   factory AuthState.from(String? source) {
     if (source == guest.name) {
@@ -14,10 +10,8 @@ enum AuthState {
       return AuthState.authenticated;
     } else if (source == unauthenticated.name) {
       return AuthState.unauthenticated;
-    } else if (source == loading.name) {
-      return AuthState.loading;
     } else {
-      return AuthState.none;
+      return AuthState.unauthenticated;
     }
   }
 
@@ -26,8 +20,4 @@ enum AuthState {
   bool get isAuthenticated => this == AuthState.authenticated;
 
   bool get isUnauthenticated => this == AuthState.unauthenticated;
-
-  bool get isLoading => this == AuthState.loading;
-
-  bool get isSuccessful => isGuest || isAuthenticated || isUnauthenticated;
 }

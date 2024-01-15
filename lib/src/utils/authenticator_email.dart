@@ -1,4 +1,4 @@
-part of 'entities.dart';
+import 'authenticator.dart';
 
 class EmailAuthenticator extends Authenticator {
   EmailAuthenticator({

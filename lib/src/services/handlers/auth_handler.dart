@@ -1,4 +1,11 @@
-part of 'handlers.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:flutter_andomie/core.dart';
+
+import '../../models/auth.dart';
+import '../../models/auth_providers.dart';
+import '../../models/biometric_config.dart';
+import '../../models/credential.dart';
+import '../repositories/auth_repository.dart';
 
 abstract class AuthHandler {
   final AuthRepository repository;

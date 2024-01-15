@@ -1,4 +1,4 @@
-part of 'repositories.dart';
+import '../../models/auth.dart';
 
 abstract class BackupRepository<T extends Auth> {
   Future<T?> get cache;

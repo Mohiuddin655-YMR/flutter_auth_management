@@ -1,20 +1,230 @@
-part of 'core.dart';
+import 'dart:async';
 
-/// to find observer and notify current state
+import 'package:auth_management/src/utils/auth_notifier.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:flutter/material.dart';
+import 'package:flutter_andomie/core.dart';
+
+import '../models/auth.dart';
+import '../models/auth_providers.dart';
+import '../models/biometric_config.dart';
+import '../services/controllers/controller.dart';
+import '../utils/auth_response.dart';
+import '../utils/authenticator.dart';
+import '../utils/authenticator_email.dart';
+import '../utils/authenticator_oauth.dart';
+import '../utils/authenticator_phone.dart';
+import '../utils/authenticator_username.dart';
+import '../utils/errors.dart';
+import '../widgets/provider.dart';
+import 'typedefs.dart';
+
 extension AuthContextExtension on BuildContext {
-  /// to find
-  AuthProvider<T>? findAuthProvider<T extends Auth>() => AuthProvider.of<T>(this);
-
-  AuthController<T> findAuthController<T extends Auth>([AuthController<T>? secondary]) {
-    return AuthProvider.controllerOf<T>(this, secondary);
+  AuthController<T> _i<T extends Auth>(String name) {
+    try {
+      return findAuthController<T>();
+    } catch (_) {
+      throw AuthProviderException(
+        "You should call like $name<${AuthProvider.type}>()",
+      );
+    }
   }
 
-  /// to notify state
-  void notifyState<T extends Auth>(AuthResponse<T> data) {
-    var observer = findAuthProvider();
-    if (observer != null) {
-      observer.notify(data);
+  AuthProvider<T>? findAuthProvider<T extends Auth>() {
+    try {
+      return AuthProvider.of<T>(this);
+    } catch (_) {
+      throw AuthProviderException(
+        "You should call like findAuthProvider<${AuthProvider.type}>()",
+      );
     }
+  }
+
+  AuthController<T> findAuthController<T extends Auth>() {
+    try {
+      return AuthProvider.controllerOf<T>(this);
+    } catch (_) {
+      throw AuthProviderException(
+        "You should call like findAuthController<${AuthProvider.type}>()",
+      );
+    }
+  }
+
+  Future<T?> auth<T extends Auth>() => _i<T>("auth").auth;
+
+  AuthNotifier<T> liveAuth<T extends Auth>() => _i<T>("liveAuth").liveAuth;
+
+  Future<bool> isBiometricEnabled<T extends Auth>() {
+    return _i<T>("isBiometricEnabled").isBiometricEnabled;
+  }
+
+  Future<bool> isLoggedIn<T extends Auth>() {
+    return _i<T>("isLoggedIn").isLoggedIn;
+  }
+
+  Future<AuthResponse<T>> emit<T extends Auth>(AuthResponse<T> data) {
+    return _i<T>("emit").emit(data);
+  }
+
+  Future<T?> updateAccount<T extends Auth>(Map<String, dynamic> data) {
+    return _i<T>("updateAccount").update(data);
+  }
+
+  Future<AuthResponse<T>> deleteAccount<T extends Auth>() {
+    return _i<T>("deleteAccount").delete();
+  }
+
+  Future<bool> addBiometric<T extends Auth>(
+    bool enabled, {
+    BiometricConfig? config,
+  }) {
+    return _i<T>("addBiometric").addBiometric(enabled, config: config);
+  }
+
+  Future<bool> biometricEnable<T extends Auth>(bool enabled) {
+    return _i<T>("biometricEnable").biometricEnable(enabled);
+  }
+
+  Future<AuthResponse<T>> isSignIn<T extends Auth>([
+    AuthProviders? provider,
+  ]) {
+    return _i<T>("isSignIn").isSignIn(provider);
+  }
+
+  Future<AuthResponse<T>> signInByApple<T extends Auth>({
+    Authenticator? authenticator,
+    SignByBiometricCallback? onBiometric,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInByApple").signInByApple(
+      authenticator: authenticator,
+      onBiometric: onBiometric,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInByBiometric<T extends Auth>({
+    BiometricConfig? config,
+  }) {
+    return _i<T>("signInByBiometric").signInByBiometric(config: config);
+  }
+
+  Future<AuthResponse<T>> signInByEmail<T extends Auth>(
+    EmailAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) {
+    return _i<T>("signInByEmail").signInByEmail(
+      authenticator,
+      onBiometric: onBiometric,
+    );
+  }
+
+  Future<AuthResponse<T>> signInByFacebook<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    SignByBiometricCallback? onBiometric,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInByFacebook").signInByFacebook(
+      authenticator: authenticator,
+      onBiometric: onBiometric,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInByGithub<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    SignByBiometricCallback? onBiometric,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInByGithub").signInByGithub(
+      authenticator: authenticator,
+      onBiometric: onBiometric,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInByGoogle<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    SignByBiometricCallback? onBiometric,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInByGoogle").signInByGoogle(
+      authenticator: authenticator,
+      onBiometric: onBiometric,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInByPhone<T extends Auth>(
+    PhoneAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInByPhone").signInByPhone(
+      authenticator,
+      onBiometric: onBiometric,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInByUsername<T extends Auth>(
+    UsernameAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) {
+    return _i<T>("signInByUsername").signInByUsername(
+      authenticator,
+      onBiometric: onBiometric,
+    );
+  }
+
+  Future<AuthResponse<T>> signUpByEmail<T extends Auth>(
+    EmailAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) {
+    return _i<T>("signUpByEmail").signUpByEmail(
+      authenticator,
+      onBiometric: onBiometric,
+    );
+  }
+
+  Future<AuthResponse<T>> signUpByUsername<T extends Auth>(
+    UsernameAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) {
+    return _i<T>("signUpByUsername").signUpByUsername(
+      authenticator,
+      onBiometric: onBiometric,
+    );
+  }
+
+  Future<AuthResponse<T>> signOut<T extends Auth>([
+    AuthProviders provider = AuthProviders.none,
+  ]) {
+    return _i<T>("signOut").signOut(provider);
+  }
+
+  Future<Response<void>> verifyPhoneNumber<T extends Auth>(
+    String phoneNumber, {
+    int? forceResendingToken,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(minutes: 2),
+    void Function(PhoneAuthCredential credential)? onComplete,
+    void Function(FirebaseAuthException exception)? onFailed,
+    void Function(String verId, int? forceResendingToken)? onCodeSent,
+    void Function(String verId)? onCodeAutoRetrievalTimeout,
+  }) {
+    return _i<T>("verifyPhoneNumber").verifyPhoneNumber(
+      phoneNumber,
+      forceResendingToken: forceResendingToken,
+      multiFactorInfo: multiFactorInfo,
+      multiFactorSession: multiFactorSession,
+      timeout: timeout,
+      onComplete: onComplete,
+      onFailed: onFailed,
+      onCodeSent: onCodeSent,
+      onCodeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+    );
   }
 }
 

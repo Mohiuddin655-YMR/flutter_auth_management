@@ -1,4 +1,4 @@
-part of 'entities.dart';
+import '../models/auth.dart';
 
 class Authenticator extends Auth {
   Authenticator.empty() : super();

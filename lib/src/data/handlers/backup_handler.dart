@@ -1,4 +1,10 @@
-part of 'handlers.dart';
+import 'package:flutter_andomie/core.dart';
+
+import '../../models/auth.dart';
+import '../../services/handlers/backup_handler.dart';
+import '../../services/repositories/backup_repository.dart';
+import '../../services/sources/backup_data_source.dart';
+import '../repositories/backup_repository.dart';
 
 class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   final BackupRepository<T> repository;

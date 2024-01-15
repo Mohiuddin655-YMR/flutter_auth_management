@@ -1,5 +1,3 @@
-part of 'models.dart';
-
 enum AuthType {
   biometric,
   oauth,

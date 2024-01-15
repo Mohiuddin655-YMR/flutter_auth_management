@@ -1,6 +1,31 @@
-part of 'controllers.dart';
+import 'dart:async';
 
-abstract class AuthController<T extends Auth> {
+import 'package:auth_management/src/utils/auth_notifier.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_andomie/utils.dart';
+
+import '../../core/messages.dart';
+import '../../core/typedefs.dart';
+import '../../data/controllers/controller.dart';
+import '../../models/auth.dart';
+import '../../models/auth_providers.dart';
+import '../../models/biometric_config.dart';
+import '../../utils/auth_response.dart';
+import '../../utils/authenticator.dart';
+import '../../utils/authenticator_email.dart';
+import '../../utils/authenticator_oauth.dart';
+import '../../utils/authenticator_phone.dart';
+import '../../utils/authenticator_username.dart';
+import '../handlers/auth_handler.dart';
+import '../handlers/backup_handler.dart';
+import '../sources/auth_data_source.dart';
+import '../sources/backup_data_source.dart';
+
+abstract class AuthController<T extends Auth>
+    extends ValueNotifier<AuthResponse<T>> {
+  AuthController(super.value);
+
   static AuthController<T> getInstance<T extends Auth>({
     AuthDataSource? auth,
     BackupDataSource<T>? backup,
@@ -33,12 +58,8 @@ abstract class AuthController<T extends Auth> {
     throw UnimplementedError('auth is not implemented');
   }
 
-  Stream<T?> get liveAuth {
+  AuthNotifier<T> get liveAuth {
     throw UnimplementedError('liveAuth is not implemented');
-  }
-
-  Stream<AuthResponse<T>> get liveResponse {
-    throw UnimplementedError('liveResponse is not implemented');
   }
 
   Future<bool> get isBiometricEnabled {
@@ -51,10 +72,6 @@ abstract class AuthController<T extends Auth> {
 
   Future<AuthResponse<T>> emit(AuthResponse<T> data) {
     throw UnimplementedError('emit() is not implemented');
-  }
-
-  void close() {
-    throw UnimplementedError('close() is not implemented');
   }
 
   Future<T?> update(Map<String, dynamic> data) {
@@ -83,7 +100,6 @@ abstract class AuthController<T extends Auth> {
   }
 
   Future<AuthResponse<T>> signInByApple({
-    String? id,
     Authenticator? authenticator,
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,

@@ -1,4 +1,4 @@
-part of 'handlers.dart';
+import '../../models/auth.dart';
 
 abstract class BackupHandler<T extends Auth> {
   Future<T?> get cache;

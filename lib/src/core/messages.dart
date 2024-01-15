@@ -1,5 +1,3 @@
-part of 'core.dart';
-
 class AuthMessages {
   final String? authorization;
   final String? biometric;

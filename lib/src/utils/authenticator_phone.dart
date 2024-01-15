@@ -1,4 +1,6 @@
-part of 'entities.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'authenticator.dart';
 
 class PhoneAuthenticator extends Authenticator {
   final PhoneAuthCredential? credential;

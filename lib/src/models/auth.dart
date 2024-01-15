@@ -1,4 +1,7 @@
-part of 'models.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_andomie/core.dart';
+
+import '../utils/auth_helper.dart';
 
 /// ## Create an authorized key class for User:
 ///

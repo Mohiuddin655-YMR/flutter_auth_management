@@ -1,4 +1,7 @@
-part of 'responses.dart';
+import '../models/auth.dart';
+import '../models/auth_providers.dart';
+import '../models/auth_state.dart';
+import '../models/auth_type.dart';
 
 class AuthResponse<T extends Auth> {
   final bool? _initial;
@@ -6,7 +9,6 @@ class AuthResponse<T extends Auth> {
   final String? _error;
   final String? _message;
   final T? data;
-  final AuthActions? _action;
   final AuthProviders? _provider;
   final AuthState? _state;
   final AuthType? _type;
@@ -19,131 +21,98 @@ class AuthResponse<T extends Auth> {
 
   bool get isMessage => message.isNotEmpty;
 
-  bool get isState => state != AuthState.none;
+  bool get isState => state != AuthState.unauthenticated;
 
   String get error => _error ?? "";
 
   String get message => _message ?? "";
 
-  AuthActions get action => _action ?? AuthActions.none;
-
   AuthProviders get provider => _provider ?? AuthProviders.email;
 
-  AuthState get state => _state ?? AuthState.none;
+  AuthState get state => _state ?? AuthState.unauthenticated;
 
   AuthType get type => _type ?? AuthType.none;
 
   bool isCurrentProvider(AuthProviders value) => provider == value;
 
-  bool isCurrentAction(AuthActions action) {
-    return action == this.action;
-  }
-
   const AuthResponse.initial({
-    AuthActions action = AuthActions.none,
-    dynamic message,
+    dynamic msg,
     AuthProviders? provider,
     AuthType? type,
-  }) : this._(
-          action,
-          initial: true,
-          message: message,
-          provider: provider,
-          type: type,
-        );
+  }) : this._(initial: true, msg: msg, provider: provider, type: type);
 
-  const AuthResponse.loading(
-    AuthActions action, [
-    AuthProviders? provider,
-    AuthType? type,
-  ]) : this._(action, loading: true, provider: provider, type: type);
+  const AuthResponse.loading([AuthProviders? provider, AuthType? type])
+      : this._(loading: true, provider: provider, type: type);
 
   const AuthResponse.guest(
-    AuthActions action,
     T? data, {
-    dynamic message,
+    dynamic msg,
     AuthProviders? provider,
     AuthType? type,
   }) : this._(
-          action,
           state: AuthState.guest,
           data: data,
-          message: message,
+          msg: msg,
           provider: provider,
           type: type,
         );
 
   const AuthResponse.authenticated(
-    AuthActions action,
     T? data, {
-    dynamic message,
+    dynamic msg,
     AuthProviders? provider,
     AuthType? type,
   }) : this._(
-          action,
           state: AuthState.authenticated,
           data: data,
-          message: message,
+          msg: msg,
           provider: provider,
           type: type,
         );
 
-  const AuthResponse.unauthenticated(
-    AuthActions action, {
-    dynamic message,
+  const AuthResponse.unauthenticated({
+    dynamic msg,
     AuthProviders? provider,
     AuthType? type,
   }) : this._(
-          action,
           state: AuthState.unauthenticated,
-          message: message,
+          msg: msg,
           provider: provider,
           type: type,
         );
 
   const AuthResponse.message(
-    AuthActions action,
-    dynamic message, {
+    dynamic msg, {
     AuthProviders? provider,
     AuthType? type,
-  }) : this._(action, message: message, provider: provider, type: type);
+  }) : this._(msg: msg, provider: provider, type: type);
 
   const AuthResponse.failure(
-    AuthActions action,
-    dynamic message, {
+    dynamic msg, {
     AuthProviders? provider,
     AuthType? type,
-  }) : this._(action, error: message, provider: provider, type: type);
+  }) : this._(error: msg, provider: provider, type: type);
 
   const AuthResponse.rollback(
-    AuthActions action,
     T? data, {
-    dynamic message,
+    dynamic msg,
     AuthProviders? provider,
     AuthType? type,
-  }) : this._(
-          action,
-          data: data,
-          message: message,
-          provider: provider,
-          type: type,
-        );
+  }) : this._(data: data, msg: msg, provider: provider, type: type);
 
-  const AuthResponse._(
-    AuthActions action, {
+  const AuthResponse._({
     this.data,
     bool? initial,
     bool? loading,
     dynamic error,
-    dynamic message,
+    dynamic msg,
     AuthProviders? provider,
     AuthState? state,
     AuthType? type,
-  })  : _action = action,
-        _initial = initial,
+  })  : _initial = initial,
         _loading = loading,
         _error = error != null ? "$error" : null,
-        _message = message != null ? "$message" : null,
+        _message = msg != null ? "$msg" : null,
         _provider = provider,
         _state = state,
         _type = type;

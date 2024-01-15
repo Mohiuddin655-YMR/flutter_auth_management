@@ -1,4 +1,9 @@
-part of 'core.dart';
+import 'package:flutter/material.dart';
+
+import '../core/typedefs.dart';
+import '../models/auth.dart';
+import '../models/auth_state.dart';
+import 'observer.dart';
 
 typedef AuthConsumerBuilder = Widget Function(
   BuildContext context,
@@ -27,9 +32,9 @@ class AuthConsumer<T extends Auth> extends StatefulWidget {
 }
 
 class _AuthConsumerState<T extends Auth> extends State<AuthConsumer<T>> {
-  AuthState state = AuthState.none;
+  AuthState state = AuthState.unauthenticated;
 
-  void _onStateChange(BuildContext context, AuthState state) {
+  void _onStatus(BuildContext context, AuthState state) {
     setState(() => this.state = state);
   }
 
@@ -40,7 +45,7 @@ class _AuthConsumerState<T extends Auth> extends State<AuthConsumer<T>> {
       onLoading: widget.onLoading,
       onMessage: widget.onMessage,
       onResponse: widget.onResponse,
-      onStateChange: _onStateChange,
+      onStatus: _onStatus,
       child: widget.builder(context, state),
     );
   }

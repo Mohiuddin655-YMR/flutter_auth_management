@@ -33,15 +33,15 @@ class _StartupPageState extends State<StartupPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: AuthObserver<UserModel>(
-        onError: _showSnackBar,
-        onMessage: _showSnackBar,
-        onLoading: _showLoading,
-        onResponse: _response,
-        onStateChange: _stateChange,
-        child: Center(
+    return AuthObserver<UserModel>(
+      onError: _showSnackBar,
+      onMessage: _showSnackBar,
+      onResponse: _response,
+      onLoading: _showLoading,
+      onStatus: _stateChange,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

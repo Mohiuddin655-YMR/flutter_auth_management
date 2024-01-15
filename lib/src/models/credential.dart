@@ -1,4 +1,4 @@
-part of 'models.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Credential {
   final String? accessToken;

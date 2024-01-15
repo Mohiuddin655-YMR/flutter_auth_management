@@ -1,5 +1,3 @@
-part of 'models.dart';
-
 enum AuthProviders {
   apple,
   biometric,

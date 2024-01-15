@@ -1,4 +1,15 @@
-part of 'sources.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:flutter_andomie/core.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+import '../../models/auth.dart';
+import '../../models/auth_providers.dart';
+import '../../models/biometric_config.dart';
+import '../../models/credential.dart';
+import '../../services/sources/auth_data_source.dart';
 
 class AuthDataSourceImpl extends AuthDataSource {
   ConnectivityProvider? _connectivity;
@@ -29,7 +40,8 @@ class AuthDataSourceImpl extends AuthDataSource {
     FirebaseAuth? firebaseAuth,
     LocalAuthentication? localAuth,
     GoogleSignIn? googleAuth,
-  })  : _connectivity = connectivity,
+  })
+      : _connectivity = connectivity,
         _facebookAuth = facebookAuth,
         _firebaseAuth = firebaseAuth,
         _localAuth = localAuth,
