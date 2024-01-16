@@ -21,7 +21,7 @@ class AuthResponse<T extends Auth> {
 
   bool get isMessage => message.isNotEmpty;
 
-  bool get isState => state != AuthState.unauthenticated;
+  bool get isState => _state != null;
 
   String get error => _error ?? "";
 

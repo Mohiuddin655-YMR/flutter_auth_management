@@ -1,3 +1,7 @@
+## 0.2.2
+
+* Authorization bug fixed
+
 ## 0.2.1
 
 ## 0.2.0

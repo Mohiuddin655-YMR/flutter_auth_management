@@ -41,7 +41,7 @@ class AuthProvider<T extends Auth> extends InheritedWidget {
 
   @override
   bool updateShouldNotify(covariant AuthProvider<T> oldWidget) {
-    return controller.value != oldWidget.controller.value;
+    return controller != oldWidget.controller;
   }
 
   void notify(AuthResponse<T> value) => controller.emit(value);
@@ -61,6 +61,12 @@ class _Support<T extends Auth> extends StatefulWidget {
 }
 
 class _SupportState<T extends Auth> extends State<_Support<T>> {
+  @override
+  void initState() {
+    widget.controller.initialize();
+    super.initState();
+  }
+
   @override
   void dispose() {
     widget.controller.dispose();

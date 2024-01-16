@@ -7,7 +7,6 @@ class AuthObserver<T extends Auth> extends StatelessWidget {
   final OnAuthLoadingListener? onLoading;
   final OnAuthMessageListener? onMessage;
   final OnAuthStateChangeListener? onStatus;
-  final OnAuthResponse<T>? onResponse;
   final Widget child;
 
   const AuthObserver({
@@ -16,7 +15,6 @@ class AuthObserver<T extends Auth> extends StatelessWidget {
     this.onLoading,
     this.onMessage,
     this.onStatus,
-    this.onResponse,
     required this.child,
   });
 
@@ -28,13 +26,12 @@ class AuthObserver<T extends Auth> extends StatelessWidget {
         onError: onError,
         onLoading: onLoading,
         onMessage: onMessage,
-        onStateChange: onStatus,
-        onResponse: onResponse,
+        onState: onStatus,
         child: child,
       );
     } catch (_) {
       throw AuthProviderException(
-        "You should apply like AuthObserver<${AuthProvider.type}>();",
+        "You should apply like AuthObserver<${AuthProvider.type}>()",
       );
     }
   }
@@ -45,8 +42,7 @@ class _Observer<T extends Auth> extends StatefulWidget {
   final OnAuthErrorListener? onError;
   final OnAuthLoadingListener? onLoading;
   final OnAuthMessageListener? onMessage;
-  final OnAuthStateChangeListener? onStateChange;
-  final OnAuthResponse<T>? onResponse;
+  final OnAuthStateChangeListener? onState;
   final Widget child;
 
   const _Observer({
@@ -54,8 +50,7 @@ class _Observer<T extends Auth> extends StatefulWidget {
     this.onError,
     this.onLoading,
     this.onMessage,
-    this.onStateChange,
-    this.onResponse,
+    this.onState,
     required this.child,
   });
 
@@ -66,41 +61,87 @@ class _Observer<T extends Auth> extends StatefulWidget {
 class _ObserverState<T extends Auth> extends State<_Observer<T>> {
   @override
   void initState() {
+    _addListeners(widget.controller);
     super.initState();
-    widget.controller.addListener(_change);
   }
 
   @override
   void didUpdateWidget(_Observer<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_change);
-      widget.controller.addListener(_change);
+      _removeListeners(oldWidget.controller);
+      _addListeners(widget.controller);
     }
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_change);
+    _removeListeners(widget.controller);
     super.dispose();
-  }
-
-  void _change() {
-    final data = widget.controller.value;
-    if (data.isMessage && widget.onMessage != null) {
-      widget.onMessage?.call(context, data.message);
-    }
-    if (data.isLoading && widget.onLoading != null) {
-      widget.onLoading?.call(context, data.isLoading);
-    } else if (data.isError && widget.onError != null) {
-      widget.onError?.call(context, data.error);
-    } else if (data.isState && widget.onStateChange != null) {
-      widget.onStateChange?.call(context, data.state);
-    } else if (widget.onResponse != null) {
-      widget.onResponse?.call(context, data);
-    }
   }
 
   @override
   Widget build(BuildContext context) => widget.child;
+
+  void _addListeners(AuthController<T> controller) {
+    if (widget.onError != null) {
+      controller.liveError.addListener(_changeError);
+    }
+    if (widget.onLoading != null) {
+      controller.liveLoading.addListener(_changeLoading);
+    }
+    if (widget.onMessage != null) {
+      controller.liveMessage.addListener(_changeMessage);
+    }
+    if (widget.onState != null) {
+      controller.liveState.addListener(_changeState);
+    }
+  }
+
+  void _removeListeners(AuthController<T> controller) {
+    if (widget.onError != null) {
+      controller.liveError.removeListener(_changeError);
+    }
+    if (widget.onLoading != null) {
+      controller.liveLoading.removeListener(_changeLoading);
+    }
+    if (widget.onMessage != null) {
+      controller.liveMessage.removeListener(_changeMessage);
+    }
+    if (widget.onState != null) {
+      controller.liveState.removeListener(_changeState);
+    }
+  }
+
+  void _changeError() {
+    if (widget.onError != null) {
+      final value = widget.controller.error;
+      if (value.isNotEmpty) {
+        widget.onError?.call(context, value);
+      }
+    }
+  }
+
+  void _changeLoading() {
+    if (widget.onLoading != null) {
+      final value = widget.controller.loading;
+      widget.onLoading?.call(context, value);
+    }
+  }
+
+  void _changeMessage() {
+    if (widget.onMessage != null) {
+      final value = widget.controller.message;
+      if (value.isNotEmpty) {
+        widget.onMessage?.call(context, value);
+      }
+    }
+  }
+
+  void _changeState() {
+    if (widget.onState != null) {
+      final value = widget.controller.state;
+      widget.onState?.call(context, value);
+    }
+  }
 }

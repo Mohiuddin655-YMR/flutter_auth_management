@@ -1,14 +1,15 @@
 import 'dart:async';
 
-import 'package:auth_management/src/utils/auth_notifier.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_andomie/core.dart';
 
 import '../models/auth.dart';
 import '../models/auth_providers.dart';
+import '../models/auth_state.dart';
 import '../models/biometric_config.dart';
 import '../services/controllers/controller.dart';
+import '../utils/auth_notifier.dart';
 import '../utils/auth_response.dart';
 import '../utils/authenticator.dart';
 import '../utils/authenticator_email.dart';
@@ -52,7 +53,25 @@ extension AuthContextExtension on BuildContext {
 
   Future<T?> auth<T extends Auth>() => _i<T>("auth").auth;
 
-  AuthNotifier<T> liveAuth<T extends Auth>() => _i<T>("liveAuth").liveAuth;
+  AuthNotifier<String> liveError<T extends Auth>() {
+    return _i<T>("liveError").liveError;
+  }
+
+  AuthNotifier<bool> liveLoading<T extends Auth>() {
+    return _i<T>("liveLoading").liveLoading;
+  }
+
+  AuthNotifier<String> liveMessage<T extends Auth>() {
+    return _i<T>("liveMessage").liveMessage;
+  }
+
+  AuthNotifier<T?> liveUser<T extends Auth>() {
+    return _i<T>("liveAuth").liveUser;
+  }
+
+  AuthNotifier<AuthState> liveState<T extends Auth>() {
+    return _i<T>("liveState").liveState;
+  }
 
   Future<bool> isBiometricEnabled<T extends Auth>() {
     return _i<T>("isBiometricEnabled").isBiometricEnabled;

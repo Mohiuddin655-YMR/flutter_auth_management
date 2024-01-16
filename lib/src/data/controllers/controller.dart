@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:developer';
 
-import 'package:auth_management/src/utils/auth_notifier.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_andomie/utils.dart';
 
@@ -8,6 +8,7 @@ import '../../core/messages.dart';
 import '../../core/typedefs.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
+import '../../models/auth_state.dart';
 import '../../models/auth_type.dart';
 import '../../models/biometric_config.dart';
 import '../../services/controllers/controller.dart';
@@ -15,6 +16,7 @@ import '../../services/handlers/auth_handler.dart';
 import '../../services/handlers/backup_handler.dart';
 import '../../services/sources/auth_data_source.dart';
 import '../../services/sources/backup_data_source.dart';
+import '../../utils/auth_notifier.dart';
 import '../../utils/auth_response.dart';
 import '../../utils/authenticator.dart';
 import '../../utils/authenticator_email.dart';
@@ -28,7 +30,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   final AuthMessages msg;
   final AuthHandler authHandler;
   final BackupHandler<T> backupHandler;
-  final AuthNotifier<T> notifier = AuthNotifier();
+  final _errorNotifier = AuthNotifier("");
+  final _loadingNotifier = AuthNotifier(false);
+  final _messageNotifier = AuthNotifier("");
+  final _userNotifier = AuthNotifier<T?>(null);
+  final _stateNotifier = AuthNotifier(AuthState.unauthenticated);
 
   Future<T?> get _auth => backupHandler.cache;
 
@@ -48,8 +54,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     AuthMessages? messages,
   })  : msg = messages ?? const AuthMessages(),
         authHandler = authHandler ?? AuthHandlerImpl(),
-        backupHandler = backupHandler ?? BackupHandlerImpl<T>(),
-        super(const AuthResponse.initial());
+        backupHandler = backupHandler ?? BackupHandlerImpl<T>();
 
   @override
   Future<T?> get auth {
@@ -59,10 +64,37 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  AuthNotifier<T> get liveAuth => notifier;
+  String get error => _errorNotifier.value;
 
   @override
-  Future<bool> get isBiometricEnabled async {
+  bool get loading => _loadingNotifier.value;
+
+  @override
+  String get message => _messageNotifier.value;
+
+  @override
+  AuthState get state => _stateNotifier.value;
+
+  @override
+  T? get user => _userNotifier.value;
+
+  @override
+  AuthNotifier<String> get liveError => _errorNotifier;
+
+  @override
+  AuthNotifier<bool> get liveLoading => _loadingNotifier;
+
+  @override
+  AuthNotifier<String> get liveMessage => _messageNotifier;
+
+  @override
+  AuthNotifier<AuthState> get liveState => _stateNotifier;
+
+  @override
+  AuthNotifier<T?> get liveUser => _userNotifier;
+
+  @override
+  Future<bool> get isBiometricEnabled {
     return _auth.then((value) => value != null && value.isBiometric);
   }
 
@@ -72,38 +104,93 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
+  Future<T?> initialize() {
+    return auth.then((value) async {
+      if (value != null && value.isLoggedIn) {
+        _stateNotifier.value = AuthState.authenticated;
+      } else {
+        _stateNotifier.value = AuthState.unauthenticated;
+      }
+      _notifyUser(value);
+      return value;
+    });
+  }
+
+  void _notifyError(AuthResponse<T> data) {
+    if (data.isError) {
+      _errorNotifier.notifiable = data.error;
+    }
+  }
+
+  void _notifyLoading(bool data) {
+    if (loading != data) {
+      _loadingNotifier.value = data;
+    }
+  }
+
+  void _notifyMessage(AuthResponse<T> data) {
+    if (data.isMessage) {
+      _errorNotifier.notifiable = data.error;
+    }
+  }
+
+  void _notifyState(AuthResponse<T> data) {
+    if (data.isState && _stateNotifier.value != data.state) {
+      _stateNotifier.value = data.state;
+    }
+  }
+
+  void _notifyUser(T? data) {
+    if (data != null) {
+      _userNotifier.value = data;
+    }
+  }
+
+  @override
   Future<AuthResponse<T>> emit(AuthResponse<T> data) async {
-    value = data;
+    _notifyLoading(data.isLoading);
+    _notifyError(data);
+    _notifyMessage(data);
+    _notifyState(data);
+    _notifyUser(data.data);
     return data;
   }
 
   @override
   void dispose() {
-    super.dispose();
-    notifier.dispose();
+    _errorNotifier.dispose();
+    _loadingNotifier.dispose();
+    _messageNotifier.dispose();
+    _stateNotifier.dispose();
+    _userNotifier.dispose();
   }
 
   Future<bool> _clear() {
+    _notifyLoading(true);
     return backupHandler.clear().then((clear) {
-      if (clear) notifier.notify(null);
+      if (clear) _notifyUser(null);
+      _notifyLoading(false);
       return clear;
     });
   }
 
   @override
   Future<T?> update(Map<String, dynamic> data) {
+    _notifyLoading(true);
     return auth.then((user) {
       if (user != null) {
         return backupHandler.update(user.id, data).then((value) {
           return auth.then((update) {
-            notifier.notify(update);
+            _notifyLoading(false);
+            _notifyUser(update);
             return update;
           });
         });
       } else {
         final current = backupHandler.build(data);
         return backupHandler.set(current).then((value) {
-          notifier.notify(current);
+          _notifyLoading(false);
+          _notifyUser(current);
           return current;
         });
       }
@@ -194,27 +281,28 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> isSignIn([
     AuthProviders? provider,
   ]) async {
+    emit(AuthResponse.loading(provider));
     try {
       final signedIn = await authHandler.isSignIn(provider);
       final data = signedIn ? await auth : null;
       if (data != null) {
-        return AuthResponse.authenticated(
+        return emit(AuthResponse.authenticated(
           data,
           provider: provider,
           type: AuthType.signedIn,
-        );
+        ));
       } else {
-        return AuthResponse.unauthenticated(
+        return emit(AuthResponse.unauthenticated(
           provider: provider,
           type: AuthType.signedIn,
-        );
+        ));
       }
     } catch (_) {
-      return AuthResponse.failure(
+      return emit(AuthResponse.failure(
         msg.loggedIn.failure ?? _,
         provider: provider,
         type: AuthType.signedIn,
-      );
+      ));
     }
   }
 
@@ -391,9 +479,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.email, AuthType.login));
     final email = authenticator.email;
     final password = authenticator.password;
+    log("signInByEmail(): $email, $password");
     if (!Validator.isValidEmail(email)) {
       return emit(AuthResponse.failure(
         msg.email,
@@ -408,6 +496,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       ));
     } else {
       try {
+        emit(const AuthResponse.loading(AuthProviders.email, AuthType.login));
         final response = await authHandler.signInWithEmailNPassword(
           email: email,
           password: password,

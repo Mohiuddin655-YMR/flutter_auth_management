@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:auth_management/src/utils/auth_notifier.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_andomie/utils.dart';
 
 import '../../core/messages.dart';
@@ -10,7 +8,9 @@ import '../../core/typedefs.dart';
 import '../../data/controllers/controller.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
+import '../../models/auth_state.dart';
 import '../../models/biometric_config.dart';
+import '../../utils/auth_notifier.dart';
 import '../../utils/auth_response.dart';
 import '../../utils/authenticator.dart';
 import '../../utils/authenticator_email.dart';
@@ -22,10 +22,7 @@ import '../handlers/backup_handler.dart';
 import '../sources/auth_data_source.dart';
 import '../sources/backup_data_source.dart';
 
-abstract class AuthController<T extends Auth>
-    extends ValueNotifier<AuthResponse<T>> {
-  AuthController(super.value);
-
+abstract class AuthController<T extends Auth> {
   static AuthController<T> getInstance<T extends Auth>({
     AuthDataSource? auth,
     BackupDataSource<T>? backup,
@@ -58,9 +55,49 @@ abstract class AuthController<T extends Auth>
     throw UnimplementedError('auth is not implemented');
   }
 
-  AuthNotifier<T> get liveAuth {
-    throw UnimplementedError('liveAuth is not implemented');
+  String get error {
+    throw UnimplementedError('error is not implemented');
   }
+
+  bool get loading {
+    throw UnimplementedError('loading is not implemented');
+  }
+
+  String get message {
+    throw UnimplementedError('message is not implemented');
+  }
+
+  AuthState get state {
+    throw UnimplementedError('state is not implemented');
+  }
+
+  T? get user {
+    throw UnimplementedError('user is not implemented');
+  }
+
+  AuthNotifier<String> get liveError {
+    throw UnimplementedError('liveError is not implemented');
+  }
+
+  AuthNotifier<bool> get liveLoading {
+    throw UnimplementedError('liveLoading is not implemented');
+  }
+
+  AuthNotifier<String> get liveMessage {
+    throw UnimplementedError('liveMessage is not implemented');
+  }
+
+  AuthNotifier<AuthState> get liveState {
+    throw UnimplementedError('liveState is not implemented');
+  }
+
+  AuthNotifier<T?> get liveUser {
+    throw UnimplementedError('liveUser is not implemented');
+  }
+
+  Future<T?> initialize();
+
+  void dispose();
 
   Future<bool> get isBiometricEnabled {
     throw UnimplementedError('isBiometricEnabled is not implemented');

@@ -1,8 +1,8 @@
+import 'dart:developer';
+
 import 'package:auth_management/core.dart';
 import 'package:flutter/material.dart';
 
-import 'home_page.dart';
-import 'login_page.dart';
 import 'user.dart';
 
 class StartupPage extends StatefulWidget {
@@ -13,32 +13,39 @@ class StartupPage extends StatefulWidget {
 }
 
 class _StartupPageState extends State<StartupPage> {
-  void _response(BuildContext context, AuthResponse<UserModel> response) {}
-
-  void _showSnackBar(BuildContext context, String msg) {
+  void _showError(BuildContext context, String error) {
+    log("AUTH ERROR : $error");
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
+      SnackBar(content: Text(error)),
     );
   }
 
-  void _showLoading(BuildContext context, bool loading) {}
+  void _showLoading(BuildContext context, bool loading) {
+    log("AUTH LOADING : $loading");
+  }
 
-  void _stateChange(BuildContext context, AuthState state) {
+  void _showMessage(BuildContext context, String message) {
+    log("AUTH MESSAGE : $message");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  void _status(BuildContext context, AuthState state) {
+    log("AUTH STATUS : $state");
     if (state.isAuthenticated) {
-      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) {
-        return const HomePage();
-      }), (route) => false);
+      Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    log("STARTUP PAGE");
     return AuthObserver<UserModel>(
-      onError: _showSnackBar,
-      onMessage: _showSnackBar,
-      onResponse: _response,
+      onError: _showError,
+      onMessage: _showMessage,
       onLoading: _showLoading,
-      onStatus: _stateChange,
+      onStatus: _status,
       child: Scaffold(
         backgroundColor: Colors.white,
         body: Center(
@@ -47,18 +54,14 @@ class _StartupPageState extends State<StartupPage> {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) {
-                    return const LoginPage();
-                  }));
+                  Navigator.pushNamed(context, "login");
                 },
                 child: const Text("Login"),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) {
-                    return const LoginPage();
-                  }));
+                  Navigator.pushNamed(context, "login");
                 },
                 child: const Text("Register"),
               ),

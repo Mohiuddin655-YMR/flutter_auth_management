@@ -1,4 +1,6 @@
 import 'package:auth_management/core.dart';
+import 'package:example/home_page.dart';
+import 'package:example/login_page.dart';
 import 'package:example/startup.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +23,30 @@ class Application extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'Auth Management',
-      home: StartupPage(),
+      onGenerateRoute: routes,
+    );
+  }
+}
+
+Route<T> routes<T>(RouteSettings settings) {
+  final name = settings.name;
+  if (name == "home") {
+    return MaterialPageRoute(
+      builder: (_) {
+        return const HomePage();
+      },
+    );
+  } else if (name == "login") {
+    return MaterialPageRoute(
+      builder: (_) {
+        return const LoginPage();
+      },
+    );
+  } else {
+    return MaterialPageRoute(
+      builder: (_) {
+        return const StartupPage();
+      },
     );
   }
 }

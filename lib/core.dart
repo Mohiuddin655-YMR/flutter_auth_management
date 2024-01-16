@@ -31,8 +31,6 @@ export 'src/utils/authenticator_email.dart';
 export 'src/utils/authenticator_oauth.dart';
 export 'src/utils/authenticator_phone.dart';
 export 'src/utils/authenticator_username.dart';
-export 'src/widgets/builder.dart';
 export 'src/widgets/consumer.dart';
 export 'src/widgets/observer.dart';
 export 'src/widgets/provider.dart';
-export 'src/widgets/user.dart';
