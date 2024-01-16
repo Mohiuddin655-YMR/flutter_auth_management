@@ -1,40 +1,40 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
 import 'authenticator.dart';
+import 'authenticator_otp.dart';
 
 class PhoneAuthenticator extends Authenticator {
-  final PhoneAuthCredential? credential;
-
   PhoneAuthenticator({
-    required String verificationId,
-    required String smsCode,
     required super.phone,
-    super.email,
+    String? token,
     super.id,
     super.timeMills,
+    super.email,
+    super.idToken,
     super.name,
     super.photo,
     super.provider,
     super.username,
-  })  : credential = null,
-        super.phone(idToken: verificationId, accessToken: smsCode);
+    super.extra,
+  }) : super.phone(accessToken: token);
 
-  PhoneAuthenticator.fromCredential({
-    required PhoneAuthCredential this.credential,
-    required super.phone,
-    super.email,
-    super.id,
-    super.timeMills,
-    super.name,
-    super.photo,
-    super.provider,
-    super.username,
-  }) : super.phone(idToken: "", accessToken: "");
+  OtpAuthenticator otp({
+    required String token,
+    required String smsCode,
+  }) {
+    return OtpAuthenticator(
+      token: token,
+      smsCode: smsCode,
+      email: email,
+      extra: extra,
+      id: id,
+      name: name,
+      phone: phone,
+      photo: photo,
+      provider: provider,
+      timeMills: timeMills,
+      username: username,
+    );
+  }
 
   @override
   String get phone => super.phone ?? "";
-
-  String get smsCode => super.accessToken ?? "";
-
-  String get verificationId => super.idToken ?? "";
 }

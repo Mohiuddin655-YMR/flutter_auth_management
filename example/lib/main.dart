@@ -10,10 +10,7 @@ import 'user.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(AuthProvider<UserModel>(
-    controller: AuthController.getInstance<UserModel>(backup: UserBackup()),
-    child: const Application(),
-  ));
+  runApp(const Application());
 }
 
 class Application extends StatelessWidget {
@@ -21,9 +18,14 @@ class Application extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Auth Management',
-      onGenerateRoute: routes,
+    return AuthProvider<UserModel>(
+      controller: AuthController.getInstance<UserModel>(
+        backup: UserBackup(),
+      ),
+      child: const MaterialApp(
+        title: 'Auth Management',
+        onGenerateRoute: routes,
+      ),
     );
   }
 }

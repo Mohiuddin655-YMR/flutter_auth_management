@@ -5,6 +5,7 @@ enum AuthType {
   login,
   logout,
   register,
+  otp,
   phone,
   signedIn,
   none;
@@ -18,6 +19,8 @@ enum AuthType {
   bool get isLogin => this == login;
 
   bool get isLogout => this == logout;
+
+  bool get isOTP => this == otp;
 
   bool get isPhone => this == phone;
 

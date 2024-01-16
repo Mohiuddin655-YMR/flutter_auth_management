@@ -40,7 +40,8 @@ class AuthDataSourceImpl extends AuthDataSource {
     FirebaseAuth? firebaseAuth,
     LocalAuthentication? localAuth,
     GoogleSignIn? googleAuth,
-  })  : _connectivity = connectivity,
+  })
+      : _connectivity = connectivity,
         _facebookAuth = facebookAuth,
         _firebaseAuth = firebaseAuth,
         _localAuth = localAuth,

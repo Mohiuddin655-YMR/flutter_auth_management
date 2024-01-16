@@ -11,6 +11,7 @@ class EmailAuthenticator extends Authenticator {
     super.photo,
     super.provider,
     super.username,
+    super.extra,
   }) : super.email();
 
   @override

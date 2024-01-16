@@ -73,7 +73,7 @@ class UserModel extends Auth<UserKeys> {
     String? id,
     int? timeMills,
     String? accessToken,
-    bool? biometric,
+    String? biometric,
     String? email,
     Map<String, dynamic>? extra,
     String? idToken,

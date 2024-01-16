@@ -4,9 +4,10 @@ class AuthMessages {
   final String? email;
   final String? error;
   final String? otp;
+  final String? phoneNumber;
   final String? password;
   final String? username;
-  final String? verificationId;
+  final String? token;
 
   final AuthMessage delete;
 
@@ -33,9 +34,10 @@ class AuthMessages {
     this.email = "Email isn't valid!",
     this.error = "Something went wrong, please try again!",
     this.otp = "OTP Code isn't valid!",
+    this.phoneNumber = "Phone number isn't valid!",
     this.password = "Password isn't valid!",
     this.username = "Username isn't valid!",
-    this.verificationId = "Verification ID isn't valid!",
+    this.token = "Token isn't valid!",
     this.delete = const AuthMessage(
       done: "User deleted!",
       failure: "User not deleted!",

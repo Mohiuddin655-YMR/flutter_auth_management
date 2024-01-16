@@ -1,3 +1,7 @@
+## 0.2.3
+
+* Add new features
+
 ## 0.2.2
 
 * Authorization bug fixed

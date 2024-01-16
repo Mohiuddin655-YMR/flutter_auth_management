@@ -165,7 +165,7 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<void>> verifyPhoneNumber({
+  Future<Response<void>> signInByPhone({
     String? phoneNumber,
     int? forceResendingToken,
     PhoneMultiFactorInfo? multiFactorInfo,

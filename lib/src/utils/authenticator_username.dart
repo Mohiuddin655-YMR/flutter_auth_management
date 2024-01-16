@@ -11,6 +11,7 @@ class UsernameAuthenticator extends Authenticator {
     super.phone,
     super.photo,
     super.provider,
+    super.extra,
   }) : super.username();
 
   @override

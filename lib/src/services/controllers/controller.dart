@@ -12,9 +12,9 @@ import '../../models/auth_state.dart';
 import '../../models/biometric_config.dart';
 import '../../utils/auth_notifier.dart';
 import '../../utils/auth_response.dart';
-import '../../utils/authenticator.dart';
 import '../../utils/authenticator_email.dart';
 import '../../utils/authenticator_oauth.dart';
+import '../../utils/authenticator_otp.dart';
 import '../../utils/authenticator_phone.dart';
 import '../../utils/authenticator_username.dart';
 import '../handlers/auth_handler.dart';
@@ -119,14 +119,14 @@ abstract class AuthController<T extends Auth> {
     throw UnimplementedError('delete() is not implemented');
   }
 
-  Future<bool> addBiometric(
-    bool enabled, {
+  Future<Response<bool>> addBiometric({
+    required SignByBiometricCallback callback,
     BiometricConfig? config,
   }) {
     throw UnimplementedError('addBiometric() is not implemented');
   }
 
-  Future<bool> biometricEnable(bool enabled) {
+  Future<Response<bool>> biometricEnable(bool enabled) {
     throw UnimplementedError('biometricEnable() is not implemented');
   }
 
@@ -137,7 +137,7 @@ abstract class AuthController<T extends Auth> {
   }
 
   Future<AuthResponse<T>> signInByApple({
-    Authenticator? authenticator,
+    OAuthAuthenticator? authenticator,
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
@@ -183,10 +183,23 @@ abstract class AuthController<T extends Auth> {
 
   Future<AuthResponse<T>> signInByPhone(
     PhoneAuthenticator authenticator, {
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(minutes: 2),
+    void Function(PhoneAuthCredential credential)? onComplete,
+    void Function(FirebaseAuthException exception)? onFailed,
+    void Function(String verId, int? forceResendingToken)? onCodeSent,
+    void Function(String verId)? onCodeAutoRetrievalTimeout,
+  }) {
+    throw UnimplementedError('signInByPhone() is not implemented');
+  }
+
+  Future<AuthResponse<T>> signInByOtp(
+    OtpAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
-    throw UnimplementedError('signInByPhone() is not implemented');
+    throw UnimplementedError('signInByOtp() is not implemented');
   }
 
   Future<AuthResponse<T>> signInByUsername(
@@ -214,19 +227,5 @@ abstract class AuthController<T extends Auth> {
     AuthProviders provider = AuthProviders.none,
   ]) {
     throw UnimplementedError('signOut() is not implemented');
-  }
-
-  Future<Response<void>> verifyPhoneNumber(
-    String phoneNumber, {
-    int? forceResendingToken,
-    PhoneMultiFactorInfo? multiFactorInfo,
-    MultiFactorSession? multiFactorSession,
-    Duration timeout = const Duration(minutes: 2),
-    void Function(PhoneAuthCredential credential)? onComplete,
-    void Function(FirebaseAuthException exception)? onFailed,
-    void Function(String verId, int? forceResendingToken)? onCodeSent,
-    void Function(String verId)? onCodeAutoRetrievalTimeout,
-  }) {
-    throw UnimplementedError('verifyPhoneNumber() is not implemented');
   }
 }

@@ -56,7 +56,7 @@ abstract class AuthHandler {
     required String password,
   });
 
-  Future<Response<void>> verifyPhoneNumber({
+  Future<Response<void>> signInByPhone({
     String? phoneNumber,
     int? forceResendingToken,
     PhoneMultiFactorInfo? multiFactorInfo,

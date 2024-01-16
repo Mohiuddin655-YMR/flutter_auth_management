@@ -32,19 +32,33 @@ class Authenticator extends Auth {
     super.extra,
   }) : super();
 
-  Authenticator.phone({
-    required String phone,
+  Authenticator.otp({
     required String idToken,
     required String accessToken,
     super.id,
     super.timeMills,
     super.name,
     super.email,
+    super.phone,
     super.photo,
     super.provider,
     super.username,
     super.extra,
-  }) : super(phone: phone, idToken: idToken, accessToken: accessToken);
+  }) : super(idToken: idToken, accessToken: accessToken);
+
+  Authenticator.phone({
+    required String phone,
+    super.id,
+    super.timeMills,
+    super.accessToken,
+    super.idToken,
+    super.name,
+    super.email,
+    super.photo,
+    super.provider,
+    super.username,
+    super.extra,
+  }) : super(phone: phone);
 
   Authenticator.username({
     required String username,

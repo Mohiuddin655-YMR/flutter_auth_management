@@ -53,4 +53,6 @@ enum AuthProviders {
   bool get isUsername => this == AuthProviders.username;
 
   bool get isNone => this == AuthProviders.none;
+
+  bool get isAllowBiometric => isEmail || isUsername;
 }

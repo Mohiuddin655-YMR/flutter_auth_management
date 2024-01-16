@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_andomie/core.dart';
 
 import '../utils/auth_helper.dart';
+import 'auth_providers.dart';
+import 'biometric_status.dart';
 
 /// ## Create an authorized key class for User:
 ///
@@ -58,6 +60,17 @@ class AuthKeys extends EntityKey {
 /// ## Create an authorized model class for User:
 ///
 /// ```dart
+/// class UserKeys extends AuthKeys {
+///   final address = "address";
+///   final contact = "contact";
+///
+///   const UserKeys._();
+///
+///   static UserKeys? _i;
+///
+///   static UserKeys get i => _i ??= const UserKeys._();
+/// }
+///
 /// class UserModel extends Auth<UserKeys> {
 ///   final Address? _address;
 ///   final Contact? _contact;
@@ -117,7 +130,7 @@ class AuthKeys extends EntityKey {
 ///     String? id,
 ///     int? timeMills,
 ///     String? accessToken,
-///     bool? biometric,
+///     String? biometric,
 ///     String? email,
 ///     Map<String, dynamic>? extra,
 ///     String? idToken,
@@ -182,7 +195,7 @@ class AuthKeys extends EntityKey {
 
 class Auth<Key extends AuthKeys> extends Entity<Key> {
   final String? accessToken;
-  final bool? biometric;
+  final String? biometric;
   final String? idToken;
   final String? email;
   final Map<String, dynamic>? extra;
@@ -194,11 +207,15 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
   final String? provider;
   final String? username;
 
-  bool get isBiometric => biometric ?? false;
-
   bool get isLoggedIn => loggedIn ?? false;
 
   bool get isCurrentUid => id == AuthHelper.uid;
+
+  bool get isBiometric => mBiometric.isActivated;
+
+  BiometricStatus get mBiometric => BiometricStatus.from(biometric);
+
+  AuthProviders get mProvider => AuthProviders.from(provider);
 
   Auth({
     super.id,
@@ -221,7 +238,7 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
     String? id,
     int? timeMills,
     String? accessToken,
-    bool? biometric,
+    String? biometric,
     String? email,
     Map<String, dynamic>? extra,
     String? idToken,
