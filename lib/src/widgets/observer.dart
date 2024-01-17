@@ -65,7 +65,7 @@ class _Observer<T extends Auth> extends StatefulWidget {
 
 class _ObserverState<T extends Auth> extends State<_Observer<T>>
     with WidgetsBindingObserver {
-  bool _isActiveMode = false;
+  bool _isActiveMode = true;
 
   @override
   void initState() {
