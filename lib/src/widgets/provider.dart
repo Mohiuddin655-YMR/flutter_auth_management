@@ -34,7 +34,7 @@ class AuthProvider<T extends Auth> extends InheritedWidget {
       return of<T>(context).controller;
     } catch (_) {
       throw AuthProviderException(
-        "You should call like of<${AuthProvider.type}>();",
+        "You should call like controllerOf<${AuthProvider.type}>();",
       );
     }
   }
@@ -48,10 +48,12 @@ class AuthProvider<T extends Auth> extends InheritedWidget {
 }
 
 class _Support<T extends Auth> extends StatefulWidget {
+  final bool initialCheck;
   final AuthController<T> controller;
   final Widget child;
 
   const _Support({
+    this.initialCheck = false,
     required this.child,
     required this.controller,
   });
@@ -63,7 +65,7 @@ class _Support<T extends Auth> extends StatefulWidget {
 class _SupportState<T extends Auth> extends State<_Support<T>> {
   @override
   void initState() {
-    widget.controller.initialize();
+    widget.controller.initialize(widget.initialCheck);
     super.initState();
   }
 

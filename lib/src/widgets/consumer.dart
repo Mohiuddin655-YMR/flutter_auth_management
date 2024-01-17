@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/extensions.dart';
 import '../models/auth.dart';
-import '../utils/auth_notifier.dart';
+import '../services/controllers/controller.dart';
 import '../utils/errors.dart';
 import 'provider.dart';
 
@@ -25,12 +25,13 @@ class AuthConsumer<T extends Auth> extends StatelessWidget {
   Widget build(BuildContext context) {
     try {
       return _Support<T>(
-        notifier: context.liveUser<T>(),
+        controller: context.findAuthController<T>(),
+        initial: initial,
         builder: builder,
       );
     } catch (_) {
       throw AuthProviderException(
-        "You should apply like AuthorizedUser<${AuthProvider.type}>();",
+        "You should apply like AuthConsumer<${AuthProvider.type}>();",
       );
     }
   }
@@ -38,13 +39,13 @@ class AuthConsumer<T extends Auth> extends StatelessWidget {
 
 class _Support<T extends Auth> extends StatefulWidget {
   final T? initial;
-  final AuthNotifier<T?> notifier;
+  final AuthController<T> controller;
   final OnAuthUserBuilder<T> builder;
 
   const _Support({
     super.key,
     this.initial,
-    required this.notifier,
+    required this.controller,
     required this.builder,
   });
 
@@ -58,27 +59,29 @@ class _SupportState<T extends Auth> extends State<_Support<T>> {
   @override
   void initState() {
     super.initState();
-    _data = widget.notifier.value;
-    widget.notifier.addListener(_change);
+    widget.controller.auth.then(_change);
+    widget.controller.liveUser.addListener(_change);
   }
 
   @override
   void didUpdateWidget(_Support<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.notifier != widget.notifier) {
-      oldWidget.notifier.removeListener(_change);
-      widget.notifier.addListener(_change);
-      _data = widget.notifier.value;
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.liveUser.removeListener(_change);
+      widget.controller.liveUser.addListener(_change);
+      widget.controller.auth.then(_change);
     }
   }
 
   @override
   void dispose() {
-    widget.notifier.removeListener(_change);
+    widget.controller.liveUser.removeListener(_change);
     super.dispose();
   }
 
-  void _change() => setState(() => _data = widget.notifier.value);
+  void _change([T? data]) {
+    setState(() => _data = data ?? widget.controller.liveUser.value);
+  }
 
   @override
   Widget build(BuildContext context) {

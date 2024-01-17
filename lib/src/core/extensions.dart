@@ -132,9 +132,9 @@ extension AuthContextExtension on BuildContext {
   }
 
   Future<AuthResponse<T>> signInByEmail<T extends Auth>(
-      EmailAuthenticator authenticator, {
-        SignByBiometricCallback? onBiometric,
-      }) {
+    EmailAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) {
     return _i<T>("signInByEmail").signInByEmail(
       authenticator,
       onBiometric: onBiometric,
@@ -178,15 +178,15 @@ extension AuthContextExtension on BuildContext {
   }
 
   Future<AuthResponse<T>> signInByPhone<T extends Auth>(
-      PhoneAuthenticator authenticator, {
-        PhoneMultiFactorInfo? multiFactorInfo,
-        MultiFactorSession? multiFactorSession,
-        Duration timeout = const Duration(minutes: 2),
-        void Function(PhoneAuthCredential credential)? onComplete,
-        void Function(FirebaseAuthException exception)? onFailed,
-        void Function(String verId, int? forceResendingToken)? onCodeSent,
-        void Function(String verId)? onCodeAutoRetrievalTimeout,
-      }) {
+    PhoneAuthenticator authenticator, {
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
+    Duration timeout = const Duration(minutes: 2),
+    void Function(PhoneAuthCredential credential)? onComplete,
+    void Function(FirebaseAuthException exception)? onFailed,
+    void Function(String verId, int? forceResendingToken)? onCodeSent,
+    void Function(String verId)? onCodeAutoRetrievalTimeout,
+  }) {
     return _i<T>("signInByPhone").signInByPhone(
       authenticator,
       multiFactorInfo: multiFactorInfo,
@@ -200,10 +200,10 @@ extension AuthContextExtension on BuildContext {
   }
 
   Future<AuthResponse<T>> signInByOtp<T extends Auth>(
-      OtpAuthenticator authenticator, {
-        SignByBiometricCallback? onBiometric,
-        bool storeToken = false,
-      }) {
+    OtpAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+    bool storeToken = false,
+  }) {
     return _i<T>("signInByOtp").signInByOtp(
       authenticator,
       onBiometric: onBiometric,
@@ -212,9 +212,9 @@ extension AuthContextExtension on BuildContext {
   }
 
   Future<AuthResponse<T>> signInByUsername<T extends Auth>(
-      UsernameAuthenticator authenticator, {
-        SignByBiometricCallback? onBiometric,
-      }) {
+    UsernameAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) {
     return _i<T>("signInByUsername").signInByUsername(
       authenticator,
       onBiometric: onBiometric,
@@ -222,9 +222,9 @@ extension AuthContextExtension on BuildContext {
   }
 
   Future<AuthResponse<T>> signUpByEmail<T extends Auth>(
-      EmailAuthenticator authenticator, {
-        SignByBiometricCallback? onBiometric,
-      }) {
+    EmailAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) {
     return _i<T>("signUpByEmail").signUpByEmail(
       authenticator,
       onBiometric: onBiometric,
@@ -232,9 +232,9 @@ extension AuthContextExtension on BuildContext {
   }
 
   Future<AuthResponse<T>> signUpByUsername<T extends Auth>(
-      UsernameAuthenticator authenticator, {
-        SignByBiometricCallback? onBiometric,
-      }) {
+    UsernameAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) {
     return _i<T>("signUpByUsername").signUpByUsername(
       authenticator,
       onBiometric: onBiometric,

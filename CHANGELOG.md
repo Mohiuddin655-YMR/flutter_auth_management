@@ -1,3 +1,7 @@
+## 0.2.4
+
+* Update loading feature
+
 ## 0.2.3
 
 * Add new features

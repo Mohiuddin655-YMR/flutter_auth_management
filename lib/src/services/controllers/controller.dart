@@ -95,9 +95,13 @@ abstract class AuthController<T extends Auth> {
     throw UnimplementedError('liveUser is not implemented');
   }
 
-  Future<T?> initialize();
+  Future<T?> initialize([bool initialCheck = true]) {
+    throw UnimplementedError('initialize is not implemented');
+  }
 
-  void dispose();
+  void dispose() {
+    throw UnimplementedError('dispose is not implemented');
+  }
 
   Future<bool> get isBiometricEnabled {
     throw UnimplementedError('isBiometricEnabled is not implemented');
