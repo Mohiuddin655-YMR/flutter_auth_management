@@ -1,3 +1,7 @@
+## 0.2.5
+
+* Update observer status
+
 ## 0.2.4
 
 * Update loading feature
