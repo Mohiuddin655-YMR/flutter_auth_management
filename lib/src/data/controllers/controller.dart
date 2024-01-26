@@ -44,16 +44,17 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     AuthorizedDataSource<T>? backup,
     AuthMessages? messages,
   }) : this.fromHandler(
-          messages: messages,
-          authHandler: AuthHandlerImpl(source: auth),
-          backupHandler: BackupHandlerImpl<T>(source: backup),
-        );
+    messages: messages,
+    authHandler: AuthHandlerImpl(source: auth),
+    backupHandler: BackupHandlerImpl<T>(source: backup),
+  );
 
   AuthControllerImpl.fromHandler({
     AuthHandler? authHandler,
     BackupHandler<T>? backupHandler,
     AuthMessages? messages,
-  })  : msg = messages ?? const AuthMessages(),
+  })
+      : msg = messages ?? const AuthMessages(),
         authHandler = authHandler ?? AuthHandlerImpl(),
         backupHandler = backupHandler ?? BackupHandlerImpl<T>();
 
@@ -272,7 +273,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         if (response.isSuccessful) {
           final biometric = await callback(auth.mBiometric);
           return update(
-            auth.copy(biometric: biometric?.name ?? auth.biometric).source,
+            auth
+                .copy(biometric: biometric?.name ?? auth.biometric)
+                .source,
           ).then((_) => Response(status: Status.ok, data: true));
         } else {
           return Response(
@@ -302,7 +305,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     if (permission) {
       try {
         final activated = BiometricStatus.value(enabled);
-        return update(auth.copy(biometric: activated.name).source).then((_) {
+        return update(auth
+            .copy(biometric: activated.name)
+            .source).then((_) {
           return Response(status: Status.ok, data: true);
         });
       } catch (_) {
@@ -378,7 +383,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -478,7 +485,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           }
           if (current.isSuccessful) {
-            return update(user.copy(loggedIn: true).source).then((value) {
+            final data = <String, dynamic>{
+              AuthKeys.i.loggedIn: true,
+              AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+            };
+            return update(data).then((value) {
               return emit(AuthResponse.authenticated(
                 value,
                 msg: msg.signInWithBiometric.done,
@@ -517,8 +528,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> signInByEmail(
-    EmailAuthenticator authenticator, {
+  Future<AuthResponse<T>> signInByEmail(EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
     final email = authenticator.email;
@@ -558,7 +568,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -634,7 +646,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -716,7 +730,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -798,7 +814,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -848,8 +866,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> signInByPhone(
-    PhoneAuthenticator authenticator, {
+  Future<AuthResponse<T>> signInByPhone(PhoneAuthenticator authenticator, {
     PhoneMultiFactorInfo? multiFactorInfo,
     MultiFactorSession? multiFactorSession,
     Duration timeout = const Duration(minutes: 2),
@@ -944,8 +961,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> signInByOtp(
-    OtpAuthenticator authenticator, {
+  Future<AuthResponse<T>> signInByOtp(OtpAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
@@ -991,7 +1007,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -1035,10 +1053,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> signInByUsername(
-    UsernameAuthenticator authenticator, {
-    SignByBiometricCallback? onBiometric,
-  }) async {
+  Future<AuthResponse<T>> signInByUsername(UsernameAuthenticator authenticator,
+      {
+        SignByBiometricCallback? onBiometric,
+      }) async {
     final username = authenticator.username;
     final password = authenticator.password;
     if (!Validator.isValidUsername(username)) {
@@ -1079,7 +1097,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -1123,8 +1143,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> signUpByEmail(
-    EmailAuthenticator authenticator, {
+  Future<AuthResponse<T>> signUpByEmail(EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
     final email = authenticator.email;
@@ -1169,7 +1188,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -1213,10 +1234,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> signUpByUsername(
-    UsernameAuthenticator authenticator, {
-    SignByBiometricCallback? onBiometric,
-  }) async {
+  Future<AuthResponse<T>> signUpByUsername(UsernameAuthenticator authenticator,
+      {
+        SignByBiometricCallback? onBiometric,
+      }) async {
     final username = authenticator.username;
     final password = authenticator.password;
     if (!Validator.isValidUsername(username)) {
@@ -1259,7 +1280,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
               return update(
-                user.copy(biometric: biometric?.name).source,
+                user
+                    .copy(biometric: biometric?.name)
+                    .source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,

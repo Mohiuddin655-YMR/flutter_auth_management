@@ -1,3 +1,7 @@
+## 0.2.10
+
+* Fix biometric loggedInTime status
+
 ## 0.2.9
 
 * Fix authorized user null properties
