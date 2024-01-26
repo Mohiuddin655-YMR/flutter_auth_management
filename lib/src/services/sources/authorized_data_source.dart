@@ -2,8 +2,8 @@ import 'package:flutter_andomie/core.dart';
 
 import '../../models/auth.dart';
 
-abstract class BackupDataSource<T extends Auth> {
-  BackupDataSource({
+abstract class AuthorizedDataSource<T extends Auth> {
+  AuthorizedDataSource({
     LocalDatabase? database,
   }) : _db = database;
 

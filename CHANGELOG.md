@@ -1,3 +1,9 @@
+## 0.2.7
+
+* Change BackupDataSource to AuthorizedDataSource
+* Update library versions
+* Update loading state
+
 ## 0.2.6
 
 ## 0.2.5

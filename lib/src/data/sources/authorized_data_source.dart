@@ -4,12 +4,12 @@ import 'dart:core';
 import 'package:flutter_andomie/core.dart';
 
 import '../../models/auth.dart';
-import '../../services/sources/backup_data_source.dart';
+import '../../services/sources/authorized_data_source.dart';
 
 part 'backup_data_source_impl.dart';
 
 abstract class BackupDataSourceImpl<T extends Auth>
-    extends BackupDataSource<T> {
+    extends AuthorizedDataSource<T> {
   BackupDataSourceImpl({
     super.database,
   });

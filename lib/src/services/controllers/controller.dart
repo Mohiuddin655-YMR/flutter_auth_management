@@ -20,12 +20,12 @@ import '../../utils/authenticator_username.dart';
 import '../handlers/auth_handler.dart';
 import '../handlers/backup_handler.dart';
 import '../sources/auth_data_source.dart';
-import '../sources/backup_data_source.dart';
+import '../sources/authorized_data_source.dart';
 
 abstract class AuthController<T extends Auth> {
   static AuthController<T> getInstance<T extends Auth>({
     AuthDataSource? auth,
-    BackupDataSource<T>? backup,
+    AuthorizedDataSource<T>? backup,
     AuthMessages? messages,
   }) {
     return Singleton.instanceOf(() {

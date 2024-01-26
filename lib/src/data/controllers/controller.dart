@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:auth_management/src/utils/authenticator_otp.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_andomie/utils.dart';
 
@@ -16,12 +15,13 @@ import '../../services/controllers/controller.dart';
 import '../../services/handlers/auth_handler.dart';
 import '../../services/handlers/backup_handler.dart';
 import '../../services/sources/auth_data_source.dart';
-import '../../services/sources/backup_data_source.dart';
+import '../../services/sources/authorized_data_source.dart';
 import '../../utils/auth_notifier.dart';
 import '../../utils/auth_response.dart';
 import '../../utils/authenticator.dart';
 import '../../utils/authenticator_email.dart';
 import '../../utils/authenticator_oauth.dart';
+import '../../utils/authenticator_otp.dart';
 import '../../utils/authenticator_phone.dart';
 import '../../utils/authenticator_username.dart';
 import '../handlers/auth_handler.dart';
@@ -41,7 +41,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
 
   AuthControllerImpl({
     AuthDataSource? auth,
-    BackupDataSource<T>? backup,
+    AuthorizedDataSource<T>? backup,
     AuthMessages? messages,
   }) : this.fromHandler(
           messages: messages,
@@ -182,9 +182,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   Future<bool> _clear() {
-    _notifyLoading(true);
     return backupHandler.clear().then((clear) {
-      _notifyLoading(false);
       if (clear) _notifyUser(null);
       return clear;
     });
@@ -192,12 +190,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
 
   @override
   Future<T?> update(Map<String, dynamic> data) {
-    _notifyLoading(true);
     return auth.then((user) {
       if (user != null) {
         return backupHandler.update(user.id, data).then((value) {
           return auth.then((update) {
-            _notifyLoading(false);
             _notifyUser(update);
             return update;
           });
@@ -205,7 +201,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       } else {
         final current = backupHandler.build(data);
         return backupHandler.set(current).then((value) {
-          _notifyLoading(false);
           _notifyUser(current);
           return current;
         });
@@ -318,8 +313,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> isSignIn([
     AuthProviders? provider,
   ]) async {
-    emit(AuthResponse.loading(provider));
     try {
+      emit(AuthResponse.loading(provider));
       final signedIn = await authHandler.isSignIn(provider);
       final data = signedIn ? await auth : null;
       if (data != null) {
@@ -349,8 +344,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.apple, AuthType.oauth));
     try {
+      emit(const AuthResponse.loading(AuthProviders.apple, AuthType.oauth));
       final response = await authHandler.signInWithApple();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -427,11 +422,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInByBiometric({
     BiometricConfig? config,
   }) async {
-    emit(const AuthResponse.loading(
-      AuthProviders.biometric,
-      AuthType.biometric,
-    ));
     try {
+      emit(const AuthResponse.loading(
+        AuthProviders.biometric,
+        AuthType.biometric,
+      ));
       final user = await _auth;
       if (user != null && user.isBiometric) {
         final response = await authHandler.signInWithBiometric(config: config);
@@ -602,8 +597,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.facebook, AuthType.oauth));
     try {
+      emit(const AuthResponse.loading(AuthProviders.facebook, AuthType.oauth));
       final response = await authHandler.signInWithFacebook();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -682,8 +677,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.github, AuthType.oauth));
     try {
+      emit(const AuthResponse.loading(AuthProviders.github, AuthType.oauth));
       final response = await authHandler.signInWithGithub();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -762,8 +757,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.google, AuthType.oauth));
     try {
+      emit(const AuthResponse.loading(AuthProviders.google, AuthType.oauth));
       final response = await authHandler.signInWithGoogle();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -856,7 +851,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       ));
     } else {
       try {
-        emit(const AuthResponse.loading(AuthProviders.phone, AuthType.otp));
         authHandler.signInByPhone(
           phoneNumber: phone,
           forceResendingToken: int.tryParse(authenticator.accessToken ?? ""),
@@ -919,10 +913,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           },
         );
-        return emit(const AuthResponse.message(
-          "Verifying...",
-          provider: AuthProviders.phone,
-          type: AuthType.otp,
+        return emit(const AuthResponse.loading(
+          AuthProviders.phone,
+          AuthType.otp,
         ));
       } catch (_) {
         return emit(AuthResponse.failure(
@@ -940,7 +933,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.phone, AuthType.phone));
     final token = authenticator.token;
     final code = authenticator.smsCode;
     if (!Validator.isValidString(token)) {
@@ -957,6 +949,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       ));
     } else {
       try {
+        emit(const AuthResponse.loading(AuthProviders.phone, AuthType.phone));
         final credential = authenticator.credential;
         final response = await authHandler.signInWithCredential(
           credential: credential,
@@ -1028,7 +1021,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.username, AuthType.login));
     final username = authenticator.username;
     final password = authenticator.password;
     if (!Validator.isValidUsername(username)) {
@@ -1045,6 +1037,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       ));
     } else {
       try {
+        emit(const AuthResponse.loading(
+          AuthProviders.username,
+          AuthType.login,
+        ));
         final response = await authHandler.signInWithUsernameNPassword(
           username: username,
           password: password,
@@ -1112,7 +1108,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.email, AuthType.register));
     final email = authenticator.email;
     final password = authenticator.password;
     if (!Validator.isValidEmail(email)) {
@@ -1129,6 +1124,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       ));
     } else {
       try {
+        emit(const AuthResponse.loading(
+          AuthProviders.email,
+          AuthType.register,
+        ));
         final response = await authHandler.signUpWithEmailNPassword(
           email: email.use,
           password: password.use,
@@ -1196,7 +1195,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    emit(const AuthResponse.loading(AuthProviders.username, AuthType.register));
     final username = authenticator.username;
     final password = authenticator.password;
     if (!Validator.isValidUsername(username)) {
@@ -1213,6 +1211,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       ));
     } else {
       try {
+        emit(const AuthResponse.loading(
+          AuthProviders.username,
+          AuthType.register,
+        ));
         final response = await authHandler.signUpWithUsernameNPassword(
           username: username.use,
           password: password.use,
@@ -1279,8 +1281,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signOut([
     AuthProviders provider = AuthProviders.none,
   ]) async {
-    emit(AuthResponse.loading(provider, AuthType.logout));
     try {
+      emit(AuthResponse.loading(provider, AuthType.logout));
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
         return _auth.then((data) async {
