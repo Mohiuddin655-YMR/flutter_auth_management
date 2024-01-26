@@ -1,3 +1,8 @@
+## 0.2.11
+
+* Fix loggedOutTime status
+* Fix updates algorithm
+
 ## 0.2.10
 
 * Fix biometric loggedInTime status
