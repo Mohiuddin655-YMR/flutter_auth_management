@@ -135,7 +135,7 @@ class Contact extends Entity {
   }
 }
 
-class UserBackup extends BackupDataSourceImpl<UserModel> {
+class UserBackup extends AuthorizedDataSourceImpl<UserModel> {
   @override
   Future<UserModel?> onFetchUser(String id) async {
     // fetch authorized user data from remote server

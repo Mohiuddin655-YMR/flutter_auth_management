@@ -24,23 +24,27 @@ class AuthHandlerImpl extends AuthHandler {
   User? get user => repository.user;
 
   @override
-  Future<Response> get delete => repository.delete;
+  Future<Response> get delete {
+    return repository.delete.onError((_, __) => Response(exception: "$_"));
+  }
 
   @override
   Future<bool> isSignIn([AuthProviders? provider]) {
     try {
-      return repository.isSignIn(provider);
+      return repository.isSignIn(provider).onError((_, __) => false);
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(false);
     }
   }
 
   @override
   Future<Response<Credential>> signInWithApple() {
     try {
-      return repository.signInWithApple();
+      return repository.signInWithApple().onError((_, __) {
+        return Response<Credential>(exception: "$_");
+      });
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<Credential>(exception: "$_"));
     }
   }
 
@@ -49,9 +53,11 @@ class AuthHandlerImpl extends AuthHandler {
     BiometricConfig? config,
   }) {
     try {
-      return repository.signInWithBiometric(config: config);
+      return repository.signInWithBiometric(config: config).onError((_, __) {
+        return Response<bool>(exception: "$_");
+      });
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<bool>(exception: "$_"));
     }
   }
 
@@ -60,11 +66,11 @@ class AuthHandlerImpl extends AuthHandler {
     required AuthCredential credential,
   }) async {
     try {
-      return repository.signInWithCredential(
-        credential: credential,
-      );
+      return repository
+          .signInWithCredential(credential: credential)
+          .onError((_, __) => Response<UserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<UserCredential>(exception: "$_"));
     }
   }
 
@@ -74,39 +80,44 @@ class AuthHandlerImpl extends AuthHandler {
     required String password,
   }) {
     try {
-      return repository.signInWithEmailNPassword(
-        email: email,
-        password: password,
-      );
+      return repository
+          .signInWithEmailNPassword(email: email, password: password)
+          .onError((_, __) => Response<UserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<UserCredential>(exception: "$_"));
     }
   }
 
   @override
   Future<Response<Credential>> signInWithFacebook() {
     try {
-      return repository.signInWithFacebook();
+      return repository.signInWithFacebook().onError((_, __) {
+        return Response<Credential>(exception: "$_");
+      });
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<Credential>(exception: "$_"));
     }
   }
 
   @override
   Future<Response<Credential>> signInWithGithub() {
     try {
-      return repository.signInWithGithub();
+      return repository.signInWithGithub().onError((_, __) {
+        return Response<Credential>(exception: "$_");
+      });
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<Credential>(exception: "$_"));
     }
   }
 
   @override
   Future<Response<Credential>> signInWithGoogle() {
     try {
-      return repository.signInWithGoogle();
+      return repository.signInWithGoogle().onError((_, __) {
+        return Response<Credential>(exception: "$_");
+      });
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<Credential>(exception: "$_"));
     }
   }
 
@@ -116,12 +127,11 @@ class AuthHandlerImpl extends AuthHandler {
     required String password,
   }) {
     try {
-      return repository.signInWithUsernameNPassword(
-        username: username,
-        password: password,
-      );
+      return repository
+          .signInWithUsernameNPassword(username: username, password: password)
+          .onError((_, __) => Response<UserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<UserCredential>(exception: "$_"));
     }
   }
 
@@ -131,12 +141,11 @@ class AuthHandlerImpl extends AuthHandler {
     required String password,
   }) {
     try {
-      return repository.signUpWithEmailNPassword(
-        email: email,
-        password: password,
-      );
+      return repository
+          .signUpWithEmailNPassword(email: email, password: password)
+          .onError((_, __) => Response<UserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<UserCredential>(exception: "$_"));
     }
   }
 
@@ -146,21 +155,22 @@ class AuthHandlerImpl extends AuthHandler {
     required String password,
   }) {
     try {
-      return repository.signUpWithUsernameNPassword(
-        username: username,
-        password: password,
-      );
+      return repository
+          .signUpWithUsernameNPassword(username: username, password: password)
+          .onError((_, __) => Response<UserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<UserCredential>(exception: "$_"));
     }
   }
 
   @override
   Future<Response<Auth>> signOut([AuthProviders? provider]) {
     try {
-      return repository.signOut(provider);
+      return repository.signOut(provider).onError((_, __) {
+        return Response<Auth>(exception: "$_");
+      });
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<Auth>(exception: "$_"));
     }
   }
 
@@ -177,19 +187,21 @@ class AuthHandlerImpl extends AuthHandler {
     required void Function(String verId) onCodeAutoRetrievalTimeout,
   }) {
     try {
-      return repository.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
-        forceResendingToken: forceResendingToken,
-        multiFactorInfo: multiFactorInfo,
-        multiFactorSession: multiFactorSession,
-        timeout: timeout,
-        onComplete: onComplete,
-        onFailed: onFailed,
-        onCodeSent: onCodeSent,
-        onCodeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
-      );
+      return repository
+          .verifyPhoneNumber(
+            phoneNumber: phoneNumber,
+            forceResendingToken: forceResendingToken,
+            multiFactorInfo: multiFactorInfo,
+            multiFactorSession: multiFactorSession,
+            timeout: timeout,
+            onComplete: onComplete,
+            onFailed: onFailed,
+            onCodeSent: onCodeSent,
+            onCodeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+          )
+          .onError((_, __) => Response<void>(exception: "$_"));
     } catch (_) {
-      return Future.error("$_");
+      return Future.value(Response<void>(exception: "$_"));
     }
   }
 }

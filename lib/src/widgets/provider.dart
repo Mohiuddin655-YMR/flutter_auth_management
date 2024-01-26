@@ -6,13 +6,21 @@ import '../services/controllers/controller.dart';
 import '../utils/auth_response.dart';
 
 class AuthProvider<T extends Auth> extends InheritedWidget {
+  final bool initialCheck;
   final AuthController<T> controller;
 
   AuthProvider({
     super.key,
+    this.initialCheck = false,
     required this.controller,
     required Widget child,
-  }) : super(child: _Support<T>(controller: controller, child: child)) {
+  }) : super(
+          child: _Support<T>(
+            controller: controller,
+            initialCheck: initialCheck,
+            child: child,
+          ),
+        ) {
     type = T;
   }
 

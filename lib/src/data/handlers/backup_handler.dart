@@ -17,11 +17,11 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   BackupHandlerImpl.fromRepository(this.repository);
 
   @override
-  Future<T?> get cache => repository.cache;
+  Future<T?> get cache => repository.cache.onError((_, __) => null);
 
   @override
   Future<bool> set(T? data) {
-    return repository.set(data).then((value) {
+    return repository.set(data).onError((_, __) => false).then((value) {
       if (data != null && value) {
         try {
           return onFetchUser(data.id).then((value) async {
@@ -41,8 +41,15 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   }
 
   @override
+  Future<bool> setAsLocal(T? data) {
+    return cache.then((value) {
+      return repository.set(data ?? value).onError((_, __) => false);
+    });
+  }
+
+  @override
   Future<bool> update(String id, Map<String, dynamic> data) {
-    return repository.update(data).then((value) {
+    return repository.update(data).onError((_, __) => false).then((value) {
       if (data.isNotEmpty && value) {
         try {
           return onFetchUser(id).then((value) async {
@@ -62,21 +69,29 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   }
 
   @override
-  Future<bool> clear() => repository.clear();
-
-  @override
-  Future<T?> onFetchUser(String id) => repository.onFetchUser(id);
-
-  @override
-  Future<void> onCreateUser(T data) => repository.onCreateUser(data);
-
-  @override
-  Future<void> onUpdateUser(String id, Map<String, dynamic> data) {
-    return repository.onUpdateUser(id, data);
+  Future<bool> clear() {
+    return repository.clear().onError((_, __) => false);
   }
 
   @override
-  Future<void> onDeleteUser(String id) => repository.onDeleteUser(id);
+  Future<T?> onFetchUser(String id) {
+    return repository.onFetchUser(id).onError((_, __) => null);
+  }
+
+  @override
+  Future<void> onCreateUser(T data) {
+    return repository.onCreateUser(data).onError((_, __) => null);
+  }
+
+  @override
+  Future<void> onUpdateUser(String id, Map<String, dynamic> data) {
+    return repository.onUpdateUser(id, data).onError((_, __) => null);
+  }
+
+  @override
+  Future<void> onDeleteUser(String id) {
+    return repository.onDeleteUser(id).onError((_, __) => null);
+  }
 
   @override
   T build(Map<String, dynamic> source) => repository.build(source);

@@ -116,15 +116,22 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<T?> initialize([bool initialCheck = true]) {
     return auth.then((value) {
-      if (initialCheck) {
-        if (value != null && value.isLoggedIn) {
-          _stateNotifier.value = AuthState.authenticated;
-        } else {
-          _stateNotifier.value = AuthState.unauthenticated;
+      if (value != null) {
+        if (initialCheck) {
+          if (value.isLoggedIn) {
+            _stateNotifier.value = AuthState.authenticated;
+          } else {
+            _stateNotifier.value = AuthState.unauthenticated;
+          }
         }
+        return backupHandler.onFetchUser(value.id).then((remote) {
+          return backupHandler.setAsLocal(remote ?? value).then((_) {
+            return remote ?? value;
+          });
+        });
+      } else {
+        return value;
       }
-      _notifyUser(value);
-      return value;
     });
   }
 
@@ -152,10 +159,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     }
   }
 
-  void _notifyUser(T? data) {
-    if (data != null) {
-      _userNotifier.value = data;
-    }
+  T? _notifyUser(T? data) {
+    if (data != null) _userNotifier.value = data;
+    return _userNotifier.value;
   }
 
   @override

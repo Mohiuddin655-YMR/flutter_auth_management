@@ -8,9 +8,9 @@ import '../../services/sources/authorized_data_source.dart';
 
 part 'backup_data_source_impl.dart';
 
-abstract class BackupDataSourceImpl<T extends Auth>
+abstract class AuthorizedDataSourceImpl<T extends Auth>
     extends AuthorizedDataSource<T> {
-  BackupDataSourceImpl({
+  AuthorizedDataSourceImpl({
     super.database,
   });
 

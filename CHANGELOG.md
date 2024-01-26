@@ -1,3 +1,10 @@
+## 0.2.8
+
+* Future error handle from auth section
+* Fetch user info from remote when connect the remote server with auth_management
+* Initially update remote user as local user when connect remote server
+* Initial check when app run
+
 ## 0.2.7
 
 * Change BackupDataSource to AuthorizedDataSource
