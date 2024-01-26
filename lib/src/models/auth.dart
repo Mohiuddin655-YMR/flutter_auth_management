@@ -28,12 +28,15 @@ class AuthKeys extends EntityKey {
   final String extra;
   final String idToken;
   final String loggedIn;
+  final String loggedInTime;
+  final String loggedOutTime;
   final String name;
   final String password;
   final String phone;
   final String photo;
   final String provider;
   final String username;
+  final String verified;
 
   const AuthKeys({
     super.id,
@@ -44,12 +47,15 @@ class AuthKeys extends EntityKey {
     this.extra = "extra",
     this.idToken = "id_token",
     this.loggedIn = "logged_in",
+    this.loggedInTime = "logged_in_time",
+    this.loggedOutTime = "logged_out_time",
     this.name = "name",
     this.password = "password",
     this.phone = "phone",
     this.photo = "photo",
     this.provider = "provider",
     this.username = "username",
+    this.verified = "verified",
   });
 
   static AuthKeys? _i;
@@ -200,14 +206,35 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
   final String? email;
   final Map<String, dynamic>? extra;
   final bool? loggedIn;
+  final int? loggedInTime;
+  final int? loggedOutTime;
   final String? name;
   final String? password;
   final String? phone;
   final String? photo;
   final String? provider;
   final String? username;
+  final bool? verified;
 
   bool get isLoggedIn => loggedIn ?? false;
+
+  bool get isVerified => verified ?? mProvider.isVerified;
+
+  DateTime get lastLoggedInDate {
+    return DateTime.fromMillisecondsSinceEpoch(loggedInTime ?? 0);
+  }
+
+  DateTime get lastLoggedOutDate {
+    return DateTime.fromMillisecondsSinceEpoch(loggedOutTime ?? 0);
+  }
+
+  Duration get lastLoggedInTime {
+    return DateTime.now().difference(lastLoggedInDate);
+  }
+
+  Duration get lastLoggedOutTime {
+    return DateTime.now().difference(lastLoggedOutDate);
+  }
 
   bool get isCurrentUid => id == AuthHelper.uid;
 
@@ -226,12 +253,15 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
     this.extra,
     this.idToken,
     this.loggedIn,
+    this.loggedInTime,
+    this.loggedOutTime,
     this.name,
     this.password,
     this.phone,
     this.photo,
     this.provider,
     this.username,
+    this.verified,
   });
 
   Auth copy({
@@ -243,12 +273,15 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
     Map<String, dynamic>? extra,
     String? idToken,
     bool? loggedIn,
+    int? loggedInTime,
+    int? loggedOutTime,
     String? name,
     String? password,
     String? phone,
     String? photo,
     String? provider,
     String? username,
+    bool? verified,
   }) {
     return Auth(
       id: id ?? this.id,
@@ -259,12 +292,15 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
       extra: extra ?? this.extra,
       idToken: idToken ?? this.idToken,
       loggedIn: loggedIn ?? this.loggedIn,
+      loggedInTime: loggedInTime ?? this.loggedInTime,
+      loggedOutTime: loggedOutTime ?? this.loggedOutTime,
       name: name ?? this.name,
       password: password ?? this.password,
       phone: phone ?? this.phone,
       photo: photo ?? this.photo,
       provider: provider ?? this.provider,
       username: username ?? this.username,
+      verified: verified ?? this.verified,
     );
   }
 
@@ -276,6 +312,8 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
       accessToken: source.entityValue(key.accessToken),
       biometric: source.entityValue(key.biometric),
       loggedIn: source.entityValue(key.loggedIn),
+      loggedInTime: source.entityValue(key.loggedInTime),
+      loggedOutTime: source.entityValue(key.loggedOutTime),
       idToken: source.entityValue(key.idToken),
       email: source.entityValue(key.email),
       name: source.entityValue(key.name),
@@ -284,6 +322,7 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
       photo: source.entityValue(key.photo),
       provider: source.entityValue(key.provider),
       username: source.entityValue(key.username),
+      verified: source.entityValue(key.verified),
       extra: source.entityObject(key.extra, (value) {
         return value is Map<String, dynamic> ? value : {};
       }),
@@ -298,6 +337,9 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
       phone: user?.phoneNumber,
       photo: user?.photoURL,
       loggedIn: user != null,
+      loggedInTime: user?.metadata.lastSignInTime?.millisecondsSinceEpoch,
+      loggedOutTime: Entity.generateTimeMills,
+      verified: user?.emailVerified,
       extra: {
         "emailVerified": user?.emailVerified,
         "isAnonymous": user?.isAnonymous,
@@ -333,21 +375,29 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
     }
   }
 
+  bool isInsertable(String key, dynamic value) => true;
+
   @override
   Map<String, dynamic> get source {
     return super.source.attach({
-      key.accessToken: accessToken,
-      key.biometric: biometric,
-      key.email: email,
-      key.extra: extra,
-      key.idToken: idToken,
-      key.loggedIn: loggedIn,
-      key.name: name,
-      key.password: password,
-      key.phone: phone,
-      key.photo: photo,
-      key.provider: provider,
-      key.username: username,
+      if (isInsertable(key.accessToken, accessToken))
+        key.accessToken: accessToken,
+      if (isInsertable(key.biometric, biometric)) key.biometric: biometric,
+      if (isInsertable(key.email, email)) key.email: email,
+      if (isInsertable(key.extra, extra)) key.extra: extra,
+      if (isInsertable(key.idToken, idToken)) key.idToken: idToken,
+      if (isInsertable(key.loggedIn, loggedIn)) key.loggedIn: loggedIn,
+      if (isInsertable(key.loggedInTime, loggedInTime))
+        key.loggedInTime: loggedInTime,
+      if (isInsertable(key.loggedOutTime, loggedOutTime))
+        key.loggedOutTime: loggedOutTime,
+      if (isInsertable(key.name, name)) key.name: name,
+      if (isInsertable(key.password, password)) key.password: password,
+      if (isInsertable(key.phone, phone)) key.phone: phone,
+      if (isInsertable(key.photo, photo)) key.photo: photo,
+      if (isInsertable(key.provider, provider)) key.provider: provider,
+      if (isInsertable(key.username, username)) key.username: username,
+      if (isInsertable(key.verified, verified)) key.verified: verified,
     });
   }
 }

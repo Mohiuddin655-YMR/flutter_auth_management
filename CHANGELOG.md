@@ -1,3 +1,8 @@
+## 0.2.9
+
+* Fix authorized user null properties
+* Add loggedInTime, loggedOutTime and verified properties
+
 ## 0.2.8
 
 * Future error handle from auth section

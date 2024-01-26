@@ -197,6 +197,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<T?> update(Map<String, dynamic> data) {
     return auth.then((user) {
+      data.removeWhere((key, value) => value == null);
       if (user != null) {
         return backupHandler.update(user.id, data).then((value) {
           return auth.then((update) {
@@ -371,6 +372,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: raw.photo ?? result.photoURL,
               provider: AuthProviders.apple.name,
               loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -550,6 +553,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: result.photoURL,
               provider: AuthProviders.email.name,
               loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -624,6 +628,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: raw.photo ?? result.photoURL,
               provider: AuthProviders.facebook.name,
               loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -704,6 +710,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: raw.photo ?? result.photoURL,
               provider: AuthProviders.github.name,
               loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -784,6 +792,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: raw.photo ?? result.photoURL,
               provider: AuthProviders.google.name,
               loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -975,6 +985,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: result.photoURL,
               provider: AuthProviders.phone.name,
               loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -1062,6 +1074,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: result.photoURL,
               provider: AuthProviders.username.name,
               loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -1141,6 +1154,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         if (response.isSuccessful) {
           final result = response.data?.user;
           if (result != null) {
+            final creationTime = Entity.generateTimeMills;
             final user = authenticator.copy(
               id: result.uid,
               email: result.email,
@@ -1149,6 +1163,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: result.photoURL,
               provider: AuthProviders.email.name,
               loggedIn: true,
+              loggedInTime: creationTime,
+              timeMills: creationTime,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -1228,6 +1244,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         if (response.isSuccessful) {
           final result = response.data?.user;
           if (result != null) {
+            final creationTime = Entity.generateTimeMills;
             final user = authenticator.copy(
               id: result.uid,
               email: result.email,
@@ -1236,6 +1253,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               photo: result.photoURL,
               provider: AuthProviders.username.name,
               loggedIn: true,
+              loggedInTime: creationTime,
+              timeMills: creationTime,
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
@@ -1294,7 +1313,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         return _auth.then((data) async {
           if (data != null) {
             if (data.isBiometric) {
-              return update(data.copy(loggedIn: false).source).then((value) {
+              return update({
+                AuthKeys.i.loggedIn: false,
+                AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+              }).then((value) {
                 return emit(AuthResponse.unauthenticated(
                   msg: msg.signOut.done,
                   provider: provider,
