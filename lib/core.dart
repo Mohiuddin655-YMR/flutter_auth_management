@@ -33,6 +33,7 @@ export 'src/utils/authenticator_oauth.dart';
 export 'src/utils/authenticator_otp.dart';
 export 'src/utils/authenticator_phone.dart';
 export 'src/utils/authenticator_username.dart';
+export 'src/widgets/builder.dart';
 export 'src/widgets/consumer.dart';
 export 'src/widgets/observer.dart';
 export 'src/widgets/provider.dart';

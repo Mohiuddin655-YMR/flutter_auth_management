@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage> {
 
   void _showLoading(BuildContext context, bool loading) {}
 
-  void _status(BuildContext context, AuthState state) {
+  void _status(BuildContext context, AuthState state, UserModel? user) {
     if (state.isUnauthenticated) {
       Navigator.pushNamedAndRemoveUntil(context, "login", (route) => false);
     }

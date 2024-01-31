@@ -31,7 +31,7 @@ class _StartupPageState extends State<StartupPage> {
     );
   }
 
-  void _status(BuildContext context, AuthState state) {
+  void _status(BuildContext context, AuthState state, UserModel? user) {
     log("AUTH STATUS : $state");
     if (state.isAuthenticated) {
       Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);

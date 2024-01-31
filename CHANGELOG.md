@@ -1,3 +1,7 @@
+## 0.2.12
+
+* Add AuthBuilder to use build widget when state change
+
 ## 0.2.11
 
 * Fix loggedOutTime status
