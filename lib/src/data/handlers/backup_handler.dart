@@ -20,24 +20,9 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   Future<T?> get cache => repository.cache.onError((_, __) => null);
 
   @override
-  Future<bool> set(T? data) {
-    return repository.set(data).onError((_, __) => false).then((value) {
-      if (data != null && value) {
-        try {
-          return onFetchUser(data.id).then((value) async {
-            if (value != null) {
-              return onUpdateUser(data.id, data.source).then((value) => true);
-            } else {
-              return onCreateUser(data).then((value) => true);
-            }
-          });
-        } catch (_) {
-          return true;
-        }
-      } else {
-        return value;
-      }
-    });
+  Future<bool> set(T? data) async {
+    if (data == null) return false;
+    return update(data.id, data.source);
   }
 
   @override
@@ -47,25 +32,39 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
     });
   }
 
-  @override
-  Future<bool> update(String id, Map<String, dynamic> data) {
-    return repository.update(data).onError((_, __) => false).then((value) {
-      if (data.isNotEmpty && value) {
-        try {
-          return onFetchUser(id).then((value) async {
-            if (value != null) {
-              return onUpdateUser(id, data).then((value) => true);
-            } else {
-              return onCreateUser(build(data)).then((value) => true);
-            }
-          });
-        } catch (_) {
-          return true;
-        }
-      } else {
-        return value;
+  Map<String, dynamic> _updates(Map<String, dynamic> data) {
+    final mData = <String, dynamic>{};
+    data.forEach((key, value) {
+      if (key.isNotEmpty && value != null && value != '') {
+        mData.putIfAbsent(key, () => value);
       }
     });
+    return mData;
+  }
+
+  @override
+  Future<bool> update(String id, Map<String, dynamic> data) async {
+    final current = _updates(data);
+    if (current.isEmpty) return false;
+    try {
+      return onFetchUser(id).then((value) {
+        if (value != null) {
+          return onUpdateUser(id, current).then((_) {
+            final updates = value.source;
+            updates.addAll(current);
+            final user = build(updates);
+            return repository.set(user);
+          });
+        } else {
+          final user = build(current);
+          return onCreateUser(user).then((_) {
+            return repository.set(user);
+          });
+        }
+      });
+    } catch (_) {
+      return false;
+    }
   }
 
   @override

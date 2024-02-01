@@ -125,6 +125,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           }
         }
         return backupHandler.onFetchUser(value.id).then((remote) {
+          _userNotifier.value = remote;
           return backupHandler.setAsLocal(remote ?? value).then((_) {
             return remote ?? value;
           });
@@ -197,19 +198,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<T?> update(Map<String, dynamic> data) {
     return auth.then((user) {
-      final mData = <String, dynamic>{};
-      data.forEach((key, value) {
-        if (value != null) mData.putIfAbsent(key, () => value);
-      });
       if (user != null) {
-        return backupHandler.update(user.id, mData).then((value) {
+        return backupHandler.update(user.id, data).then((value) {
           return auth.then((update) {
             _notifyUser(update);
             return update;
           });
         });
       } else {
-        final current = backupHandler.build(mData);
+        final current = backupHandler.build(data);
         return backupHandler.set(current).then((value) {
           _notifyUser(current);
           return current;
@@ -351,7 +348,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<AuthResponse<T>> signInByApple({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
     try {
@@ -378,28 +374,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.copy(biometric: biometric?.name).source,
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithApple.done,
-                  provider: AuthProviders.apple,
-                  type: AuthType.oauth,
-                ));
-              });
-            } else {
-              return update(user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithApple.done,
-                  provider: AuthProviders.apple,
-                  type: AuthType.oauth,
-                ));
-              });
-            }
+            return update(user.source).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithApple.done,
+                provider: AuthProviders.apple,
+                type: AuthType.oauth,
+              ));
+            });
           } else {
             return emit(AuthResponse.failure(
               msg.authorization,
@@ -611,7 +593,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<AuthResponse<T>> signInByFacebook({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
     try {
@@ -638,28 +619,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.copy(biometric: biometric?.name).source,
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithFacebook.done,
-                  provider: AuthProviders.facebook,
-                  type: AuthType.oauth,
-                ));
-              });
-            } else {
-              return update(user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithFacebook.done,
-                  provider: AuthProviders.facebook,
-                  type: AuthType.oauth,
-                ));
-              });
-            }
+            return update(user.source).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithFacebook.done,
+                provider: AuthProviders.facebook,
+                type: AuthType.oauth,
+              ));
+            });
           } else {
             return emit(AuthResponse.failure(
               msg.authorization,
@@ -693,7 +660,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<AuthResponse<T>> signInByGithub({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
     try {
@@ -720,28 +686,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.copy(biometric: biometric?.name).source,
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithGithub.done,
-                  provider: AuthProviders.github,
-                  type: AuthType.oauth,
-                ));
-              });
-            } else {
-              return update(user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithGithub.done,
-                  provider: AuthProviders.github,
-                  type: AuthType.oauth,
-                ));
-              });
-            }
+            return update(user.source).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGithub.done,
+                provider: AuthProviders.github,
+                type: AuthType.oauth,
+              ));
+            });
           } else {
             return emit(AuthResponse.failure(
               msg.authorization,
@@ -775,7 +727,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<AuthResponse<T>> signInByGoogle({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
     try {
@@ -802,28 +753,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.copy(biometric: biometric?.name).source,
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithGoogle.done,
-                  provider: AuthProviders.google,
-                  type: AuthType.oauth,
-                ));
-              });
-            } else {
-              return update(user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithGoogle.done,
-                  provider: AuthProviders.google,
-                  type: AuthType.oauth,
-                ));
-              });
-            }
+            return update(user.source).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGoogle.done,
+                provider: AuthProviders.google,
+                type: AuthType.oauth,
+              ));
+            });
           } else {
             return emit(AuthResponse.failure(
               msg.authorization,
@@ -953,7 +890,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<AuthResponse<T>> signInByOtp(
     OtpAuthenticator authenticator, {
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) async {
     final token = authenticator.token;
@@ -995,28 +931,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.copy(biometric: biometric?.name).source,
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithPhone.done,
-                  provider: AuthProviders.phone,
-                  type: AuthType.phone,
-                ));
-              });
-            } else {
-              return update(user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithPhone.done,
-                  provider: AuthProviders.phone,
-                  type: AuthType.phone,
-                ));
-              });
-            }
+            return update(user.source).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithPhone.done,
+                provider: AuthProviders.phone,
+                type: AuthType.phone,
+              ));
+            });
           } else {
             return emit(AuthResponse.failure(
               msg.authorization,

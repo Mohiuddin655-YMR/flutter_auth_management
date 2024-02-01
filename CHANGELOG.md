@@ -1,3 +1,7 @@
+## 0.2.13
+
+* Updating bug fixed, and remove unnecessary biometric callbacks
+
 ## 0.2.12
 
 * Add AuthBuilder to use build widget when state change

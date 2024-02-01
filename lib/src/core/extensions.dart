@@ -115,12 +115,10 @@ extension AuthContextExtension on BuildContext {
 
   Future<AuthResponse<T>> signInByApple<T extends Auth>({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     return _i<T>("signInByApple").signInByApple(
       authenticator: authenticator,
-      onBiometric: onBiometric,
       storeToken: storeToken,
     );
   }
@@ -143,36 +141,30 @@ extension AuthContextExtension on BuildContext {
 
   Future<AuthResponse<T>> signInByFacebook<T extends Auth>({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     return _i<T>("signInByFacebook").signInByFacebook(
       authenticator: authenticator,
-      onBiometric: onBiometric,
       storeToken: storeToken,
     );
   }
 
   Future<AuthResponse<T>> signInByGithub<T extends Auth>({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     return _i<T>("signInByGithub").signInByGithub(
       authenticator: authenticator,
-      onBiometric: onBiometric,
       storeToken: storeToken,
     );
   }
 
   Future<AuthResponse<T>> signInByGoogle<T extends Auth>({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     return _i<T>("signInByGoogle").signInByGoogle(
       authenticator: authenticator,
-      onBiometric: onBiometric,
       storeToken: storeToken,
     );
   }
@@ -201,12 +193,10 @@ extension AuthContextExtension on BuildContext {
 
   Future<AuthResponse<T>> signInByOtp<T extends Auth>(
     OtpAuthenticator authenticator, {
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     return _i<T>("signInByOtp").signInByOtp(
       authenticator,
-      onBiometric: onBiometric,
       storeToken: storeToken,
     );
   }

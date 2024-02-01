@@ -142,7 +142,6 @@ abstract class AuthController<T extends Auth> {
 
   Future<AuthResponse<T>> signInByApple({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     throw UnimplementedError('signInByApple() is not implemented');
@@ -163,7 +162,6 @@ abstract class AuthController<T extends Auth> {
 
   Future<AuthResponse<T>> signInByFacebook({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     throw UnimplementedError('signInByFacebook() is not implemented');
@@ -171,7 +169,6 @@ abstract class AuthController<T extends Auth> {
 
   Future<AuthResponse<T>> signInByGithub({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     throw UnimplementedError('signInByGithub() is not implemented');
@@ -179,7 +176,6 @@ abstract class AuthController<T extends Auth> {
 
   Future<AuthResponse<T>> signInByGoogle({
     OAuthAuthenticator? authenticator,
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     throw UnimplementedError('signInByGoogle() is not implemented');
@@ -200,7 +196,6 @@ abstract class AuthController<T extends Auth> {
 
   Future<AuthResponse<T>> signInByOtp(
     OtpAuthenticator authenticator, {
-    SignByBiometricCallback? onBiometric,
     bool storeToken = false,
   }) {
     throw UnimplementedError('signInByOtp() is not implemented');
