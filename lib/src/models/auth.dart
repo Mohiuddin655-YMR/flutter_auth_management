@@ -245,7 +245,7 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
   AuthProviders get mProvider => AuthProviders.from(provider);
 
   Auth({
-    super.id,
+    super.id = "",
     super.timeMills,
     this.accessToken,
     this.biometric,

@@ -22,7 +22,7 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   @override
   Future<bool> set(T? data) async {
     if (data == null) return false;
-    return update(data.id, data.source);
+    return update(data.source);
   }
 
   @override
@@ -32,36 +32,67 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
     });
   }
 
-  Map<String, dynamic> _updates(Map<String, dynamic> data) {
-    final mData = <String, dynamic>{};
+  Map<String, dynamic> _filter(Map<String, dynamic> data) {
+    final x = <String, dynamic>{};
     data.forEach((key, value) {
-      if (key.isNotEmpty && value != null && value != '') {
-        mData.putIfAbsent(key, () => value);
+      if (key.isEmpty || value == null || value == "") return;
+      x.putIfAbsent(key, () => value);
+    });
+    return x;
+  }
+
+  Map<String, dynamic> _merge({
+    required Map<String, dynamic> oldData,
+    required Map<String, dynamic> newData,
+  }) {
+    Map<String, dynamic> result = {};
+    oldData.forEach((key, value) {
+      result[key] = value ?? newData[key];
+    });
+    newData.forEach((key, value) {
+      if (!oldData.containsKey(key)) {
+        result[key] = value;
       }
     });
-    return mData;
+
+    return result;
   }
 
   @override
-  Future<bool> update(String id, Map<String, dynamic> data) async {
-    final current = _updates(data);
-    if (current.isEmpty) return false;
+  Future<bool> update(
+    Map<String, dynamic> data, {
+    bool forUpdate = false,
+  }) async {
+    if (data.isEmpty) return false;
     try {
-      return onFetchUser(id).then((value) {
-        if (value != null) {
-          return onUpdateUser(id, current).then((_) {
-            final updates = value.source;
-            updates.addAll(current);
-            final user = build(updates);
-            return repository.set(user);
+      if (forUpdate) {
+        return cache.then((local) {
+          if (local == null || local.id.isEmpty) return false;
+          final filters = _filter(data);
+          if (filters.isEmpty) return false;
+          return onUpdateUser(local.id, filters).then((_) {
+            return onFetchUser(local.id).then((value) {
+              return repository.set(value);
+            });
           });
-        } else {
-          final user = build(current);
-          return onCreateUser(user).then((_) {
-            return repository.set(user);
-          });
-        }
-      });
+        });
+      } else {
+        final user = build(data);
+        return onFetchUser(user.id).then((remote) {
+          if (remote != null) {
+            final merge = _merge(newData: data, oldData: remote.source);
+            return onUpdateUser(user.id, merge).then((_) {
+              return onFetchUser(user.id).then((value) {
+                return repository.set(value);
+              });
+            });
+          } else {
+            return onCreateUser(user).then((_) {
+              return repository.set(user);
+            });
+          }
+        });
+      }
     } catch (_) {
       return false;
     }

@@ -196,22 +196,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<T?> update(Map<String, dynamic> data) {
-    return auth.then((user) {
-      if (user != null) {
-        return backupHandler.update(user.id, data).then((value) {
-          return auth.then((update) {
-            _notifyUser(update);
-            return update;
-          });
-        });
-      } else {
-        final current = backupHandler.build(data);
-        return backupHandler.set(current).then((value) {
-          _notifyUser(current);
-          return current;
-        });
-      }
+  Future<T?> update(
+    Map<String, dynamic> data, {
+    bool forUpdate = false,
+  }) {
+    return backupHandler.update(data, forUpdate: forUpdate).then((value) {
+      return auth.then((update) {
+        _notifyUser(update);
+        return update;
+      });
     });
   }
 
@@ -273,6 +266,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           final biometric = await callback(auth.mBiometric);
           return update(
             auth.copy(biometric: biometric?.name ?? auth.biometric).source,
+            forUpdate: true,
           ).then((_) => Response(status: Status.ok, data: true));
         } else {
           return Response(
@@ -302,7 +296,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     if (permission) {
       try {
         final activated = BiometricStatus.value(enabled);
-        return update(auth.copy(biometric: activated.name).source).then((_) {
+        return update(
+          auth.copy(biometric: activated.name).source,
+          forUpdate: true,
+        ).then((_) {
           return Response(status: Status.ok, data: true);
         });
       } catch (_) {
@@ -467,7 +464,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               AuthKeys.i.loggedIn: true,
               AuthKeys.i.loggedInTime: Entity.generateTimeMills,
             };
-            return update(data).then((value) {
+            return update(data, forUpdate: true).then((value) {
               return emit(AuthResponse.authenticated(
                 value,
                 msg: msg.signInWithBiometric.done,
@@ -1239,7 +1236,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       emit(AuthResponse.loading(provider, AuthType.logout));
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
-        return _auth.then((data) async {
+        return _auth.then((data) {
           if (data != null) {
             if (data.isBiometric) {
               return update({

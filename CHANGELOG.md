@@ -1,3 +1,7 @@
+## 0.2.14
+
+* Add updating merge algorithm
+
 ## 0.2.13
 
 * Updating bug fixed, and remove unnecessary biometric callbacks

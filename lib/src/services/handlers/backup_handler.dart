@@ -7,7 +7,10 @@ abstract class BackupHandler<T extends Auth> {
 
   Future<bool> setAsLocal(T? data);
 
-  Future<bool> update(String id, Map<String, dynamic> data);
+  Future<bool> update(
+    Map<String, dynamic> data, {
+    bool forUpdate = false,
+  });
 
   Future<bool> clear();
 
