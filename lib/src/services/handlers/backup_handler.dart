@@ -9,7 +9,9 @@ abstract class BackupHandler<T extends Auth> {
 
   Future<bool> update(
     Map<String, dynamic> data, {
-    bool forUpdate = false,
+    String? id,
+    Map<String, dynamic>? extra,
+    bool update = false,
   });
 
   Future<bool> clear();

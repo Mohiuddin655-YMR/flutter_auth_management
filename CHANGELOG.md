@@ -1,3 +1,7 @@
+## 0.2.15
+
+* Controller updating modified
+
 ## 0.2.14
 
 * Add updating merge algorithm

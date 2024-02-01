@@ -86,7 +86,7 @@ extension AuthContextExtension on BuildContext {
   }
 
   Future<T?> updateAccount<T extends Auth>(Map<String, dynamic> data) {
-    return _i<T>("updateAccount").update(data);
+    return _i<T>("updateAccount").update(null, data, updateMode: true);
   }
 
   Future<AuthResponse<T>> deleteAccount<T extends Auth>() {

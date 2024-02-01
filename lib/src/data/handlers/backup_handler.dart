@@ -61,14 +61,16 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   @override
   Future<bool> update(
     Map<String, dynamic> data, {
-    bool forUpdate = false,
+    String? id,
+    Map<String, dynamic>? extra,
+    bool update = false,
   }) async {
-    if (data.isEmpty) return false;
     try {
-      if (forUpdate) {
+      if (update) {
         return cache.then((local) {
           if (local == null || local.id.isEmpty) return false;
           final filters = _filter(data);
+          filters.addAll(extra ?? {});
           if (filters.isEmpty) return false;
           return onUpdateUser(local.id, filters).then((_) {
             return onFetchUser(local.id).then((value) {
@@ -77,16 +79,18 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
           });
         });
       } else {
-        final user = build(data);
-        return onFetchUser(user.id).then((remote) {
+        if (id == null || id.isEmpty) return false;
+        return onFetchUser(id).then((remote) {
           if (remote != null) {
             final merge = _merge(newData: data, oldData: remote.source);
-            return onUpdateUser(user.id, merge).then((_) {
-              return onFetchUser(user.id).then((value) {
+            merge.addAll(extra ?? {});
+            return onUpdateUser(id, merge).then((_) {
+              return onFetchUser(id).then((value) {
                 return repository.set(value);
               });
             });
           } else {
+            final user = build(data);
             return onCreateUser(user).then((_) {
               return repository.set(user);
             });
