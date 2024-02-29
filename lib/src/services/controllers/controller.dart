@@ -232,4 +232,8 @@ abstract class AuthController<T extends Auth> {
   ]) {
     throw UnimplementedError('signOut() is not implemented');
   }
+
+  Future<AuthResponse> verifyPhoneByOtp(OtpAuthenticator authenticator) {
+    throw UnimplementedError('verifyPhoneByOtp() is not implemented');
+  }
 }

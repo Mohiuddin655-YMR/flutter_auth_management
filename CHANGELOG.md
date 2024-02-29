@@ -1,3 +1,7 @@
+## 0.2.16
+
+* Phone number verifier mode
+
 ## 0.2.15
 
 * Controller updating modified

@@ -236,6 +236,12 @@ extension AuthContextExtension on BuildContext {
   ]) {
     return _i<T>("signOut").signOut(provider);
   }
+
+  Future<AuthResponse> verifyPhoneByOtp<T extends Auth>(
+    OtpAuthenticator authenticator,
+  ) {
+    return _i<T>("verifyPhoneByOtp").verifyPhoneByOtp(authenticator);
+  }
 }
 
 extension AuthFutureExtension<T extends Auth> on Future<AuthResponse<T>> {

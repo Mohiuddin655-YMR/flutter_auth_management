@@ -1356,4 +1356,72 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       ));
     }
   }
+
+  @override
+  Future<AuthResponse> verifyPhoneByOtp(OtpAuthenticator authenticator) async {
+    final token = authenticator.token;
+    final code = authenticator.smsCode;
+    if (!Validator.isValidString(token)) {
+      return AuthResponse.failure(
+        msg.token,
+        provider: AuthProviders.phone,
+        type: AuthType.phone,
+      );
+    } else if (!Validator.isValidString(code)) {
+      return AuthResponse.failure(
+        msg.otp,
+        provider: AuthProviders.phone,
+        type: AuthType.phone,
+      );
+    } else {
+      try {
+        final credential = authenticator.credential;
+        final response = await authHandler.signInWithCredential(
+          credential: credential,
+        );
+        if (response.isSuccessful) {
+          final result = response.data?.user;
+          if (result != null) {
+            final user = authenticator.copy(
+              id: result.uid,
+              accessToken: credential.accessToken,
+              idToken: credential.token != null ? "${credential.token}" : null,
+              email: result.email,
+              name: result.displayName,
+              phone: result.phoneNumber,
+              photo: result.photoURL,
+              provider: AuthProviders.phone.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return AuthResponse.authenticated(
+              user,
+              msg: msg.signInWithPhone.done,
+              provider: AuthProviders.phone,
+              type: AuthType.phone,
+            );
+          } else {
+            return AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.phone,
+              type: AuthType.phone,
+            );
+          }
+        } else {
+          return AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.phone,
+            type: AuthType.phone,
+          );
+        }
+      } catch (_) {
+        return AuthResponse.failure(
+          msg.signInWithPhone.failure ?? _,
+          provider: AuthProviders.phone,
+          type: AuthType.phone,
+        );
+      }
+    }
+  }
 }
