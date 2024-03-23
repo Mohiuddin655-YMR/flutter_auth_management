@@ -74,14 +74,30 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
     Map<String, dynamic> updates = const {},
     bool updateMode = false,
   }) async {
+    if (id.isEmpty) return false;
     try {
       if (updateMode) {
-        return update(updates);
+        if (updates.isNotEmpty) {
+          return onUpdateUser(id, updates).then((_) {
+            return onFetchUser(id).then((value) {
+              return repository.set(value);
+            });
+          });
+        } else {
+          return false;
+        }
       } else {
-        if (id.isEmpty) return false;
         return onFetchUser(id).then((remote) {
           if (remote != null) {
-            return update(updates);
+            if (updates.isNotEmpty) {
+              return onUpdateUser(id, updates).then((_) {
+                return onFetchUser(id).then((value) {
+                  return repository.set(value);
+                });
+              });
+            } else {
+              return false;
+            }
           } else {
             final user = build(creates);
             return onCreateUser(user).then((_) {
