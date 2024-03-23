@@ -27,6 +27,11 @@ class UserKeys extends AuthKeys {
 ### Create authorized user model
 
 ```dart
+import 'dart:developer';
+
+import 'package:auth_management/core.dart';
+import 'package:flutter_andomie/core.dart';
+
 class UserModel extends Auth<UserKeys> {
   final Address? _address;
   final Contact? _contact;
@@ -44,16 +49,18 @@ class UserModel extends Auth<UserKeys> {
     super.extra,
     super.idToken,
     super.loggedIn,
+    super.loggedInTime,
+    super.loggedOutTime,
     super.name,
     super.password,
     super.phone,
     super.photo,
     super.provider,
     super.username,
+    super.verified,
     Address? address,
     Contact? contact,
-  })
-      : _address = address,
+  })  : _address = address,
         _contact = contact;
 
   factory UserModel.from(Object? source) {
@@ -69,12 +76,15 @@ class UserModel extends Auth<UserKeys> {
       extra: root.extra,
       idToken: root.idToken,
       loggedIn: root.loggedIn,
+      loggedInTime: root.loggedInTime,
+      loggedOutTime: root.loggedOutTime,
       name: root.name,
       password: root.password,
       phone: root.phone,
       photo: root.photo,
       provider: root.provider,
       username: root.username,
+      verified: root.verified,
 
       // CHILD PROPERTIES
       address: source.entityObject(key.address, Address.from),
@@ -92,12 +102,15 @@ class UserModel extends Auth<UserKeys> {
     Map<String, dynamic>? extra,
     String? idToken,
     bool? loggedIn,
+    int? loggedInTime,
+    int? loggedOutTime,
     String? name,
     String? password,
     String? phone,
     String? photo,
     String? provider,
     String? username,
+    bool? verified,
     Address? address,
     Contact? contact,
   }) {
@@ -110,12 +123,15 @@ class UserModel extends Auth<UserKeys> {
       extra: extra ?? this.extra,
       idToken: idToken ?? this.idToken,
       loggedIn: loggedIn ?? this.loggedIn,
+      loggedInTime: loggedInTime ?? this.loggedInTime,
+      loggedOutTime: loggedOutTime ?? this.loggedOutTime,
       name: name ?? this.name,
       password: password ?? this.password,
       phone: phone ?? this.phone,
       photo: photo ?? this.photo,
       provider: provider ?? this.provider,
       username: username ?? this.username,
+      verified: verified ?? this.verified,
       address: address ?? this.address,
       contact: contact ?? this.contact,
     );
@@ -153,7 +169,7 @@ class Contact extends Entity {
 ### Create authorized user backup instance
 
 ```dart
-class UserBackup extends BackupDataSourceImpl<UserModel> {
+class UserBackup extends AuthorizedDataSourceImpl<UserModel> {
   @override
   Future<UserModel?> onFetchUser(String id) async {
     // fetch authorized user data from remote server
@@ -187,6 +203,15 @@ class UserBackup extends BackupDataSourceImpl<UserModel> {
 ### Add auth provider in Main instance and initialize FirebaseApp
 
 ```dart
+import 'package:auth_management/core.dart';
+import 'package:example/home_page.dart';
+import 'package:example/login_page.dart';
+import 'package:example/startup.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+
+import 'user.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -199,6 +224,7 @@ class Application extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuthProvider<UserModel>(
+      initialCheck: true,
       controller: AuthController.getInstance<UserModel>(
         backup: UserBackup(),
       ),
@@ -270,7 +296,7 @@ class _StartupPageState extends State<StartupPage> {
     );
   }
 
-  void _status(BuildContext context, AuthState state) {
+  void _status(BuildContext context, AuthState state, UserModel? user) {
     log("AUTH STATUS : $state");
     if (state.isAuthenticated) {
       Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
@@ -279,7 +305,6 @@ class _StartupPageState extends State<StartupPage> {
 
   @override
   Widget build(BuildContext context) {
-    log("STARTUP PAGE");
     return AuthObserver<UserModel>(
       onError: _showError,
       onMessage: _showMessage,
@@ -480,6 +505,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void signInByEmail() async {
+    log("AUTH : login");
     final email = etEmail.text;
     final password = etPassword.text;
     context.signInByEmail<UserModel>(EmailAuthenticator(
@@ -605,35 +631,34 @@ class _HomePageState extends State<HomePage> {
         signInTitle: "Biometric",
         localizedReason: "Scan your face or fingerprint",
       ),
-      callback: (value) =>
-          showDialog<BiometricStatus>(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: const Text("Biometric permission from user!"),
-                actions: [
-                  ElevatedButton(
-                    child: const Text("Cancel"),
-                    onPressed: () {
-                      Navigator.pop(context, BiometricStatus.initial);
-                    },
-                  ),
-                  ElevatedButton(
-                    child: const Text("Inactivate"),
-                    onPressed: () {
-                      Navigator.pop(context, BiometricStatus.inactivated);
-                    },
-                  ),
-                  ElevatedButton(
-                    child: const Text("Activate"),
-                    onPressed: () {
-                      Navigator.pop(context, BiometricStatus.activated);
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
+      callback: (value) => showDialog<BiometricStatus>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Biometric permission from user!"),
+            actions: [
+              ElevatedButton(
+                child: const Text("Cancel"),
+                onPressed: () {
+                  Navigator.pop(context, BiometricStatus.initial);
+                },
+              ),
+              ElevatedButton(
+                child: const Text("Inactivate"),
+                onPressed: () {
+                  Navigator.pop(context, BiometricStatus.inactivated);
+                },
+              ),
+              ElevatedButton(
+                child: const Text("Activate"),
+                onPressed: () {
+                  Navigator.pop(context, BiometricStatus.activated);
+                },
+              ),
+            ],
+          );
+        },
+      ),
     )
         .then((value) {
       log("Add biometric status : ${value.exception}");
@@ -648,7 +673,7 @@ class _HomePageState extends State<HomePage> {
 
   void _showLoading(BuildContext context, bool loading) {}
 
-  void _status(BuildContext context, AuthState state) {
+  void _status(BuildContext context, AuthState state, UserModel? user) {
     if (state.isUnauthenticated) {
       Navigator.pushNamedAndRemoveUntil(context, "login", (route) => false);
     }
@@ -689,23 +714,18 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 24),
                     Text(
                       value?.name ?? "",
-                      style: Theme
-                          .of(context)
+                      style: Theme.of(context)
                           .textTheme
                           .titleLarge
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       value?.email ?? "",
-                      style: Theme
-                          .of(context)
-                          .textTheme
-                          .titleMedium,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     Text(
                       "Account created at ".join(value?.realtime ?? ""),
-                      style: Theme
-                          .of(context)
+                      style: Theme.of(context)
                           .textTheme
                           .titleSmall
                           ?.copyWith(fontWeight: FontWeight.normal),
@@ -790,7 +810,6 @@ android {
     defaultConfig {
         //...
         minSdkVersion 23
-        multiDexEnabled true
     }
     //...
 }

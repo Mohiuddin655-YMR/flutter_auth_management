@@ -1,3 +1,7 @@
+## 0.2.17
+
+* Updating bug fixed
+
 ## 0.2.16
 
 * Phone number verifier mode

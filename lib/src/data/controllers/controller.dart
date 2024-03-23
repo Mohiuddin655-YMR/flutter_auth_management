@@ -196,14 +196,28 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<T?> update(
-    String? id,
-    Map<String, dynamic> data, {
-    Map<String, dynamic>? extra,
+  Future<T?> update(Map<String, dynamic> data) {
+    return backupHandler.update(data).then((value) {
+      return auth.then((update) {
+        _notifyUser(update);
+        return update;
+      });
+    });
+  }
+
+  Future<T?> _update({
+    required String id,
+    Map<String, dynamic> creates = const {},
+    Map<String, dynamic> updates = const {},
     bool updateMode = false,
   }) {
     return backupHandler
-        .update(data, id: id, update: updateMode, extra: extra)
+        .updateAsLocal(
+      id: id,
+      updateMode: updateMode,
+      creates: creates,
+      updates: updates,
+    )
         .then((value) {
       return auth.then((update) {
         _notifyUser(update);
@@ -268,10 +282,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         final response = await authHandler.signInWithBiometric(config: config);
         if (response.isSuccessful) {
           final biometric = await callback(auth.mBiometric);
-          return update(
-            auth.id,
-            auth.copy(biometric: biometric?.name ?? auth.biometric).source,
+          return _update(
+            id: auth.id,
             updateMode: true,
+            creates:
+                auth.copy(biometric: biometric?.name ?? auth.biometric).source,
+            updates: {
+              AuthKeys.i.biometric: biometric?.name,
+            },
           ).then((_) => Response(status: Status.ok, data: true));
         } else {
           return Response(
@@ -301,10 +319,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     if (permission) {
       try {
         final activated = BiometricStatus.value(enabled);
-        return update(
-          auth.id,
-          auth.copy(biometric: activated.name).source,
+        return _update(
+          id: auth.id,
           updateMode: true,
+          creates: auth.copy(biometric: activated.name).source,
+          updates: {
+            AuthKeys.i.biometric: activated.name,
+          },
         ).then((_) {
           return Response(status: Status.ok, data: true);
         });
@@ -377,12 +398,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            return update(
-              user.id,
-              user.source,
-              extra: {
+            return _update(
+              id: user.id,
+              creates: user.source,
+              updates: {
                 AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
               return emit(AuthResponse.authenticated(
@@ -477,7 +498,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               AuthKeys.i.loggedIn: true,
               AuthKeys.i.loggedInTime: Entity.generateTimeMills,
             };
-            return update(user.id, data, updateMode: true).then((value) {
+            return _update(
+              id: user.id,
+              creates: data,
+              updates: data,
+            ).then((value) {
               return emit(AuthResponse.authenticated(
                 value,
                 msg: msg.signInWithBiometric.done,
@@ -556,9 +581,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.id,
-                user.copy(biometric: biometric?.name).source,
+              return _update(
+                id: user.id,
+                creates: user.copy(biometric: biometric?.name).source,
+                updates: {
+                  AuthKeys.i.loggedIn: true,
+                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+                },
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -568,12 +597,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 ));
               });
             } else {
-              return update(
-                user.id,
-                user.source,
-                extra: {
+              return _update(
+                id: user.id,
+                creates: user.source,
+                updates: {
                   AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
                 return emit(AuthResponse.authenticated(
@@ -637,12 +666,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            return update(
-              user.id,
-              user.source,
-              extra: {
+            return _update(
+              id: user.id,
+              creates: user.source,
+              updates: {
                 AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
               return emit(AuthResponse.authenticated(
@@ -711,12 +740,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            return update(
-              user.id,
-              user.source,
-              extra: {
+            return _update(
+              id: user.id,
+              creates: user.source,
+              updates: {
                 AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
               return emit(AuthResponse.authenticated(
@@ -785,12 +814,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            return update(
-              user.id,
-              user.source,
-              extra: {
+            return _update(
+              id: user.id,
+              creates: user.source,
+              updates: {
                 AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
               return emit(AuthResponse.authenticated(
@@ -970,12 +999,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               loggedInTime: Entity.generateTimeMills,
               verified: true,
             );
-            return update(
-              user.id,
-              user.source,
-              extra: {
+            return _update(
+              id: user.id,
+              creates: user.source,
+              updates: {
                 AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
               return emit(AuthResponse.authenticated(
@@ -1053,12 +1082,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.id,
-                user.copy(biometric: biometric?.name).source,
-                extra: {
+              return _update(
+                id: user.id,
+                creates: user.copy(biometric: biometric?.name).source,
+                updates: {
                   AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
                 return emit(AuthResponse.authenticated(
@@ -1069,12 +1098,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 ));
               });
             } else {
-              return update(
-                user.id,
-                user.source,
-                extra: {
+              return _update(
+                id: user.id,
+                creates: user.source,
+                updates: {
                   AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
                 return emit(AuthResponse.authenticated(
@@ -1155,12 +1184,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.id,
-                user.copy(biometric: biometric?.name).source,
-                extra: {
+              return _update(
+                id: user.id,
+                creates: user.copy(biometric: biometric?.name).source,
+                updates: {
                   AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: creationTime,
+                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
                 return emit(AuthResponse.authenticated(
@@ -1171,7 +1200,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 ));
               });
             } else {
-              return update(user.id, user.source).then((value) {
+              return _update(
+                id: user.id,
+                creates: user.source,
+                updates: {
+                  AuthKeys.i.loggedIn: true,
+                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+                },
+              ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
                   msg: msg.signUpWithEmail.done,
@@ -1250,12 +1286,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             );
             if (onBiometric != null) {
               final biometric = await onBiometric(user.mBiometric);
-              return update(
-                user.id,
-                user.copy(biometric: biometric?.name).source,
-                extra: {
+              return _update(
+                id: user.id,
+                creates: user.copy(biometric: biometric?.name).source,
+                updates: {
                   AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: creationTime,
+                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
                 return emit(AuthResponse.authenticated(
@@ -1266,7 +1302,14 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 ));
               });
             } else {
-              return update(user.id, user.source).then((value) {
+              return _update(
+                id: user.id,
+                creates: user.source,
+                updates: {
+                  AuthKeys.i.loggedIn: true,
+                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+                },
+              ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
                   msg: msg.signUpWithUsername.done,
@@ -1310,10 +1353,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         return _auth.then((data) {
           if (data != null) {
             if (data.isBiometric) {
-              return update(
-                data.id,
-                {},
-                extra: {
+              return _update(
+                id: data.id,
+                updates: {
                   AuthKeys.i.loggedIn: false,
                   AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
                 },

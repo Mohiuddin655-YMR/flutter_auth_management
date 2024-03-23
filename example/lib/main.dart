@@ -19,6 +19,7 @@ class Application extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuthProvider<UserModel>(
+      initialCheck: true,
       controller: AuthController.getInstance<UserModel>(
         backup: UserBackup(),
       ),

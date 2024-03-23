@@ -115,12 +115,7 @@ abstract class AuthController<T extends Auth> {
     throw UnimplementedError('emit() is not implemented');
   }
 
-  Future<T?> update(
-    String? id,
-    Map<String, dynamic> data, {
-    bool updateMode = false,
-    Map<String, dynamic>? extra,
-  }) {
+  Future<T?> update(Map<String, dynamic> data) {
     throw UnimplementedError('update() is not implemented');
   }
 
