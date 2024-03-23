@@ -402,6 +402,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               id: user.id,
               creates: user.source,
               updates: {
+                ...user.extra ?? {},
                 AuthKeys.i.loggedIn: true,
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
@@ -585,6 +586,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 id: user.id,
                 creates: user.copy(biometric: biometric?.name).source,
                 updates: {
+                  ...user.extra ?? {},
                   AuthKeys.i.loggedIn: true,
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
@@ -601,6 +603,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 id: user.id,
                 creates: user.source,
                 updates: {
+                  ...user.extra ?? {},
                   AuthKeys.i.loggedIn: true,
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
@@ -670,6 +673,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               id: user.id,
               creates: user.source,
               updates: {
+                ...user.extra ?? {},
                 AuthKeys.i.loggedIn: true,
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
@@ -744,6 +748,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               id: user.id,
               creates: user.source,
               updates: {
+                ...user.extra ?? {},
                 AuthKeys.i.loggedIn: true,
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
@@ -818,6 +823,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               id: user.id,
               creates: user.source,
               updates: {
+                ...user.extra ?? {},
                 AuthKeys.i.loggedIn: true,
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
@@ -1003,6 +1009,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               id: user.id,
               creates: user.source,
               updates: {
+                ...user.extra ?? {},
                 AuthKeys.i.loggedIn: true,
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
@@ -1086,6 +1093,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 id: user.id,
                 creates: user.copy(biometric: biometric?.name).source,
                 updates: {
+                  ...user.extra ?? {},
                   AuthKeys.i.loggedIn: true,
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
@@ -1102,6 +1110,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 id: user.id,
                 creates: user.source,
                 updates: {
+                  ...user.extra ?? {},
                   AuthKeys.i.loggedIn: true,
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
@@ -1188,6 +1197,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 id: user.id,
                 creates: user.copy(biometric: biometric?.name).source,
                 updates: {
+                  ...user.extra ?? {},
                   AuthKeys.i.loggedIn: true,
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
@@ -1290,6 +1300,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 id: user.id,
                 creates: user.copy(biometric: biometric?.name).source,
                 updates: {
+                  ...user.extra ?? {},
                   AuthKeys.i.loggedIn: true,
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
@@ -1350,12 +1361,17 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       emit(AuthResponse.loading(provider, AuthType.logout));
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
-        return _auth.then((data) {
+        return _auth.then((data) async {
           if (data != null) {
+            await update({
+              AuthKeys.i.loggedIn: false,
+              AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
+            });
             if (data.isBiometric) {
               return _update(
                 id: data.id,
                 updates: {
+                  ...data.extra ?? {},
                   AuthKeys.i.loggedIn: false,
                   AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
                 },
