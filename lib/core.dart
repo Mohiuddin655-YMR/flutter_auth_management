@@ -1,8 +1,11 @@
 library core;
 
+export 'src/core/converter.dart';
 export 'src/core/extensions.dart';
 export 'src/core/messages.dart';
+export 'src/core/patterns.dart';
 export 'src/core/typedefs.dart';
+export 'src/core/validator.dart';
 export 'src/data/controllers/controller.dart';
 export 'src/data/handlers/auth_handler.dart';
 export 'src/data/handlers/backup_handler.dart';

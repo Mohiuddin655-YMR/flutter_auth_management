@@ -1,4 +1,4 @@
-import 'package:flutter_andomie/core.dart';
+import 'package:in_app_database/in_app_database.dart';
 
 import '../../models/auth.dart';
 import '../../services/repositories/backup_repository.dart';
@@ -10,7 +10,7 @@ class BackupRepositoryImpl<T extends Auth> extends BackupRepository<T> {
 
   BackupRepositoryImpl({
     AuthorizedDataSource<T>? source,
-    LocalDatabase? database,
+    InAppDatabase? database,
   }) : source = source ?? KeepDataSource<T>(database: database);
 
   @override

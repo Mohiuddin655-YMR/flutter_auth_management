@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-import 'package:flutter_andomie/core.dart';
+import 'package:flutter_entity/flutter_entity.dart';
 
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
@@ -199,9 +199,9 @@ class AuthHandlerImpl extends AuthHandler {
             onCodeSent: onCodeSent,
             onCodeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
           )
-          .onError((_, __) => Response<void>(exception: "$_"));
+          .onError((_, __) => Response(exception: "$_"));
     } catch (_) {
-      return Future.value(Response<void>(exception: "$_"));
+      return Future.value(Response(exception: "$_"));
     }
   }
 }

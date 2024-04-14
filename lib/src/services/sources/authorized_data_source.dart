@@ -1,15 +1,15 @@
-import 'package:flutter_andomie/core.dart';
+import 'package:in_app_database/in_app_database.dart';
 
 import '../../models/auth.dart';
 
 abstract class AuthorizedDataSource<T extends Auth> {
   AuthorizedDataSource({
-    LocalDatabase? database,
+    InAppDatabase? database,
   }) : _db = database;
 
-  LocalDatabase? _db;
+  InAppDatabase? _db;
 
-  Future<LocalDatabase> get database async => _db ??= await LocalDatabaseImpl.I;
+  Future<InAppDatabase> get database async => _db ??= await InAppDatabaseImpl.I;
 
   final String key = AuthKeys.key;
 

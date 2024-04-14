@@ -1,7 +1,7 @@
 import 'dart:developer';
 
 import 'package:auth_management/core.dart';
-import 'package:flutter_andomie/core.dart';
+import 'package:flutter_entity/flutter_entity.dart';
 
 class UserKeys extends AuthKeys {
   final address = "address";
@@ -124,10 +124,11 @@ class UserModel extends Auth<UserKeys> {
 
   @override
   Map<String, dynamic> get source {
-    return super.source.attach({
-      key.address: _address?.source,
-      key.contact: _contact?.source,
-    });
+    return super.source
+      ..addAll({
+        key.address: _address?.source,
+        key.contact: _contact?.source,
+      });
   }
 }
 

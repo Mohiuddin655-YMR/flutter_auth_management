@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_andomie/core.dart';
+import 'package:flutter_entity/flutter_entity.dart';
 
 import '../utils/auth_helper.dart';
 import 'auth_providers.dart';
@@ -379,25 +379,26 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
 
   @override
   Map<String, dynamic> get source {
-    return super.source.attach({
-      if (isInsertable(key.accessToken, accessToken))
-        key.accessToken: accessToken,
-      if (isInsertable(key.biometric, biometric)) key.biometric: biometric,
-      if (isInsertable(key.email, email)) key.email: email,
-      if (isInsertable(key.extra, extra)) key.extra: extra,
-      if (isInsertable(key.idToken, idToken)) key.idToken: idToken,
-      if (isInsertable(key.loggedIn, loggedIn)) key.loggedIn: loggedIn,
-      if (isInsertable(key.loggedInTime, loggedInTime))
-        key.loggedInTime: loggedInTime,
-      if (isInsertable(key.loggedOutTime, loggedOutTime))
-        key.loggedOutTime: loggedOutTime,
-      if (isInsertable(key.name, name)) key.name: name,
-      if (isInsertable(key.password, password)) key.password: password,
-      if (isInsertable(key.phone, phone)) key.phone: phone,
-      if (isInsertable(key.photo, photo)) key.photo: photo,
-      if (isInsertable(key.provider, provider)) key.provider: provider,
-      if (isInsertable(key.username, username)) key.username: username,
-      if (isInsertable(key.verified, verified)) key.verified: verified,
-    });
+    return super.source
+      ..addAll({
+        if (isInsertable(key.accessToken, accessToken))
+          key.accessToken: accessToken,
+        if (isInsertable(key.biometric, biometric)) key.biometric: biometric,
+        if (isInsertable(key.email, email)) key.email: email,
+        if (isInsertable(key.extra, extra)) key.extra: extra,
+        if (isInsertable(key.idToken, idToken)) key.idToken: idToken,
+        if (isInsertable(key.loggedIn, loggedIn)) key.loggedIn: loggedIn,
+        if (isInsertable(key.loggedInTime, loggedInTime))
+          key.loggedInTime: loggedInTime,
+        if (isInsertable(key.loggedOutTime, loggedOutTime))
+          key.loggedOutTime: loggedOutTime,
+        if (isInsertable(key.name, name)) key.name: name,
+        if (isInsertable(key.password, password)) key.password: password,
+        if (isInsertable(key.phone, phone)) key.phone: phone,
+        if (isInsertable(key.photo, photo)) key.photo: photo,
+        if (isInsertable(key.provider, provider)) key.provider: provider,
+        if (isInsertable(key.username, username)) key.username: username,
+        if (isInsertable(key.verified, verified)) key.verified: verified,
+      });
   }
 }

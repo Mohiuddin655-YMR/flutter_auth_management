@@ -130,7 +130,9 @@ class _HomePageState extends State<HomePage> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     Text(
-                      "Account created at ".join(value?.realtime ?? ""),
+                      "Account created at ".join(
+                        DateProvider.toRealtime(value?.timeMills ?? 0),
+                      ),
                       style: Theme.of(context)
                           .textTheme
                           .titleSmall

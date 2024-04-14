@@ -12,7 +12,7 @@ dependencies:
 
   auth_management:
     path: ../
-  flutter_andomie: ^0.5.7
+  flutter_andomie: ^0.5.17
   flutter_androssy: ^0.3.5
   firebase_core: ^2.24.2
   firebase_auth: ^4.14.1

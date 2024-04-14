@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_andomie/utils.dart';
+import 'package:flutter_entity/flutter_entity.dart';
 
 import '../../core/messages.dart';
 import '../../core/typedefs.dart';
@@ -23,18 +23,23 @@ import '../sources/auth_data_source.dart';
 import '../sources/authorized_data_source.dart';
 
 abstract class AuthController<T extends Auth> {
+  static AuthController? _i;
+
   static AuthController<T> getInstance<T extends Auth>({
     AuthDataSource? auth,
     AuthorizedDataSource<T>? backup,
     AuthMessages? messages,
   }) {
-    return Singleton.instanceOf(() {
-      return AuthControllerImpl<T>(
+    if (_i is AuthController<T>) {
+      return _i as AuthController<T>;
+    } else {
+      _i = AuthControllerImpl<T>(
         auth: auth,
         backup: backup,
         messages: messages,
       );
-    });
+      return _i as AuthController<T>;
+    }
   }
 
   static AuthController<T> getInstanceOf<T extends Auth>({
@@ -42,13 +47,16 @@ abstract class AuthController<T extends Auth> {
     BackupHandler<T>? backupHandler,
     AuthMessages? messages,
   }) {
-    return Singleton.instanceOf(() {
-      return AuthControllerImpl<T>.fromHandler(
+    if (_i is AuthController<T>) {
+      return _i as AuthController<T>;
+    } else {
+      _i = AuthControllerImpl<T>.fromHandler(
         authHandler: authHandler,
         backupHandler: backupHandler,
         messages: messages,
       );
-    });
+      return _i as AuthController<T>;
+    }
   }
 
   Future<T?> get auth {

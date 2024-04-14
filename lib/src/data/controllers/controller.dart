@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_andomie/utils.dart';
+import 'package:flutter_entity/flutter_entity.dart';
 
 import '../../core/messages.dart';
 import '../../core/typedefs.dart';
+import '../../core/validator.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
 import '../../models/auth_state.dart';
@@ -460,8 +461,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           final token = user.accessToken;
           final provider = AuthProviders.from(user.provider);
           var current = Response<UserCredential>();
-          if ((user.email.isValid || user.username.isValid) &&
-              user.password.isValid) {
+          if ((user.email ?? user.username ?? "").isNotEmpty &&
+              (user.password ?? '').isNotEmpty) {
             if (provider.isEmail) {
               current = await authHandler.signInWithEmailNPassword(
                 email: user.email ?? "",
@@ -473,7 +474,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 password: user.password ?? "",
               );
             }
-          } else if (token.isValid || user.idToken.isValid) {
+          } else if ((token ?? user.idToken ?? "").isNotEmpty) {
             if (provider.isApple) {
               current = await authHandler.signInWithCredential(
                 credential: OAuthProvider("apple.com").credential(
@@ -483,7 +484,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               );
             } else if (provider.isFacebook) {
               current = await authHandler.signInWithCredential(
-                credential: FacebookAuthProvider.credential(token.use),
+                credential: FacebookAuthProvider.credential(token ?? ""),
               );
             } else if (provider.isGoogle) {
               current = await authHandler.signInWithCredential(
@@ -548,13 +549,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }) async {
     final email = authenticator.email;
     final password = authenticator.password;
-    if (!Validator.isValidEmail(email)) {
+    if (!AuthValidator.isValidEmail(email)) {
       return emit(AuthResponse.failure(
         msg.email,
         provider: AuthProviders.email,
         type: AuthType.login,
       ));
-    } else if (!Validator.isValidPassword(password)) {
+    } else if (!AuthValidator.isValidPassword(password)) {
       return emit(AuthResponse.failure(
         msg.password,
         provider: AuthProviders.email,
@@ -877,7 +878,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     void Function(String verId)? onCodeAutoRetrievalTimeout,
   }) async {
     final phone = authenticator.phone;
-    if (!Validator.isValidPhone(phone)) {
+    if (!AuthValidator.isValidPhone(phone)) {
       return emit(AuthResponse.failure(
         msg.phoneNumber,
         provider: AuthProviders.phone,
@@ -968,13 +969,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }) async {
     final token = authenticator.token;
     final code = authenticator.smsCode;
-    if (!Validator.isValidString(token)) {
+    if (!AuthValidator.isValidToken(token)) {
       return emit(AuthResponse.failure(
         msg.token,
         provider: AuthProviders.phone,
         type: AuthType.phone,
       ));
-    } else if (!Validator.isValidString(code)) {
+    } else if (!AuthValidator.isValidSmsCode(code)) {
       return emit(AuthResponse.failure(
         msg.otp,
         provider: AuthProviders.phone,
@@ -1052,13 +1053,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }) async {
     final username = authenticator.username;
     final password = authenticator.password;
-    if (!Validator.isValidUsername(username)) {
+    if (!AuthValidator.isValidUsername(username)) {
       return emit(AuthResponse.failure(
         msg.username,
         provider: AuthProviders.username,
         type: AuthType.login,
       ));
-    } else if (!Validator.isValidPassword(password)) {
+    } else if (!AuthValidator.isValidPassword(password)) {
       return emit(AuthResponse.failure(
         msg.password,
         provider: AuthProviders.username,
@@ -1154,13 +1155,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }) async {
     final email = authenticator.email;
     final password = authenticator.password;
-    if (!Validator.isValidEmail(email)) {
+    if (!AuthValidator.isValidEmail(email)) {
       return emit(AuthResponse.failure(
         msg.email,
         provider: AuthProviders.email,
         type: AuthType.register,
       ));
-    } else if (!Validator.isValidPassword(password)) {
+    } else if (!AuthValidator.isValidPassword(password)) {
       return emit(AuthResponse.failure(
         msg.password,
         provider: AuthProviders.email,
@@ -1173,8 +1174,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           AuthType.register,
         ));
         final response = await authHandler.signUpWithEmailNPassword(
-          email: email.use,
-          password: password.use,
+          email: email,
+          password: password,
         );
         if (response.isSuccessful) {
           final result = response.data?.user;
@@ -1257,13 +1258,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }) async {
     final username = authenticator.username;
     final password = authenticator.password;
-    if (!Validator.isValidUsername(username)) {
+    if (!AuthValidator.isValidUsername(username)) {
       return emit(AuthResponse.failure(
         msg.username,
         provider: AuthProviders.username,
         type: AuthType.register,
       ));
-    } else if (!Validator.isValidPassword(password)) {
+    } else if (!AuthValidator.isValidPassword(password)) {
       return emit(AuthResponse.failure(
         msg.password,
         provider: AuthProviders.username,
@@ -1276,8 +1277,8 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           AuthType.register,
         ));
         final response = await authHandler.signUpWithUsernameNPassword(
-          username: username.use,
-          password: password.use,
+          username: username,
+          password: password,
         );
         if (response.isSuccessful) {
           final result = response.data?.user;
@@ -1419,13 +1420,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse> verifyPhoneByOtp(OtpAuthenticator authenticator) async {
     final token = authenticator.token;
     final code = authenticator.smsCode;
-    if (!Validator.isValidString(token)) {
+    if (!AuthValidator.isValidToken(token)) {
       return AuthResponse.failure(
         msg.token,
         provider: AuthProviders.phone,
         type: AuthType.phone,
       );
-    } else if (!Validator.isValidString(code)) {
+    } else if (!AuthValidator.isValidSmsCode(code)) {
       return AuthResponse.failure(
         msg.otp,
         provider: AuthProviders.phone,

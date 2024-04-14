@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:core';
 
-import 'package:flutter_andomie/core.dart';
+import 'package:flutter_entity/flutter_entity.dart';
+import 'package:in_app_database/in_app_database.dart';
 
 import '../../models/auth.dart';
 import '../../services/sources/authorized_data_source.dart';

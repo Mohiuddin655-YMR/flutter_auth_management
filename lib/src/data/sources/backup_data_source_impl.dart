@@ -1,6 +1,6 @@
 part of 'authorized_data_source.dart';
 
-extension _LocalExtension on Future<LocalDatabase> {
+extension _LocalExtension on Future<InAppDatabase> {
   Future<bool> input(
     String key,
     Map<String, dynamic>? value,

@@ -1,6 +1,6 @@
 name: auth_management
 description: Collection of auth service with advanced controlling system.
-version: 0.2.20
+version: 0.2.21
 repository: https://github.com/P-YMR/flutter_auth_management.git
 
 environment:
@@ -11,18 +11,19 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_andomie: ^0.5.15
-
   # Authentications
+  flutter_entity: ^1.0.0
   firebase_auth: ^4.19.1
   flutter_facebook_auth: ^6.2.0
   google_sign_in: ^6.2.1
-  local_auth: ^2.2.0
+  local_auth: ^2.1.8
   local_auth_android: ^1.0.37
-  local_auth_ios: ^1.1.7
+  local_auth_ios: ^1.1.6
   local_auth_platform_interface: ^1.0.10
   local_auth_windows: ^1.0.10
-  sign_in_with_apple: ^6.1.0
+  sign_in_with_apple: ^5.0.0
+  in_app_database: ^1.0.2
+  flutter_network_status: ^1.0.0
 
 dev_dependencies:
   flutter_test:

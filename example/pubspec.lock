@@ -17,14 +17,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.2"
-  asn1lib:
-    dependency: transitive
-    description:
-      name: asn1lib
-      sha256: "21afe4333076c02877d14f4a89df111e658a6d466cbfc802eb705eb91bd5adfd"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.5.0"
   async:
     dependency: transitive
     description:
@@ -39,7 +31,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.2.20"
+    version: "0.2.21"
   badges:
     dependency: transitive
     description:
@@ -60,26 +52,26 @@ packages:
     dependency: transitive
     description:
       name: cached_network_image
-      sha256: f98972704692ba679db144261172a8e20feb145636c617af0eb4022132a6797f
+      sha256: "28ea9690a8207179c319965c13cd8df184d5ee721ae2ce60f398ced1219cea1f"
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0"
+    version: "3.3.1"
   cached_network_image_platform_interface:
     dependency: transitive
     description:
       name: cached_network_image_platform_interface
-      sha256: "56aa42a7a01e3c9db8456d9f3f999931f1e05535b5a424271e9a38cabf066613"
+      sha256: "9e90e78ae72caa874a323d78fa6301b3fb8fa7ea76a8f96dc5b5bf79f283bf2f"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "4.0.0"
   cached_network_image_web:
     dependency: transitive
     description:
       name: cached_network_image_web
-      sha256: "759b9a9f8f6ccbb66c185df805fac107f05730b1dab9c64626d1008cca532257"
+      sha256: "42a835caa27c220d1294311ac409a43361088625a4f23c820b006dd9bffb3316"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.1.1"
   characters:
     dependency: transitive
     description:
@@ -108,26 +100,18 @@ packages:
     dependency: transitive
     description:
       name: connectivity_plus
-      sha256: "224a77051d52a11fbad53dd57827594d3bd24f945af28bd70bab376d68d437f0"
+      sha256: ebe15d94de9dd7c31dc2ac54e42780acdf3384b1497c69290c9f3c5b0279fc57
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.2"
+    version: "6.0.2"
   connectivity_plus_platform_interface:
     dependency: transitive
     description:
       name: connectivity_plus_platform_interface
-      sha256: cf1d1c28f4416f8c654d7dc3cd638ec586076255d407cef3ddbdaf178272a71a
+      sha256: b6a56efe1e6675be240de39107281d4034b64ac23438026355b4234042a35adb
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.4"
-  convert:
-    dependency: transitive
-    description:
-      name: convert
-      sha256: "0f08b14755d163f6e2134cb58222dd25ea2a2ee8a195e53983d57c075324d592"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.1"
+    version: "2.0.0"
   crypto:
     dependency: transitive
     description:
@@ -144,14 +128,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.8"
-  encrypt:
-    dependency: transitive
-    description:
-      name: encrypt
-      sha256: "62d9aa4670cc2a8798bab89b39fc71b6dfbacf615de6cf5001fb39f7e4a996a2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.0.3"
   facebook_auth_desktop:
     dependency: transitive
     description:
@@ -241,18 +217,18 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_andomie
-      sha256: "4297e8e6b10d873e8a479180a12f6ffdafebf9d785a35ed01a4becb34a7eb2cf"
+      sha256: "66017596a292efa40a002a76f96f89fe7c7b80ce2a5622a1477c75f511b003b3"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.15"
+    version: "0.5.17"
   flutter_androssy:
     dependency: "direct main"
     description:
       name: flutter_androssy
-      sha256: "22fd740f7bfdf7646003e4b12c80df162f66126b0f5ac132e6d84a5cfdadd2da"
+      sha256: f3974532bbdd79cc32d3efb8f80fb459e7206cca968a0d83ad39e5e28ba76131
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.5"
+    version: "0.3.34"
   flutter_cache_manager:
     dependency: transitive
     description:
@@ -261,6 +237,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.3.1"
+  flutter_entity:
+    dependency: transitive
+    description:
+      name: flutter_entity
+      sha256: "7e29b495160f71ec5a2992b9a1c3c69807bcc045c8108a029e99bb3af7748aa0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   flutter_facebook_auth:
     dependency: transitive
     description:
@@ -297,10 +281,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_network_status
-      sha256: "7777fc980e5b11f07391620ebf7cadd1ccdbef77a25f42d57ac87d3180a9ca83"
+      sha256: "2ecfc64b7cba76a2f55f7840964672ce380e0eef8ab94eeeccf8a4cd7b20e308"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.3"
+    version: "1.0.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -439,6 +423,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.2"
+  in_app_database:
+    dependency: transitive
+    description:
+      name: in_app_database
+      sha256: "34c6e5112bb7adb0c1ce95998895cd4a90693e299fd1daa05d47a7180c83f22b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   intl:
     dependency: transitive
     description:
@@ -671,14 +663,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  pointycastle:
-    dependency: transitive
-    description:
-      name: pointycastle
-      sha256: "7c1e5f0d23c9016c5bbd8b1473d0d3fb3fc851b876046039509e18e0c7485f2c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.7.3"
   quiver:
     dependency: transitive
     description:
@@ -699,10 +683,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences
-      sha256: "81429e4481e1ccfb51ede496e916348668fd0921627779233bd24cc3ff6abd02"
+      sha256: d3bbe5553a986e83980916ded2f0b435ef2e1893dfaa29d5a7a790d0eca12180
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.2"
+    version: "2.2.3"
   shared_preferences_android:
     dependency: transitive
     description:
@@ -715,10 +699,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_foundation
-      sha256: f39696b83e844923b642ce9dd4bd31736c17e697f6731a5adf445b1274cf3cd4
+      sha256: "7708d83064f38060c7b39db12aefe449cb8cdc031d6062280087bc4cdb988f5c"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.2"
+    version: "2.3.5"
   shared_preferences_linux:
     dependency: transitive
     description:
@@ -755,10 +739,10 @@ packages:
     dependency: transitive
     description:
       name: sign_in_with_apple
-      sha256: b0abd9c0d0407140829b12cd99a250f10b20352573ff08c7e0c5174c64b4973e
+      sha256: "0975c23b9f8b30a80e27d5659a75993a093d4cb5f4eb7d23a9ccc586fea634e0"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.0"
+    version: "5.0.0"
   sign_in_with_apple_platform_interface:
     dependency: transitive
     description:
@@ -771,10 +755,10 @@ packages:
     dependency: transitive
     description:
       name: sign_in_with_apple_web
-      sha256: c009e9beeb6c376e86aaa154fcc8b4e075d4bad90c56286b9668a51cdb6129ea
+      sha256: "44b66528f576e77847c14999d5e881e17e7223b7b0625a185417829e5306f47a"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "1.0.1"
   sky_engine:
     dependency: transitive
     description: flutter

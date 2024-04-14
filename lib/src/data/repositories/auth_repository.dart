@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-import 'package:flutter_andomie/core.dart';
+import 'package:flutter_entity/flutter_entity.dart';
 
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';

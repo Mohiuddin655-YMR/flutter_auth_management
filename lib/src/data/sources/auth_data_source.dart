@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-import 'package:flutter_andomie/core.dart';
+import 'package:flutter_entity/flutter_entity.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:flutter_network_status/network_status.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../../core/converter.dart';
+import '../../core/validator.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
 import '../../models/biometric_config.dart';
@@ -292,8 +295,8 @@ class AuthDataSourceImpl extends AuthDataSource {
     required String password,
   }) async {
     final response = Response<UserCredential>();
-    var mail = Converter.toMail(username, "user", "org");
-    if (Validator.isValidEmail(mail)) {
+    var mail = AuthConverter.toMail(username, "user", "org");
+    if (AuthValidator.isValidEmail(mail)) {
       try {
         final result = await firebaseAuth.signInWithEmailAndPassword(
           email: mail ?? "example@user.org",
@@ -331,8 +334,8 @@ class AuthDataSourceImpl extends AuthDataSource {
     required String password,
   }) async {
     final response = Response<UserCredential>();
-    var mail = Converter.toMail(username, "user", "org");
-    if (Validator.isValidEmail(mail)) {
+    var mail = AuthConverter.toMail(username, "user", "org");
+    if (AuthValidator.isValidEmail(mail)) {
       try {
         final result = await firebaseAuth.createUserWithEmailAndPassword(
           email: mail ?? "example@user.org",
@@ -401,8 +404,8 @@ class AuthDataSourceImpl extends AuthDataSource {
     required void Function(String verId, int? forceResendingToken) onCodeSent,
     required void Function(String verId) onCodeAutoRetrievalTimeout,
   }) async {
-    final response = Response<void>();
-    if (Validator.isValidPhone(phoneNumber)) {
+    final response = Response();
+    if (AuthValidator.isValidPhone(phoneNumber)) {
       try {
         firebaseAuth.verifyPhoneNumber(
           phoneNumber: phoneNumber,
