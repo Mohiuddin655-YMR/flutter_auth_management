@@ -1,15 +1,13 @@
-import 'package:in_app_database/in_app_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/auth.dart';
 
 abstract class AuthorizedDataSource<T extends Auth> {
-  AuthorizedDataSource({
-    InAppDatabase? database,
-  }) : _db = database;
+  SharedPreferences? _db;
 
-  InAppDatabase? _db;
-
-  Future<InAppDatabase> get database async => _db ??= await InAppDatabaseImpl.I;
+  Future<SharedPreferences> get database async {
+    return _db ??= await SharedPreferences.getInstance();
+  }
 
   final String key = AuthKeys.key;
 

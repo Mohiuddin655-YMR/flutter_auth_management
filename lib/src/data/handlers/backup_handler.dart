@@ -1,5 +1,3 @@
-import 'package:in_app_database/in_app_database.dart';
-
 import '../../models/auth.dart';
 import '../../services/handlers/backup_handler.dart';
 import '../../services/repositories/backup_repository.dart';
@@ -11,8 +9,7 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
 
   BackupHandlerImpl({
     AuthorizedDataSource<T>? source,
-    InAppDatabase? database,
-  }) : repository = BackupRepositoryImpl<T>(source: source, database: database);
+  }) : repository = BackupRepositoryImpl<T>(source: source);
 
   BackupHandlerImpl.fromRepository(this.repository);
 

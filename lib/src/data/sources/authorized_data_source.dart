@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:flutter_entity/flutter_entity.dart';
-import 'package:in_app_database/in_app_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/auth.dart';
 import '../../services/sources/authorized_data_source.dart';
@@ -11,10 +11,6 @@ part 'backup_data_source_impl.dart';
 
 abstract class AuthorizedDataSourceImpl<T extends Auth>
     extends AuthorizedDataSource<T> {
-  AuthorizedDataSourceImpl({
-    super.database,
-  });
-
   @override
   Future<T?> get cache {
     return database.output(key).then((value) {

@@ -1,6 +1,6 @@
 part of 'authorized_data_source.dart';
 
-extension _LocalExtension on Future<InAppDatabase> {
+extension _LocalExtension on Future<SharedPreferences> {
   Future<bool> input(
     String key,
     Map<String, dynamic>? value,
@@ -11,7 +11,7 @@ extension _LocalExtension on Future<InAppDatabase> {
       if (data.isNotEmpty) {
         return db.setString(key, data);
       } else {
-        return db.removeItem(key);
+        return db.remove(key);
       }
     } catch (_) {
       return Future.error(_);
