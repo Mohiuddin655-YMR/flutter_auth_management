@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:auth_management/core.dart';
 import 'package:flutter/material.dart';
 
-import 'user.dart';
+import 'user_model.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,6 +19,89 @@ class _LoginPageState extends State<LoginPage> {
   final etPassword = TextEditingController();
   final etOTP = TextEditingController();
   String? token;
+
+  void signInByEmail() async {
+    log("AUTH : login");
+    final email = etEmail.text;
+    final password = etPassword.text;
+    context.signInByEmail<UserModel>(EmailAuthenticator(
+      email: email,
+      password: password,
+    ));
+  }
+
+  void signUpByEmail() async {
+    final name = etName.text;
+    final email = etEmail.text;
+    final password = etPassword.text;
+    context.signUpByEmail<UserModel>(EmailAuthenticator(
+      email: email,
+      password: password,
+      name: name, // Optional
+    ));
+  }
+
+  void signInByUsername() {
+    final name = etName.text;
+    final password = etPassword.text;
+    context.signInByUsername<UserModel>(UsernameAuthenticator(
+      username: name,
+      password: password,
+    ));
+  }
+
+  void signUpByUsername() {
+    final name = etName.text;
+    final password = etPassword.text;
+    context.signUpByUsername<UserModel>(UsernameAuthenticator(
+      username: name,
+      password: password,
+      name: name, // Optional
+    ));
+  }
+
+  void signInByPhone() async {
+    final name = etName.text;
+    final phone = etPhone.text;
+    context.signInByPhone<UserModel>(
+      PhoneAuthenticator(phone: phone, name: name),
+      onCodeSent: (verId, refreshTokenId) {
+        token = verId;
+      },
+    );
+  }
+
+  void signInByOtp() async {
+    final name = etName.text;
+    final phone = etPhone.text;
+    final code = etOTP.text;
+    context.signInByOtp<UserModel>(OtpAuthenticator(
+      token: token ?? "",
+      smsCode: code,
+      name: name,
+      phone: phone,
+    ));
+  }
+
+  void signInByApple() {
+    context.signInByApple<UserModel>();
+  }
+
+  void signInByBiometric() {
+    context.signInByBiometric<UserModel>();
+  }
+
+  void signInByFacebook() {
+    context.signInByFacebook<UserModel>();
+  }
+
+  void signInByGithub() {
+    context.signInByGithub<UserModel>();
+  }
+
+  void signInByGoogle() {
+    context.signInByGoogle<UserModel>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,88 +242,5 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
     );
-  }
-
-  void signInByEmail() async {
-    log("AUTH : login");
-    final email = etEmail.text;
-    final password = etPassword.text;
-    context.signInByEmail<UserModel>(EmailAuthenticator(
-      email: email,
-      password: password,
-    ));
-  }
-
-  void signUpByEmail() async {
-    final name = etName.text;
-    final email = etEmail.text;
-    final password = etPassword.text;
-    context.signUpByEmail<UserModel>(EmailAuthenticator(
-      email: email,
-      password: password,
-      name: name, // Optional
-    ));
-  }
-
-  void signInByUsername() {
-    final name = etName.text;
-    final password = etPassword.text;
-    context.signInByUsername<UserModel>(UsernameAuthenticator(
-      username: name,
-      password: password,
-    ));
-  }
-
-  void signUpByUsername() {
-    final name = etName.text;
-    final password = etPassword.text;
-    context.signUpByUsername<UserModel>(UsernameAuthenticator(
-      username: name,
-      password: password,
-      name: name, // Optional
-    ));
-  }
-
-  void signInByPhone() async {
-    final name = etName.text;
-    final phone = etPhone.text;
-    context.signInByPhone<UserModel>(
-      PhoneAuthenticator(phone: phone, name: name),
-      onCodeSent: (verId, refreshTokenId) {
-        token = verId;
-      },
-    );
-  }
-
-  void signInByOtp() async {
-    final name = etName.text;
-    final phone = etPhone.text;
-    final code = etOTP.text;
-    context.signInByOtp<UserModel>(OtpAuthenticator(
-      token: token ?? "",
-      smsCode: code,
-      name: name,
-      phone: phone,
-    ));
-  }
-
-  void signInByApple() {
-    context.signInByApple<UserModel>();
-  }
-
-  void signInByBiometric() {
-    context.signInByBiometric<UserModel>();
-  }
-
-  void signInByFacebook() {
-    context.signInByFacebook<UserModel>();
-  }
-
-  void signInByGithub() {
-    context.signInByGithub<UserModel>();
-  }
-
-  void signInByGoogle() {
-    context.signInByGoogle<UserModel>();
   }
 }

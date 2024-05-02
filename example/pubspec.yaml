@@ -15,6 +15,11 @@ dependencies:
   flutter_andomie: ^0.5.17
   flutter_androssy: ^0.3.5
   firebase_core: ^2.24.2
+  auth_management_apple_delegate: ^1.0.0
+  auth_management_biometric_delegate: ^1.0.0
+  auth_management_facebook_delegate: ^1.0.0
+  auth_management_google_delegate: ^1.0.0
+
   pinput: ^3.0.1
 
 dev_dependencies:

@@ -6,6 +6,10 @@ import '../../models/auth_providers.dart';
 import '../../models/biometric_config.dart';
 import '../../models/credential.dart';
 
+abstract class UserDelegate {
+  Future<void> delete();
+}
+
 abstract class AuthDataSource {
   User? get user;
 

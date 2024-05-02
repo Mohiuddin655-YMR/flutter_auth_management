@@ -1,4 +1,4 @@
-part of 'authorized_data_source.dart';
+part of '../data/sources/authorized_data_source.dart';
 
 extension _LocalExtension on Future<SharedPreferences> {
   Future<bool> input(

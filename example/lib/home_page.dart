@@ -4,7 +4,7 @@ import 'package:auth_management/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_andomie/core.dart';
 
-import 'user.dart';
+import 'user_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

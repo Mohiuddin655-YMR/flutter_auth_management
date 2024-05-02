@@ -31,7 +31,47 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.2.22"
+    version: "0.3.0"
+  auth_management_apple_delegate:
+    dependency: "direct main"
+    description:
+      name: auth_management_apple_delegate
+      sha256: e7c8f7aca2740564f9cccc9681eb4e6d9c348786bbc9d24e4cd4e4336fb3e9bd
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  auth_management_biometric_delegate:
+    dependency: "direct main"
+    description:
+      name: auth_management_biometric_delegate
+      sha256: "3cc94b9e91defc67655a04d354caee1765d57dcd6c514499bc5ca7026c7c5dad"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  auth_management_delegates:
+    dependency: transitive
+    description:
+      name: auth_management_delegates
+      sha256: "613a085291a265b07f118e368c02661e8225785907f416d264feb2fff0a28c75"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  auth_management_facebook_delegate:
+    dependency: "direct main"
+    description:
+      name: auth_management_facebook_delegate
+      sha256: "58d93b291c0fc247fba9e7dc47f4052aba51b938b6757a038c039de05a9ac7f9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  auth_management_google_delegate:
+    dependency: "direct main"
+    description:
+      name: auth_management_google_delegate
+      sha256: "999c2ae4d0df1708283ac63a83dad9137f8b954e6e9cb58bcdd38e6cb8171459"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   badges:
     dependency: transitive
     description:
@@ -289,10 +329,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_plugin_android_lifecycle
-      sha256: "950e77c2bbe1692bc0874fc7fb491b96a4dc340457f4ea1641443d0a6c1ea360"
+      sha256: "8cf40eebf5dec866a6d1956ad7b4f7016e6c0cc69847ab946833b7d43743809f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.15"
+    version: "2.0.19"
   flutter_secure_storage:
     dependency: transitive
     description:
@@ -363,10 +403,10 @@ packages:
     dependency: transitive
     description:
       name: google_identity_services_web
-      sha256: "7940fdc3b1035db4d65d387c1bdd6f9574deaa6777411569c05ecc25672efacd"
+      sha256: "9482364c9f8b7bd36902572ebc3a7c2b5c8ee57a9c93e6eb5099c1a9ec5265d8"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.3.1+1"
   google_sign_in:
     dependency: transitive
     description:
@@ -379,34 +419,34 @@ packages:
     dependency: transitive
     description:
       name: google_sign_in_android
-      sha256: "8d60a787b29cb7d2bcf29230865f4a91f17323c6ac5b6b9027a6418e48d9ffc3"
+      sha256: "7647893c65e6720973f0e579051c8f84b877b486614d9f70a404259c41a4632e"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.18"
+    version: "6.1.23"
   google_sign_in_ios:
     dependency: transitive
     description:
       name: google_sign_in_ios
-      sha256: "0822b0abc94ff6d705d7a321ef58818ffed864787f23f5ac3451e3e6afbcf90d"
+      sha256: a058c9880be456f21e2e8571c1126eaacd570bdc5b6c6d9d15aea4bdf22ca9fe
       url: "https://pub.dev"
     source: hosted
-    version: "5.7.1"
+    version: "5.7.6"
   google_sign_in_platform_interface:
     dependency: transitive
     description:
       name: google_sign_in_platform_interface
-      sha256: e69553c0fc6a76216e9d06a8c3767e291ad9be42171f879aab7ab708569d4393
+      sha256: "1f6e5787d7a120cc0359ddf315c92309069171306242e181c09472d1b00a2971"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.5"
   google_sign_in_web:
     dependency: transitive
     description:
       name: google_sign_in_web
-      sha256: "69b9ce0e760945ff52337921a8b5871592b74c92f85e7632293310701eea68cc"
+      sha256: fc0f14ed45ea616a6cfb4d1c7534c2221b7092cc4f29a709f0c3053cc3e821bd
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.0+2"
+    version: "0.12.4"
   http:
     dependency: transitive
     description:
@@ -483,10 +523,10 @@ packages:
     dependency: transitive
     description:
       name: local_auth_android
-      sha256: "3bcd732dda7c75fcb7ddaef12e131230f53dcc8c00790d0d6efb3aa0fbbeda57"
+      sha256: e0e5b1ea247c5a0951c13a7ee13dc1beae69750e6a2e1910d1ed6a3cd4d56943
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.37"
+    version: "1.0.38"
   local_auth_darwin:
     dependency: transitive
     description:
@@ -495,14 +535,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.2"
-  local_auth_ios:
-    dependency: transitive
-    description:
-      name: local_auth_ios
-      sha256: "6dde47dc852bc0c8343cb58e66a46efb16b62eddf389ce103d4dacb0c6c40c71"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.7"
   local_auth_platform_interface:
     dependency: transitive
     description:
@@ -655,14 +687,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  quiver:
-    dependency: transitive
-    description:
-      name: quiver
-      sha256: b1c1ac5ce6688d77f65f3375a9abb9319b3cb32486bdc7a1e0fdf004d7ba4e47
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.1"
   rxdart:
     dependency: transitive
     description:
@@ -731,10 +755,10 @@ packages:
     dependency: transitive
     description:
       name: sign_in_with_apple
-      sha256: b0abd9c0d0407140829b12cd99a250f10b20352573ff08c7e0c5174c64b4973e
+      sha256: "0975c23b9f8b30a80e27d5659a75993a093d4cb5f4eb7d23a9ccc586fea634e0"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.0"
+    version: "5.0.0"
   sign_in_with_apple_platform_interface:
     dependency: transitive
     description:
@@ -747,10 +771,10 @@ packages:
     dependency: transitive
     description:
       name: sign_in_with_apple_web
-      sha256: c009e9beeb6c376e86aaa154fcc8b4e075d4bad90c56286b9668a51cdb6129ea
+      sha256: "44b66528f576e77847c14999d5e881e17e7223b7b0625a185417829e5306f47a"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "1.0.1"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -941,5 +965,5 @@ packages:
     source: hosted
     version: "6.3.0"
 sdks:
-  dart: ">=3.3.0 <4.0.0"
+  dart: ">=3.3.3 <4.0.0"
   flutter: ">=3.19.0"

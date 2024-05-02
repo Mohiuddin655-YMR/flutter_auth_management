@@ -7,9 +7,8 @@ import '../repositories/backup_repository.dart';
 class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   final BackupRepository<T> repository;
 
-  BackupHandlerImpl({
-    AuthorizedDataSource<T>? source,
-  }) : repository = BackupRepositoryImpl<T>(source: source);
+  BackupHandlerImpl(AuthorizedDataSource<T> source)
+      : repository = BackupRepositoryImpl<T>(source);
 
   BackupHandlerImpl.fromRepository(this.repository);
 

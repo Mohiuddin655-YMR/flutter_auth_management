@@ -7,6 +7,8 @@ import '../../models/biometric_config.dart';
 import '../../models/credential.dart';
 
 abstract class AuthRepository {
+  const AuthRepository();
+
   User? get user;
 
   Future<Response> get delete;

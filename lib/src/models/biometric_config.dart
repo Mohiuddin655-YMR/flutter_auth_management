@@ -1,13 +1,11 @@
-import 'package:local_auth_android/local_auth_android.dart';
-import 'package:local_auth_ios/local_auth_ios.dart';
-import 'package:local_auth_windows/local_auth_windows.dart';
+import 'package:auth_management_delegates/auth_management_delegates.dart';
 
 class BiometricConfig {
   final String deviceException;
   final String failureException;
   final String checkingException;
   final String localizedReason;
-  final AuthenticationOptions options;
+  final IBiometricOptions options;
 
   // Android
   final String? biometricHint;
@@ -18,8 +16,8 @@ class BiometricConfig {
   final String? deviceCredentialsSetupDescription;
   final String? signInTitle;
 
-  AndroidAuthMessages get androidAuthMessages {
-    return AndroidAuthMessages(
+  AndroidBiometricMessages get androidAuthMessages {
+    return AndroidBiometricMessages(
       biometricHint: biometricHint,
       biometricNotRecognized: biometricNotRecognized,
       biometricRequiredTitle: biometricRequiredTitle,
@@ -40,8 +38,8 @@ class BiometricConfig {
   final String? cancelButton;
   final String? localizedFallbackTitle;
 
-  IOSAuthMessages get iosAuthMessages {
-    return IOSAuthMessages(
+  IOSBiometricMessages get iosAuthMessages {
+    return IOSBiometricMessages(
       lockOut: lockOut,
       goToSettingsButton: goToSettingsButton,
       goToSettingsDescription: goToSettingsDescription,
@@ -50,12 +48,12 @@ class BiometricConfig {
     );
   }
 
-  // Widow
-  WindowsAuthMessages get windowsAuthMessages {
-    return const WindowsAuthMessages();
+  // Windows
+  WindowsBiometricMessages get windowsAuthMessages {
+    return const WindowsBiometricMessages();
   }
 
-  List<AuthMessages> get authMessages {
+  List<IBiometricMessages> get authMessages {
     return [
       androidAuthMessages,
       iosAuthMessages,
@@ -84,7 +82,7 @@ class BiometricConfig {
     this.checkingException = "Can not check biometrics!",
     this.localizedReason =
         "Scan your fingerprint (or face or whatever) to authenticate",
-    this.options = const AuthenticationOptions(
+    this.options = const IBiometricOptions(
       stickyAuth: true,
       biometricOnly: true,
     ),

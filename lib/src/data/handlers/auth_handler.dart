@@ -6,19 +6,14 @@ import '../../models/auth_providers.dart';
 import '../../models/biometric_config.dart';
 import '../../models/credential.dart';
 import '../../services/handlers/auth_handler.dart';
-import '../../services/repositories/auth_repository.dart';
 import '../../services/sources/auth_data_source.dart';
 import '../repositories/auth_repository.dart';
-import '../sources/auth_data_source.dart';
 
 class AuthHandlerImpl extends AuthHandler {
-  AuthHandlerImpl({
-    AuthDataSource? source,
-  }) : super(AuthRepositoryImpl(source: source ?? AuthDataSourceImpl()));
+  AuthHandlerImpl(AuthDataSource source)
+      : super(AuthRepositoryImpl(source: source));
 
-  AuthHandlerImpl.fromRepository({
-    AuthRepository? repository,
-  }) : super(repository ?? AuthRepositoryImpl(source: AuthDataSourceImpl()));
+  const AuthHandlerImpl.fromRepository(super.repository);
 
   @override
   User? get user => repository.user;

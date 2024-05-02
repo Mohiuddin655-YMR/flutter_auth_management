@@ -1,32 +1,10 @@
 import 'dart:async';
 
+import 'package:auth_management/auth_management.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_entity/flutter_entity.dart';
 
-import '../../core/messages.dart';
-import '../../core/typedefs.dart';
-import '../../core/validator.dart';
-import '../../models/auth.dart';
-import '../../models/auth_providers.dart';
-import '../../models/auth_state.dart';
-import '../../models/auth_type.dart';
-import '../../models/biometric_config.dart';
-import '../../models/biometric_status.dart';
-import '../../services/controllers/controller.dart';
-import '../../services/handlers/auth_handler.dart';
-import '../../services/handlers/backup_handler.dart';
-import '../../services/sources/auth_data_source.dart';
-import '../../services/sources/authorized_data_source.dart';
 import '../../utils/auth_notifier.dart';
-import '../../utils/auth_response.dart';
-import '../../utils/authenticator.dart';
-import '../../utils/authenticator_email.dart';
-import '../../utils/authenticator_oauth.dart';
-import '../../utils/authenticator_otp.dart';
-import '../../utils/authenticator_phone.dart';
-import '../../utils/authenticator_username.dart';
-import '../handlers/auth_handler.dart';
-import '../handlers/backup_handler.dart';
 
 class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   final AuthMessages msg;
@@ -41,22 +19,31 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<T?> get _auth => backupHandler.cache;
 
   AuthControllerImpl({
-    AuthDataSource? auth,
+    OAuthDelegates? auth,
+    BackupDelegate<T>? backup,
+    AuthMessages? messages,
+  }) : this.fromSource(
+          auth: AuthDataSourceImpl(auth),
+          backup: AuthorizedDataSourceImpl(backup),
+        );
+
+  AuthControllerImpl.fromSource({
+    required AuthDataSource auth,
     AuthorizedDataSource<T>? backup,
     AuthMessages? messages,
   }) : this.fromHandler(
           messages: messages,
-          authHandler: AuthHandlerImpl(source: auth),
-          backupHandler: BackupHandlerImpl<T>(source: backup),
+          authHandler: AuthHandlerImpl(auth),
+          backupHandler: backup != null ? BackupHandlerImpl<T>(backup) : null,
         );
 
   AuthControllerImpl.fromHandler({
-    AuthHandler? authHandler,
+    required this.authHandler,
     BackupHandler<T>? backupHandler,
     AuthMessages? messages,
   })  : msg = messages ?? const AuthMessages(),
-        authHandler = authHandler ?? AuthHandlerImpl(),
-        backupHandler = backupHandler ?? BackupHandlerImpl<T>();
+        backupHandler =
+            backupHandler ?? BackupHandlerImpl<T>(AuthorizedDataSourceImpl());
 
   @override
   Future<T?> get auth {

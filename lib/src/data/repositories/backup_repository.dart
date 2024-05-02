@@ -1,14 +1,11 @@
 import '../../models/auth.dart';
 import '../../services/repositories/backup_repository.dart';
 import '../../services/sources/authorized_data_source.dart';
-import '../sources/keep_data_source.dart';
 
 class BackupRepositoryImpl<T extends Auth> extends BackupRepository<T> {
   final AuthorizedDataSource<T> source;
 
-  BackupRepositoryImpl({
-    AuthorizedDataSource<T>? source,
-  }) : source = source ?? KeepDataSource<T>();
+  BackupRepositoryImpl(this.source);
 
   @override
   Future<T?> get cache => source.cache;

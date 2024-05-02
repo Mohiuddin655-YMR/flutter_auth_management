@@ -4,13 +4,17 @@ import 'dart:core';
 import 'package:flutter_entity/flutter_entity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../delegates/backup.dart';
 import '../../models/auth.dart';
 import '../../services/sources/authorized_data_source.dart';
 
-part 'backup_data_source_impl.dart';
+part '../../extensions/backup.dart';
 
-abstract class AuthorizedDataSourceImpl<T extends Auth>
-    extends AuthorizedDataSource<T> {
+class AuthorizedDataSourceImpl<T extends Auth> extends AuthorizedDataSource<T> {
+  final BackupDelegate<T>? delegate;
+
+  AuthorizedDataSourceImpl([this.delegate]);
+
   @override
   Future<T?> get cache {
     return database.output(key).then((value) {
@@ -42,5 +46,50 @@ abstract class AuthorizedDataSourceImpl<T extends Auth>
   @override
   Future<bool> clear() {
     return database.input(key, null);
+  }
+
+  @override
+  Future<T?> onFetchUser(String id) {
+    if (delegate != null) {
+      return delegate!.get(id);
+    } else {
+      return Future.value(null);
+    }
+  }
+
+  @override
+  Future<void> onCreateUser(T data) {
+    if (delegate != null) {
+      return delegate!.create(data);
+    } else {
+      return Future.value(null);
+    }
+  }
+
+  @override
+  Future<void> onDeleteUser(String id) {
+    if (delegate != null) {
+      return delegate!.delete(id);
+    } else {
+      return Future.value(null);
+    }
+  }
+
+  @override
+  Future<void> onUpdateUser(String id, Map<String, dynamic> data) {
+    if (delegate != null) {
+      return delegate!.update(id, data);
+    } else {
+      return Future.value(null);
+    }
+  }
+
+  @override
+  T build(Map<String, dynamic> source) {
+    if (delegate != null) {
+      return delegate!.build(source);
+    } else {
+      return Auth.from(source) as T;
+    }
   }
 }

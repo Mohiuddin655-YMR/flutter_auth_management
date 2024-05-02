@@ -6,10 +6,9 @@
 
 ```dart
 import 'package:auth_management/core.dart';
-import 'package:flutter_andomie/core.dart';
 ```
 
-### Create authorized user key
+### Create authorized user key (OPTIONAL)
 
 ```dart
 class UserKeys extends AuthKeys {
@@ -24,14 +23,9 @@ class UserKeys extends AuthKeys {
 }
 ```
 
-### Create authorized user model
+### Create authorized user model (OPTIONAL)
 
 ```dart
-import 'dart:developer';
-
-import 'package:auth_management/core.dart';
-import 'package:flutter_andomie/core.dart';
-
 class UserModel extends Auth<UserKeys> {
   final Address? _address;
   final Contact? _contact;
@@ -60,7 +54,8 @@ class UserModel extends Auth<UserKeys> {
     super.verified,
     Address? address,
     Contact? contact,
-  })  : _address = address,
+  })
+      : _address = address,
         _contact = contact;
 
   factory UserModel.from(Object? source) {
@@ -142,10 +137,11 @@ class UserModel extends Auth<UserKeys> {
 
   @override
   Map<String, dynamic> get source {
-    return super.source.attach({
-      key.address: _address?.source,
-      key.contact: _contact?.source,
-    });
+    return super.source
+      ..addAll({
+        key.address: _address?.source,
+        key.contact: _contact?.source,
+      });
   }
 }
 
@@ -166,31 +162,31 @@ class Contact extends Entity {
 }
 ```
 
-### Create authorized user backup instance
+### Create authorized user backup delegate
 
 ```dart
-class UserBackup extends AuthorizedDataSourceImpl<UserModel> {
+class UserBackupDelegate extends BackupDelegate<UserModel> {
   @override
-  Future<UserModel?> onFetchUser(String id) async {
+  Future<UserModel?> get(String id) async {
     // fetch authorized user data from remote server
     log("Authorized user id : $id");
     return null;
   }
 
   @override
-  Future<void> onCreateUser(UserModel data) async {
+  Future<void> create(UserModel data) async {
     // Store authorized user data in remote server
     log("Authorized user data : $data");
   }
 
   @override
-  Future<void> onUpdateUser(String id, Map<String, dynamic> data) async {
+  Future<void> update(String id, Map<String, dynamic> data) async {
     // Update authorized user data in remote server
     log("Authorized user data : $data");
   }
 
   @override
-  Future<void> onDeleteUser(String id) async {
+  Future<void> delete(String id) async {
     // Clear unauthorized user data from remote server
     log("Unauthorized user id : $id");
   }
@@ -200,23 +196,41 @@ class UserBackup extends AuthorizedDataSourceImpl<UserModel> {
 }
 ```
 
-### Add auth provider in Main instance and initialize FirebaseApp
+### Create external auth delegates (apple, biometric, facebook, google etc)
 
 ```dart
-import 'package:auth_management/core.dart';
-import 'package:example/home_page.dart';
-import 'package:example/login_page.dart';
-import 'package:example/startup.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
+import 'package:auth_management/auth_management.dart';
+import 'package:auth_management_apple_delegate/auth_management_apple_delegate.dart';
+import 'package:auth_management_biometric_delegate/auth_management_biometric_delegate.dart';
+import 'package:auth_management_facebook_delegate/auth_management_facebook_delegate.dart';
+import 'package:auth_management_google_delegate/auth_management_google_delegate.dart';
 
-import 'user.dart';
+OAuthDelegates get oauthDelegates {
+  return OAuthDelegates(
+    appleAuthDelegate: AppleAuthDelegate(),
+    biometricAuthDelegate: BiometricAuthDelegate(),
+    facebookAuthDelegate: FacebookAuthDelegate(),
+    googleAuthDelegate: GoogleAuthDelegate(),
+  );
+}
+```
+
+### Initialize firebase app and widget bindings in main.dart
+
+```dart
+import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   runApp(const Application());
 }
+```
+
+### Add auth provider in root level
+
+```dart
+import 'package:auth_management/core.dart';
 
 class Application extends StatelessWidget {
   const Application({super.key});
@@ -226,7 +240,8 @@ class Application extends StatelessWidget {
     return AuthProvider<UserModel>(
       initialCheck: true,
       controller: AuthController.getInstance<UserModel>(
-        backup: UserBackup(),
+        backup: UserBackupDelegate(),
+        oauth: oauthDelegates,
       ),
       child: const MaterialApp(
         title: 'Auth Management',
@@ -235,40 +250,12 @@ class Application extends StatelessWidget {
     );
   }
 }
-
-Route<T> routes<T>(RouteSettings settings) {
-  final name = settings.name;
-  if (name == "home") {
-    return MaterialPageRoute(
-      builder: (_) {
-        return const HomePage();
-      },
-    );
-  } else if (name == "login") {
-    return MaterialPageRoute(
-      builder: (_) {
-        return const LoginPage();
-      },
-    );
-  } else {
-    return MaterialPageRoute(
-      builder: (_) {
-        return const StartupPage();
-      },
-    );
-  }
-}
 ```
 
 ### Create Startup screen
 
 ```dart
-import 'dart:developer';
-
 import 'package:auth_management/core.dart';
-import 'package:flutter/material.dart';
-
-import 'user.dart';
 
 class StartupPage extends StatefulWidget {
   const StartupPage({super.key});
@@ -341,12 +328,7 @@ class _StartupPageState extends State<StartupPage> {
 ### Create Login/Register screen
 
 ```dart
-import 'dart:developer';
-
 import 'package:auth_management/core.dart';
-import 'package:flutter/material.dart';
-
-import 'user.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -362,6 +344,88 @@ class _LoginPageState extends State<LoginPage> {
   final etPassword = TextEditingController();
   final etOTP = TextEditingController();
   String? token;
+
+  void signInByEmail() async {
+    final email = etEmail.text;
+    final password = etPassword.text;
+    context.signInByEmail<UserModel>(EmailAuthenticator(
+      email: email,
+      password: password,
+    ));
+  }
+
+  void signUpByEmail() async {
+    final name = etName.text;
+    final email = etEmail.text;
+    final password = etPassword.text;
+    context.signUpByEmail<UserModel>(EmailAuthenticator(
+      email: email,
+      password: password,
+      name: name, // Optional
+    ));
+  }
+
+  void signInByUsername() {
+    final name = etName.text;
+    final password = etPassword.text;
+    context.signInByUsername<UserModel>(UsernameAuthenticator(
+      username: name,
+      password: password,
+    ));
+  }
+
+  void signUpByUsername() {
+    final name = etName.text;
+    final password = etPassword.text;
+    context.signUpByUsername<UserModel>(UsernameAuthenticator(
+      username: name,
+      password: password,
+      name: name, // Optional
+    ));
+  }
+
+  void signInByPhone() async {
+    final name = etName.text;
+    final phone = etPhone.text;
+    context.signInByPhone<UserModel>(
+      PhoneAuthenticator(phone: phone, name: name),
+      onCodeSent: (verId, refreshTokenId) {
+        token = verId;
+      },
+    );
+  }
+
+  void signInByOtp() async {
+    final name = etName.text;
+    final phone = etPhone.text;
+    final code = etOTP.text;
+    context.signInByOtp<UserModel>(OtpAuthenticator(
+      token: token ?? "",
+      smsCode: code,
+      name: name,
+      phone: phone,
+    ));
+  }
+
+  void signInByApple() {
+    context.signInByApple<UserModel>();
+  }
+
+  void signInByBiometric() {
+    context.signInByBiometric<UserModel>();
+  }
+
+  void signInByFacebook() {
+    context.signInByFacebook<UserModel>();
+  }
+
+  void signInByGithub() {
+    context.signInByGithub<UserModel>();
+  }
+
+  void signInByGoogle() {
+    context.signInByGoogle<UserModel>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -504,101 +568,13 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void signInByEmail() async {
-    log("AUTH : login");
-    final email = etEmail.text;
-    final password = etPassword.text;
-    context.signInByEmail<UserModel>(EmailAuthenticator(
-      email: email,
-      password: password,
-    ));
-  }
-
-  void signUpByEmail() async {
-    final name = etName.text;
-    final email = etEmail.text;
-    final password = etPassword.text;
-    context.signUpByEmail<UserModel>(EmailAuthenticator(
-      email: email,
-      password: password,
-      name: name, // Optional
-    ));
-  }
-
-  void signInByUsername() {
-    final name = etName.text;
-    final password = etPassword.text;
-    context.signInByUsername<UserModel>(UsernameAuthenticator(
-      username: name,
-      password: password,
-    ));
-  }
-
-  void signUpByUsername() {
-    final name = etName.text;
-    final password = etPassword.text;
-    context.signUpByUsername<UserModel>(UsernameAuthenticator(
-      username: name,
-      password: password,
-      name: name, // Optional
-    ));
-  }
-
-  void signInByPhone() async {
-    final name = etName.text;
-    final phone = etPhone.text;
-    context.signInByPhone<UserModel>(
-      PhoneAuthenticator(phone: phone, name: name),
-      onCodeSent: (verId, refreshTokenId) {
-        token = verId;
-      },
-    );
-  }
-
-  void signInByOtp() async {
-    final name = etName.text;
-    final phone = etPhone.text;
-    final code = etOTP.text;
-    context.signInByOtp<UserModel>(OtpAuthenticator(
-      token: token ?? "",
-      smsCode: code,
-      name: name,
-      phone: phone,
-    ));
-  }
-
-  void signInByApple() {
-    context.signInByApple<UserModel>();
-  }
-
-  void signInByBiometric() {
-    context.signInByBiometric<UserModel>();
-  }
-
-  void signInByFacebook() {
-    context.signInByFacebook<UserModel>();
-  }
-
-  void signInByGithub() {
-    context.signInByGithub<UserModel>();
-  }
-
-  void signInByGoogle() {
-    context.signInByGoogle<UserModel>();
-  }
 }
 ```
 
 ### Create Home screen
 
 ```dart
-import 'dart:developer';
-
 import 'package:auth_management/core.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_andomie/core.dart';
-
-import 'user.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -625,42 +601,41 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _biometricChange(BuildContext context) {
-    context
-        .addBiometric<UserModel>(
+    context.addBiometric<UserModel>(
       config: const BiometricConfig(
         signInTitle: "Biometric",
         localizedReason: "Scan your face or fingerprint",
       ),
-      callback: (value) => showDialog<BiometricStatus>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text("Biometric permission from user!"),
-            actions: [
-              ElevatedButton(
-                child: const Text("Cancel"),
-                onPressed: () {
-                  Navigator.pop(context, BiometricStatus.initial);
-                },
-              ),
-              ElevatedButton(
-                child: const Text("Inactivate"),
-                onPressed: () {
-                  Navigator.pop(context, BiometricStatus.inactivated);
-                },
-              ),
-              ElevatedButton(
-                child: const Text("Activate"),
-                onPressed: () {
-                  Navigator.pop(context, BiometricStatus.activated);
-                },
-              ),
-            ],
-          );
-        },
-      ),
-    )
-        .then((value) {
+      callback: (value) =>
+          showDialog<BiometricStatus>(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text("Biometric permission from user!"),
+                actions: [
+                  ElevatedButton(
+                    child: const Text("Cancel"),
+                    onPressed: () {
+                      Navigator.pop(context, BiometricStatus.initial);
+                    },
+                  ),
+                  ElevatedButton(
+                    child: const Text("Inactivate"),
+                    onPressed: () {
+                      Navigator.pop(context, BiometricStatus.inactivated);
+                    },
+                  ),
+                  ElevatedButton(
+                    child: const Text("Activate"),
+                    onPressed: () {
+                      Navigator.pop(context, BiometricStatus.activated);
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+    ).then((value) {
       log("Add biometric status : ${value.exception}");
     });
   }
@@ -714,18 +689,25 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 24),
                     Text(
                       value?.name ?? "",
-                      style: Theme.of(context)
+                      style: Theme
+                          .of(context)
                           .textTheme
                           .titleLarge
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       value?.email ?? "",
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .titleMedium,
                     ),
                     Text(
-                      "Account created at ".join(value?.realtime ?? ""),
-                      style: Theme.of(context)
+                      "Account created at ".join(
+                        DateProvider.toRealtime(value?.timeMills ?? 0),
+                      ),
+                      style: Theme
+                          .of(context)
                           .textTheme
                           .titleSmall
                           ?.copyWith(fontWeight: FontWeight.normal),
@@ -781,7 +763,9 @@ class _HomePageState extends State<HomePage> {
 
 ## Project required properties :
 
-### Activity changes
+### Biometric login
+
+#### Activity changes
 
 ```java
 import io.flutter.embedding.android.FlutterFragmentActivity;
@@ -791,7 +775,7 @@ public class MainActivity extends FlutterFragmentActivity {
 }
 ```
 
-### Add Permissions
+#### Add Permissions
 
 ```xml
 

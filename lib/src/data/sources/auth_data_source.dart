@@ -1,50 +1,58 @@
+import 'package:auth_management/auth_management.dart';
+import 'package:auth_management_delegates/auth_management_delegates.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter_entity/flutter_entity.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:local_auth/local_auth.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
-import '../../core/converter.dart';
-import '../../core/validator.dart';
-import '../../models/auth.dart';
-import '../../models/auth_providers.dart';
-import '../../models/biometric_config.dart';
-import '../../models/credential.dart';
-import '../../services/sources/auth_data_source.dart';
 import '../../utils/connectivity.dart';
 
 class AuthDataSourceImpl extends AuthDataSource {
+  final OAuthDelegates? _delegates;
   ConnectionService? _connectivity;
-  FacebookAuth? _facebookAuth;
   FirebaseAuth? _firebaseAuth;
-  LocalAuthentication? _localAuth;
-  GoogleSignIn? _googleAuth;
-
-  ConnectionService get connectivity => _connectivity ??= ConnectionService.I;
-
-  FacebookAuth get facebookAuth => _facebookAuth ??= FacebookAuth.i;
 
   FirebaseAuth get firebaseAuth => _firebaseAuth ??= FirebaseAuth.instance;
 
-  LocalAuthentication get localAuth => _localAuth ??= LocalAuthentication();
+  OAuthDelegates get delegates => _delegates ?? const OAuthDelegates();
 
-  GoogleSignIn get googleAuth =>
-      _googleAuth ??= GoogleSignIn(scopes: ['email']);
+  IAppleAuthDelegate get appleAuth {
+    if (delegates.appleAuthDelegate != null) {
+      return delegates.appleAuthDelegate!;
+    } else {
+      throw const AuthDelegateException("IAppleAuthDelegate");
+    }
+  }
+
+  IFacebookAuthDelegate get facebookAuth {
+    if (delegates.facebookAuthDelegate != null) {
+      return delegates.facebookAuthDelegate!;
+    } else {
+      throw const AuthDelegateException("IFacebookAuthDelegate");
+    }
+  }
+
+  IBiometricAuthDelegate get localAuth {
+    if (delegates.biometricAuthDelegate != null) {
+      return delegates.biometricAuthDelegate!;
+    } else {
+      throw const AuthDelegateException("IBiometricAuthDelegate");
+    }
+  }
+
+  IGoogleAuthDelegate get googleAuth {
+    if (delegates.googleAuthDelegate != null) {
+      return delegates.googleAuthDelegate!;
+    } else {
+      throw const AuthDelegateException("IGoogleAuthDelegate");
+    }
+  }
+
+  ConnectionService get connectivity => _connectivity ??= ConnectionService.I;
 
   Future<bool> get isConnected async => await connectivity.isConnected;
 
   Future<bool> get isDisconnected async => !(await isConnected);
 
-  AuthDataSourceImpl({
-    FacebookAuth? facebookAuth,
-    FirebaseAuth? firebaseAuth,
-    LocalAuthentication? localAuth,
-    GoogleSignIn? googleAuth,
-  })  : _facebookAuth = facebookAuth,
-        _firebaseAuth = firebaseAuth,
-        _localAuth = localAuth,
-        _googleAuth = googleAuth;
+  AuthDataSourceImpl([this._delegates]);
 
   @override
   User? get user => FirebaseAuth.instance.currentUser;
@@ -98,12 +106,7 @@ class AuthDataSourceImpl extends AuthDataSource {
   Future<Response<Credential>> signInWithApple() async {
     final response = Response<Credential>();
     try {
-      final result = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
+      final result = await appleAuth.getAppleIDCredential();
 
       if (result.identityToken != null) {
         final credential = OAuthProvider("apple.com").credential(
@@ -122,8 +125,8 @@ class AuthDataSourceImpl extends AuthDataSource {
       } else {
         return response.withException('Token not valid!', status: Status.error);
       }
-    } on SignInWithAppleAuthorizationException catch (_) {
-      return response.withException(_.message, status: Status.failure);
+    } catch (_) {
+      return response.withException(_.toString(), status: Status.failure);
     }
   }
 
@@ -201,15 +204,15 @@ class AuthDataSourceImpl extends AuthDataSource {
     final response = Response<Credential>();
     try {
       final token = await facebookAuth.accessToken;
-      LoginResult? result;
+      IFacebookLoginResult? result;
 
       result = token == null
           ? await facebookAuth.login(permissions: ['public_profile', 'email'])
           : null;
 
-      final status = result?.status ?? LoginStatus.failed;
+      final status = result?.status ?? IFacebookLoginStatus.failed;
 
-      if (token != null || status == LoginStatus.success) {
+      if (token != null || status == IFacebookLoginStatus.success) {
         final accessToken = result?.accessToken ?? token;
         if (accessToken != null) {
           final credential = FacebookAuthProvider.credential(accessToken.token);
@@ -227,8 +230,8 @@ class AuthDataSourceImpl extends AuthDataSource {
       } else {
         return response.withException('Token not valid!', status: Status.error);
       }
-    } on FirebaseAuthException catch (_) {
-      return response.withException(_.message, status: Status.failure);
+    } catch (_) {
+      return response.withException(_.toString(), status: Status.failure);
     }
   }
 
@@ -246,7 +249,7 @@ class AuthDataSourceImpl extends AuthDataSource {
   Future<Response<Credential>> signInWithGoogle() async {
     final response = Response<Credential>();
     try {
-      GoogleSignInAccount? result;
+      IGoogleSignInAccount? result;
       final auth = googleAuth;
       final isSignedIn = await auth.isSignedIn();
       if (isSignedIn) {
@@ -281,8 +284,8 @@ class AuthDataSourceImpl extends AuthDataSource {
       } else {
         return response.withException('Sign in failed!', status: Status.error);
       }
-    } on FirebaseAuthException catch (_) {
-      return response.withException(_.message, status: Status.failure);
+    } catch (_) {
+      return response.withException(_.toString(), status: Status.failure);
     }
   }
 

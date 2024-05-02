@@ -11,7 +11,7 @@ import '../../services/sources/auth_data_source.dart';
 class AuthRepositoryImpl extends AuthRepository {
   final AuthDataSource source;
 
-  AuthRepositoryImpl({
+  const AuthRepositoryImpl({
     required this.source,
   });
 

@@ -6,6 +6,8 @@ import 'package:flutter_entity/flutter_entity.dart';
 import '../../core/messages.dart';
 import '../../core/typedefs.dart';
 import '../../data/controllers/controller.dart';
+import '../../delegates/backup.dart';
+import '../../delegates/oauth.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
 import '../../models/auth_state.dart';
@@ -17,42 +19,21 @@ import '../../utils/authenticator_oauth.dart';
 import '../../utils/authenticator_otp.dart';
 import '../../utils/authenticator_phone.dart';
 import '../../utils/authenticator_username.dart';
-import '../handlers/auth_handler.dart';
-import '../handlers/backup_handler.dart';
-import '../sources/auth_data_source.dart';
-import '../sources/authorized_data_source.dart';
 
 abstract class AuthController<T extends Auth> {
   static AuthController? _i;
 
   static AuthController<T> getInstance<T extends Auth>({
-    AuthDataSource? auth,
-    AuthorizedDataSource<T>? backup,
+    OAuthDelegates? oauth,
+    BackupDelegate<T>? backup,
     AuthMessages? messages,
   }) {
     if (_i is AuthController<T>) {
       return _i as AuthController<T>;
     } else {
       _i = AuthControllerImpl<T>(
-        auth: auth,
+        auth: oauth,
         backup: backup,
-        messages: messages,
-      );
-      return _i as AuthController<T>;
-    }
-  }
-
-  static AuthController<T> getInstanceOf<T extends Auth>({
-    AuthHandler? authHandler,
-    BackupHandler<T>? backupHandler,
-    AuthMessages? messages,
-  }) {
-    if (_i is AuthController<T>) {
-      return _i as AuthController<T>;
-    } else {
-      _i = AuthControllerImpl<T>.fromHandler(
-        authHandler: authHandler,
-        backupHandler: backupHandler,
         messages: messages,
       );
       return _i as AuthController<T>;

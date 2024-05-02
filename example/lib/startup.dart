@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:auth_management/core.dart';
 import 'package:flutter/material.dart';
 
-import 'user.dart';
+import 'user_model.dart';
 
 class StartupPage extends StatefulWidget {
   const StartupPage({super.key});
