@@ -5,55 +5,65 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 
 class GoogleAuthDelegate extends IGoogleAuthDelegate {
-  GoogleSignIn? _i;
+  final GoogleSignIn googleSignIn;
 
-  GoogleSignIn get i => _i ??= GoogleSignIn(scopes: ['email']);
+  GoogleAuthDelegate({
+    GoogleSignIn? googleSignIn,
+  }) : googleSignIn = googleSignIn ?? GoogleSignIn(scopes: ['email']);
 
   @override
   Future<bool> canAccessScopes(
     List<String> scopes, {
     String? accessToken,
   }) {
-    return i.canAccessScopes(scopes, accessToken: accessToken);
+    return googleSignIn.canAccessScopes(scopes, accessToken: accessToken);
   }
 
   @override
-  IGoogleSignInAccount? get currentUser => _account(i.currentUser);
+  IGoogleSignInAccount? get currentUser => _account(googleSignIn.currentUser);
 
   @override
-  Future<IGoogleSignInAccount?> disconnect() => i.disconnect().then(_account);
+  Future<IGoogleSignInAccount?> disconnect() {
+    return googleSignIn.disconnect().then(_account);
+  }
 
   @override
-  Future<bool> isSignedIn() => i.isSignedIn();
+  Future<bool> isSignedIn() => googleSignIn.isSignedIn();
 
   @override
   Stream<IGoogleSignInAccount?> get onCurrentUserChanged {
     final controller = StreamController<IGoogleSignInAccount?>();
-    i.onCurrentUserChanged.listen((event) {
+    googleSignIn.onCurrentUserChanged.listen((event) {
       controller.add(_account(event));
     });
     return controller.stream;
   }
 
   @override
-  Future<bool> requestScopes(List<String> scopes) => i.requestScopes(scopes);
+  Future<bool> requestScopes(List<String> scopes) {
+    return googleSignIn.requestScopes(scopes);
+  }
 
   @override
-  Future<IGoogleSignInAccount?> signIn() => i.signIn().then(_account);
+  Future<IGoogleSignInAccount?> signIn() {
+    return googleSignIn.signIn().then(_account);
+  }
 
   @override
   Future<IGoogleSignInAccount?> signInSilently({
     bool suppressErrors = true,
     bool reAuthenticate = false,
   }) {
-    return i
+    return googleSignIn
         .signInSilently(
             suppressErrors: suppressErrors, reAuthenticate: reAuthenticate)
         .then(_account);
   }
 
   @override
-  Future<IGoogleSignInAccount?> signOut() => i.signOut().then(_account);
+  Future<IGoogleSignInAccount?> signOut() {
+    return googleSignIn.signOut().then(_account);
+  }
 
   IGoogleSignInAccount? _account(GoogleSignInAccount? value) {
     if (value != null) {

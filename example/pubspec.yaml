@@ -12,21 +12,21 @@ dependencies:
 
   auth_management:
     path: ../
-  flutter_andomie: ^0.5.17
-  flutter_androssy: ^0.3.5
-  firebase_core: ^2.24.2
-  auth_management_apple_delegate: ^1.0.0
-  auth_management_biometric_delegate: ^1.0.0
-  auth_management_facebook_delegate: ^1.0.0
-  auth_management_google_delegate: ^1.0.0
+  flutter_andomie: ^0.5.18
+  flutter_androssy: ^0.1.9
+  firebase_core: ^3.1.1
+  auth_management_apple_delegate: ^1.0.3
+  auth_management_biometric_delegate: ^1.0.3
+  auth_management_facebook_delegate: ^1.0.3
+  auth_management_google_delegate: ^1.0.4
 
-  pinput: ^3.0.1
+  pinput: ^5.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^2.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
 

@@ -106,7 +106,12 @@ class AuthDataSourceImpl extends AuthDataSource {
   Future<Response<Credential>> signInWithApple() async {
     final response = Response<Credential>();
     try {
-      final result = await appleAuth.getAppleIDCredential();
+      final result = await appleAuth.getAppleIDCredential(
+        scopes: [
+          IAppleIDAuthorizationScopes.email,
+          IAppleIDAuthorizationScopes.fullName,
+        ],
+      );
 
       if (result.identityToken != null) {
         final credential = OAuthProvider("apple.com").credential(
@@ -215,10 +220,12 @@ class AuthDataSourceImpl extends AuthDataSource {
       if (token != null || status == IFacebookLoginStatus.success) {
         final accessToken = result?.accessToken ?? token;
         if (accessToken != null) {
-          final credential = FacebookAuthProvider.credential(accessToken.token);
+          final credential = FacebookAuthProvider.credential(
+            accessToken.tokenString,
+          );
           final fbData = await facebookAuth.getUserData();
           return response.withData(Credential.fromMap(fbData).copy(
-            accessToken: accessToken.token,
+            accessToken: accessToken.tokenString,
             credential: credential,
           ));
         } else {

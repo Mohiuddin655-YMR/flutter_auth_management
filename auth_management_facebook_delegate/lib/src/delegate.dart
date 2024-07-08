@@ -34,31 +34,22 @@ class FacebookAuthDelegate extends IFacebookAuthDelegate {
   Future<void> logOut() => i.logOut();
 
   @override
+  @override
   Future<IFacebookLoginResult> login({
     List<String> permissions = const ['email', 'public_profile'],
     IFacebookLoginBehavior loginBehavior =
         IFacebookLoginBehavior.nativeWithFallback,
+    IFacebookLoginTracking loginTracking = IFacebookLoginTracking.limited,
+    String? nonce,
   }) {
     return i
         .login(
           permissions: permissions,
           loginBehavior: _behavior(loginBehavior),
+          loginTracking: _tracking(loginTracking),
+          nonce: nonce,
         )
         .then(_result);
-  }
-
-  @override
-  Future<IFacebookPermissions?> get permissions {
-    return i.permissions.then((value) {
-      if (value != null) {
-        return IFacebookPermissions(
-          granted: value.granted,
-          declined: value.declined,
-        );
-      } else {
-        return null;
-      }
-    });
   }
 
   @override
@@ -93,6 +84,15 @@ class FacebookAuthDelegate extends IFacebookAuthDelegate {
     }
   }
 
+  LoginTracking _tracking(IFacebookLoginTracking value) {
+    switch (value) {
+      case IFacebookLoginTracking.limited:
+        return LoginTracking.limited;
+      case IFacebookLoginTracking.enabled:
+        return LoginTracking.enabled;
+    }
+  }
+
   IFacebookLoginResult _result(LoginResult value) {
     return IFacebookLoginResult(
       status: _status(value.status),
@@ -115,18 +115,22 @@ class FacebookAuthDelegate extends IFacebookAuthDelegate {
   }
 
   IFacebookAccessToken? _token(AccessToken? value) {
-    if (value != null) {
-      return IFacebookAccessToken(
+    if (value is LimitedToken) {
+      return IFacebookLimitedToken(
+        userId: value.userId,
+        userName: value.userName,
+        userEmail: value.userEmail,
+        nonce: value.nonce,
+        tokenString: value.tokenString,
+      );
+    } else if (value is ClassicToken) {
+      return IFacebookClassicToken(
         declinedPermissions: value.declinedPermissions,
         grantedPermissions: value.grantedPermissions,
         userId: value.userId,
         expires: value.expires,
-        lastRefresh: value.lastRefresh,
-        token: value.token,
+        tokenString: value.tokenString,
         applicationId: value.applicationId,
-        isExpired: value.isExpired,
-        dataAccessExpirationTime: value.dataAccessExpirationTime,
-        graphDomain: value.graphDomain,
       );
     } else {
       return null;

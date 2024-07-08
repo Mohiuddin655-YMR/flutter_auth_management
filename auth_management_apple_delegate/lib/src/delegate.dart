@@ -3,40 +3,22 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AppleAuthDelegate extends IAppleAuthDelegate {
   @override
-  Future<bool> isAvailable() => SignInWithApple.isAvailable();
-
-  @override
-  Future<AppleCredentialState> getCredentialState(String id) {
-    return SignInWithApple.getCredentialState(id).then((value) {
-      if (value == CredentialState.authorized) {
-        return AppleCredentialState.authorized;
-      } else if (value == CredentialState.revoked) {
-        return AppleCredentialState.revoked;
-      } else {
-        return AppleCredentialState.notFound;
-      }
-    });
-  }
-
-  @override
-  Future<AppleAuthorizationCredentialPassword> getKeychainCredential() {
-    return SignInWithApple.getKeychainCredential().then((value) {
-      return AppleAuthorizationCredentialPassword(
-        username: value.username,
-        password: value.password,
-      );
-    });
-  }
-
-  @override
-  Future<AppleAuthorizationCredentialAppleID> getAppleIDCredential() async {
+  Future<IAppleAuthorizationCredentialAppleID> getAppleIDCredential({
+    List<IAppleIDAuthorizationScopes> scopes = const [
+      IAppleIDAuthorizationScopes.email,
+      IAppleIDAuthorizationScopes.fullName,
+    ],
+    IAppleWebAuthenticationOptions? webAuthenticationOptions,
+    String? nonce,
+    String? state,
+  }) async {
     return SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
+      scopes: _scopes(scopes),
+      webAuthenticationOptions: _options(webAuthenticationOptions),
+      nonce: nonce,
+      state: state,
     ).then((result) {
-      return AppleAuthorizationCredentialAppleID(
+      return IAppleAuthorizationCredentialAppleID(
         userIdentifier: result.userIdentifier,
         givenName: result.givenName,
         familyName: result.familyName,
@@ -46,5 +28,59 @@ class AppleAuthDelegate extends IAppleAuthDelegate {
         state: result.state,
       );
     });
+  }
+
+  @override
+  Future<IAppleCredentialState> getCredentialState(String userIdentifier) {
+    return SignInWithApple.getCredentialState(userIdentifier).then((value) {
+      if (value == CredentialState.authorized) {
+        return IAppleCredentialState.authorized;
+      } else if (value == CredentialState.revoked) {
+        return IAppleCredentialState.revoked;
+      } else {
+        return IAppleCredentialState.notFound;
+      }
+    });
+  }
+
+  @override
+  Future<IAppleAuthorizationCredentialPassword> getKeychainCredential() {
+    return SignInWithApple.getKeychainCredential().then((value) {
+      return IAppleAuthorizationCredentialPassword(
+        username: value.username,
+        password: value.password,
+      );
+    });
+  }
+
+  @override
+  Future<bool> isAvailable() => SignInWithApple.isAvailable();
+
+  List<AppleIDAuthorizationScopes> _scopes(
+    List<IAppleIDAuthorizationScopes> scopes,
+  ) {
+    return scopes.map(_scope).toList();
+  }
+
+  AppleIDAuthorizationScopes _scope(IAppleIDAuthorizationScopes scope) {
+    switch (scope) {
+      case IAppleIDAuthorizationScopes.email:
+        return AppleIDAuthorizationScopes.email;
+      case IAppleIDAuthorizationScopes.fullName:
+        return AppleIDAuthorizationScopes.fullName;
+    }
+  }
+
+  WebAuthenticationOptions? _options(
+    IAppleWebAuthenticationOptions? options,
+  ) {
+    if (options != null) {
+      return WebAuthenticationOptions(
+        clientId: options.clientId,
+        redirectUri: options.redirectUri,
+      );
+    } else {
+      return null;
+    }
   }
 }

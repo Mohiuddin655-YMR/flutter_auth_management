@@ -1,8 +1,8 @@
 part of 'delegate.dart';
 
-class AppleAuthorizationCredentialPassword {
+class IAppleAuthorizationCredentialPassword {
   /// Creates a new username/password combination, which is the result of a successful Keychain query.
-  const AppleAuthorizationCredentialPassword({
+  const IAppleAuthorizationCredentialPassword({
     required this.username,
     required this.password,
   });

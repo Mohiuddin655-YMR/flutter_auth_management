@@ -1,23 +1,42 @@
 part of 'delegate.dart';
 
-class IFacebookAccessToken {
+enum IFacebookAccessTokenType { classic, limited }
+
+abstract class IFacebookAccessToken {
+  final String tokenString;
+  final IFacebookAccessTokenType type;
+
+  const IFacebookAccessToken({
+    required this.tokenString,
+    required this.type,
+  });
+}
+
+class IFacebookLimitedToken extends IFacebookAccessToken {
+  final String userId;
+  final String userName;
+  final String? userEmail;
+  final String nonce;
+
+  const IFacebookLimitedToken({
+    required this.userId,
+    required this.userName,
+    required this.userEmail,
+    required this.nonce,
+    super.type = IFacebookAccessTokenType.limited,
+    required super.tokenString,
+  });
+}
+
+class IFacebookClassicToken extends IFacebookAccessToken {
   /// DateTime with the expires date of this token
   final DateTime expires;
-
-  /// DateTime with the last refresh date of this token
-  final DateTime lastRefresh;
 
   /// the facebook user id
   final String userId;
 
-  /// token provided by facebook to make api calls to the GRAPH API
-  final String token;
-
   /// the facebook application Id
   final String applicationId;
-
-  /// the graph Domain name returned by facebook
-  final String? graphDomain;
 
   /// list of string with the rejected permission by the user (on Web is null)
   final List<String>? declinedPermissions;
@@ -25,22 +44,16 @@ class IFacebookAccessToken {
   /// list of string with the approved permission by the user (on Web is null)
   final List<String>? grantedPermissions;
 
-  /// is `true` when the token is expired
-  final bool isExpired;
+  final String? authenticationToken;
 
-  /// DateTime with the date at which user data access expires
-  final DateTime dataAccessExpirationTime;
-
-  const IFacebookAccessToken({
+  const IFacebookClassicToken({
     required this.declinedPermissions,
     required this.grantedPermissions,
     required this.userId,
     required this.expires,
-    required this.lastRefresh,
-    required this.token,
+    required super.tokenString,
     required this.applicationId,
-    this.graphDomain,
-    required this.isExpired,
-    required this.dataAccessExpirationTime,
+    this.authenticationToken,
+    super.type = IFacebookAccessTokenType.classic,
   });
 }

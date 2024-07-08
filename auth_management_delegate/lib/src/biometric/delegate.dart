@@ -5,15 +5,29 @@ part 'options.dart';
 part 'type.dart';
 part 'window_messages.dart';
 
+/// A Flutter plugin for authenticating the user identity locally.
 abstract class IBiometricAuthDelegate {
   /// Authenticates the user with biometrics available on the device while also
   /// allowing the user to use device authentication - pin, pattern, passcode.
   ///
   /// Returns true if the user successfully authenticated, false otherwise.
   ///
+  /// [localizedReason] is the message to show to user while prompting them
+  /// for authentication. This is typically along the lines of: 'Authenticate
+  /// to access MyApp.'. This must not be empty.
+  ///
+  /// Provide [authMessages] if you want to
+  /// customize messages in the dialogs.
+  ///
+  /// Provide [options] for configuring further authentication related options.
+  ///
+  /// Throws a [PlatformException] if there were technical problems with local
+  /// authentication (e.g. lack of relevant hardware). This might throw
+  /// [PlatformException] with error code [otherOperatingSystem] on the iOS
+  /// simulator.
   Future<bool> authenticate({
     required String localizedReason,
-    Iterable<IBiometricMessages> authMessages = const [
+    Iterable<IBiometricMessages> authMessages = const <IBiometricMessages>[
       IOSBiometricMessages(),
       AndroidBiometricMessages(),
       WindowsBiometricMessages()

@@ -1,6 +1,6 @@
 name: auth_management_delegates
 description: "Auth management delegate simplifies login with support for OAuth and biometric methods, ensuring secure access and seamless user experience."
-version: 1.0.0
+version: 1.0.2
 repository: https://github.com/P-YMR/flutter_auth_management.git
 
 environment:
@@ -14,6 +14,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.2
+  flutter_lints: ^4.0.0
 
 flutter:

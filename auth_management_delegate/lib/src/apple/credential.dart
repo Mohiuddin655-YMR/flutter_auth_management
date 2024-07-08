@@ -1,8 +1,8 @@
 part of 'delegate.dart';
 
-class AppleAuthorizationCredentialAppleID {
+class IAppleAuthorizationCredentialAppleID {
   /// Creates an instance which contains the result of a successful Sign in with Apple flow.
-  const AppleAuthorizationCredentialAppleID({
+  const IAppleAuthorizationCredentialAppleID({
     required this.userIdentifier,
     required this.givenName,
     required this.familyName,

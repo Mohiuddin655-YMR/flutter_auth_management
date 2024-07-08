@@ -1,8 +1,11 @@
 part 'behavior.dart';
-part 'permissions.dart';
+part 'login_tracking.dart';
 part 'result.dart';
 part 'token.dart';
 
+/// this class implements the FacebookAuthPlatform interface
+/// and calls to the native APIs on Android, iOS and web.
+///
 abstract class IFacebookAuthDelegate {
   /// if the user is logged return one instance of AccessToken
   Future<IFacebookAccessToken?> get accessToken;
@@ -50,10 +53,14 @@ abstract class IFacebookAuthDelegate {
   ///
   /// [loginBehavior] (only Android) use this param to set the UI for the authentication,
   /// like webview, native app, or a dialog.
+  ///
+  /// [nonce] a custom nonce
   Future<IFacebookLoginResult> login({
     List<String> permissions = const ['email', 'public_profile'],
     IFacebookLoginBehavior loginBehavior =
         IFacebookLoginBehavior.nativeWithFallback,
+    IFacebookLoginTracking loginTracking = IFacebookLoginTracking.limited,
+    String? nonce,
   });
 
   /// call this method (ONLY FOR WEB) to initialize the facebook javascript sdk
@@ -63,11 +70,6 @@ abstract class IFacebookAuthDelegate {
     required bool xfbml,
     required String version,
   });
-
-  /// returns one instance of FacebookPermission with the granted and declined permissions
-  ///
-  /// It could be null if you exceed the request limit
-  Future<IFacebookPermissions?> get permissions;
 
   /// use this to know if the facebook sdk was initializated on Web
   /// on Android and iOS is always true

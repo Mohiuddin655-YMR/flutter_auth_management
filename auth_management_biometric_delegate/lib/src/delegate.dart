@@ -12,7 +12,7 @@ class BiometricAuthDelegate extends IBiometricAuthDelegate {
   @override
   Future<bool> authenticate({
     required String localizedReason,
-    Iterable<IBiometricMessages> authMessages = const [
+    Iterable<IBiometricMessages> authMessages = const <IBiometricMessages>[
       IOSBiometricMessages(),
       AndroidBiometricMessages(),
       WindowsBiometricMessages()

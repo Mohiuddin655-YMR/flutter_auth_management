@@ -1,6 +1,6 @@
 part of 'delegate.dart';
 
-enum AppleCredentialState {
+enum IAppleCredentialState {
   /// The user is authorized.
   authorized,
 

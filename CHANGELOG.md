@@ -1,3 +1,7 @@
+## 0.3.1
+
+* Libraries updates
+
 ## 0.3.0
 
 * Add auth management delegate supports [apple, biometric, facebook, google etc.]
