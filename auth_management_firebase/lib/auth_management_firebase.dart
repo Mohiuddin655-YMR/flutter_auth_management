@@ -1,1 +1,0 @@
-library auth_management_firebase;

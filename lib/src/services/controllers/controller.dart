@@ -1,11 +1,8 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_entity/flutter_entity.dart';
 
-import '../../../auth/authorizer.dart';
-import '../../../auth/exception.dart';
-import '../../../auth/multi_factor.dart';
-import '../../../providers/phone_auth.dart';
 import '../../core/messages.dart';
 import '../../core/typedefs.dart';
 import '../../data/controllers/controller.dart';
@@ -27,7 +24,6 @@ abstract class AuthController<T extends Auth> {
   static AuthController? _i;
 
   static AuthController<T> getInstance<T extends Auth>({
-    required Authorizer authorizer,
     OAuthDelegates? oauth,
     BackupDelegate<T>? backup,
     AuthMessages? messages,
@@ -36,8 +32,7 @@ abstract class AuthController<T extends Auth> {
       return _i as AuthController<T>;
     } else {
       _i = AuthControllerImpl<T>(
-        authorizer: authorizer,
-        delegates: oauth,
+        auth: oauth,
         backup: backup,
         messages: messages,
       );
@@ -177,11 +172,11 @@ abstract class AuthController<T extends Auth> {
 
   Future<AuthResponse<T>> signInByPhone(
     PhoneAuthenticator authenticator, {
-    IPhoneMultiFactorInfo? multiFactorInfo,
-    IMultiFactorSession? multiFactorSession,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
     Duration timeout = const Duration(minutes: 2),
-    void Function(IPhoneAuthCredential credential)? onComplete,
-    void Function(IAuthException exception)? onFailed,
+    void Function(PhoneAuthCredential credential)? onComplete,
+    void Function(FirebaseAuthException exception)? onFailed,
     void Function(String verId, int? forceResendingToken)? onCodeSent,
     void Function(String verId)? onCodeAutoRetrievalTimeout,
   }) {

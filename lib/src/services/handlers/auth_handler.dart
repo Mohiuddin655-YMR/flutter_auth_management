@@ -1,11 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter_entity/flutter_entity.dart';
 
-import '../../../auth/auth_credential.dart';
-import '../../../auth/exception.dart';
-import '../../../auth/multi_factor.dart';
-import '../../../auth/user.dart';
-import '../../../auth/user_credential.dart';
-import '../../../providers/phone_auth.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
 import '../../models/biometric_config.dart';
@@ -17,7 +12,7 @@ abstract class AuthHandler {
 
   const AuthHandler(this.repository);
 
-  IUser? get user;
+  User? get user;
 
   Future<Response> get delete;
 
@@ -31,7 +26,7 @@ abstract class AuthHandler {
     BiometricConfig? config,
   });
 
-  Future<Response<IUserCredential>> signInWithEmailNPassword({
+  Future<Response<UserCredential>> signInWithEmailNPassword({
     required String email,
     required String password,
   });
@@ -42,21 +37,21 @@ abstract class AuthHandler {
 
   Future<Response<Credential>> signInWithGoogle();
 
-  Future<Response<IUserCredential>> signInWithUsernameNPassword({
+  Future<Response<UserCredential>> signInWithUsernameNPassword({
     required String username,
     required String password,
   });
 
-  Future<Response<IUserCredential>> signInWithCredential({
-    required IAuthCredential credential,
+  Future<Response<UserCredential>> signInWithCredential({
+    required AuthCredential credential,
   });
 
-  Future<Response<IUserCredential>> signUpWithEmailNPassword({
+  Future<Response<UserCredential>> signUpWithEmailNPassword({
     required String email,
     required String password,
   });
 
-  Future<Response<IUserCredential>> signUpWithUsernameNPassword({
+  Future<Response<UserCredential>> signUpWithUsernameNPassword({
     required String username,
     required String password,
   });
@@ -64,11 +59,11 @@ abstract class AuthHandler {
   Future<Response<void>> signInByPhone({
     String? phoneNumber,
     int? forceResendingToken,
-    IPhoneMultiFactorInfo? multiFactorInfo,
-    IMultiFactorSession? multiFactorSession,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
     Duration timeout = const Duration(seconds: 30),
-    required void Function(IPhoneAuthCredential credential) onComplete,
-    required void Function(IAuthException exception) onFailed,
+    required void Function(PhoneAuthCredential credential) onComplete,
+    required void Function(FirebaseAuthException exception) onFailed,
     required void Function(String verId, int? forceResendingToken) onCodeSent,
     required void Function(String verId) onCodeAutoRetrievalTimeout,
   });

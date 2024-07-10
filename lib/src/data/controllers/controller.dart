@@ -1,43 +1,10 @@
 import 'dart:async';
 
+import 'package:auth_management/auth_management.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_entity/flutter_entity.dart';
 
-import '../../../auth/authorizer.dart';
-import '../../../auth/exception.dart';
-import '../../../auth/multi_factor.dart';
-import '../../../auth/user_credential.dart';
-import '../../../providers/facebook_auth.dart';
-import '../../../providers/google_auth.dart';
-import '../../../providers/oauth.dart';
-import '../../../providers/phone_auth.dart';
-import '../../core/messages.dart';
-import '../../core/typedefs.dart';
-import '../../core/validator.dart';
-import '../../delegates/backup.dart';
-import '../../delegates/oauth.dart';
-import '../../models/auth.dart';
-import '../../models/auth_providers.dart';
-import '../../models/auth_state.dart';
-import '../../models/auth_type.dart';
-import '../../models/biometric_config.dart';
-import '../../models/biometric_status.dart';
-import '../../services/controllers/controller.dart';
-import '../../services/handlers/auth_handler.dart';
-import '../../services/handlers/backup_handler.dart';
-import '../../services/sources/auth_data_source.dart';
-import '../../services/sources/authorized_data_source.dart';
 import '../../utils/auth_notifier.dart';
-import '../../utils/auth_response.dart';
-import '../../utils/authenticator.dart';
-import '../../utils/authenticator_email.dart';
-import '../../utils/authenticator_oauth.dart';
-import '../../utils/authenticator_otp.dart';
-import '../../utils/authenticator_phone.dart';
-import '../../utils/authenticator_username.dart';
-import '../handlers/auth_handler.dart';
-import '../handlers/backup_handler.dart';
-import '../sources/auth_data_source.dart';
-import '../sources/authorized_data_source.dart';
 
 class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   final AuthMessages msg;
@@ -52,15 +19,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<T?> get _auth => backupHandler.cache;
 
   AuthControllerImpl({
-    required Authorizer authorizer,
-    OAuthDelegates? delegates,
+    OAuthDelegates? auth,
     BackupDelegate<T>? backup,
     AuthMessages? messages,
   }) : this.fromSource(
-          auth: AuthDataSourceImpl(
-            authorizer: authorizer,
-            delegates: delegates,
-          ),
+          auth: AuthDataSourceImpl(auth),
           backup: AuthorizedDataSourceImpl(backup),
         );
 
@@ -484,7 +447,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         if (response.isSuccessful) {
           final token = user.accessToken;
           final provider = AuthProviders.from(user.provider);
-          var current = Response<IUserCredential>();
+          var current = Response<UserCredential>();
           if ((user.email ?? user.username ?? "").isNotEmpty &&
               (user.password ?? '').isNotEmpty) {
             if (provider.isEmail) {
@@ -501,7 +464,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           } else if ((token ?? user.idToken ?? "").isNotEmpty) {
             if (provider.isApple) {
               current = await authHandler.signInWithCredential(
-                credential: IOAuthProvider("apple.com").credential(
+                credential: OAuthProvider("apple.com").credential(
                   idToken: user.idToken,
                   accessToken: token,
                 ),
@@ -893,11 +856,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   @override
   Future<AuthResponse<T>> signInByPhone(
     PhoneAuthenticator authenticator, {
-    IPhoneMultiFactorInfo? multiFactorInfo,
-    IMultiFactorSession? multiFactorSession,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
     Duration timeout = const Duration(minutes: 2),
-    void Function(IPhoneAuthCredential credential)? onComplete,
-    void Function(IAuthException exception)? onFailed,
+    void Function(PhoneAuthCredential credential)? onComplete,
+    void Function(FirebaseAuthException exception)? onFailed,
     void Function(String verId, int? forceResendingToken)? onCodeSent,
     void Function(String verId)? onCodeAutoRetrievalTimeout,
   }) async {
@@ -916,7 +879,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           multiFactorInfo: multiFactorInfo,
           multiFactorSession: multiFactorSession,
           timeout: timeout,
-          onComplete: (IPhoneAuthCredential credential) async {
+          onComplete: (PhoneAuthCredential credential) async {
             if (onComplete != null) {
               emit(const AuthResponse.message(
                 "Verification done!",
@@ -951,7 +914,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               onCodeSent(verId, forceResendingToken);
             }
           },
-          onFailed: (IAuthException exception) {
+          onFailed: (FirebaseAuthException exception) {
             emit(AuthResponse.failure(
               exception.message,
               provider: AuthProviders.phone,

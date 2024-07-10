@@ -1,10 +1,16 @@
-import '../../../core.dart';
+import 'package:auth_management/auth_management.dart';
+import 'package:auth_management_delegates/auth_management_delegates.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:flutter_entity/flutter_entity.dart';
+
 import '../../utils/connectivity.dart';
 
 class AuthDataSourceImpl extends AuthDataSource {
-  final Authorizer authorizer;
   final OAuthDelegates? _delegates;
   ConnectionService? _connectivity;
+  FirebaseAuth? _firebaseAuth;
+
+  FirebaseAuth get firebaseAuth => _firebaseAuth ??= FirebaseAuth.instance;
 
   OAuthDelegates get delegates => _delegates ?? const OAuthDelegates();
 
@@ -46,13 +52,10 @@ class AuthDataSourceImpl extends AuthDataSource {
 
   Future<bool> get isDisconnected async => !(await isConnected);
 
-  AuthDataSourceImpl({
-    required this.authorizer,
-    OAuthDelegates? delegates,
-  }) : _delegates = delegates;
+  AuthDataSourceImpl([this._delegates]);
 
   @override
-  IUser? get user => authorizer.currentUser;
+  User? get user => FirebaseAuth.instance.currentUser;
 
   @override
   Future<Response> get delete async {
@@ -65,7 +68,7 @@ class AuthDataSourceImpl extends AuthDataSource {
             message: "Account delete successful!",
           );
         });
-      } on IAuthException catch (_) {
+      } on FirebaseAuthException catch (_) {
         return response.withException(_.message, status: Status.failure);
       }
     } else {
@@ -83,7 +86,7 @@ class AuthDataSourceImpl extends AuthDataSource {
         case AuthProviders.email:
         case AuthProviders.username:
         case AuthProviders.phone:
-          return authorizer.currentUser != null;
+          return firebaseAuth.currentUser != null;
         case AuthProviders.facebook:
           return (await facebookAuth.accessToken) != null;
         case AuthProviders.google:
@@ -96,7 +99,7 @@ class AuthDataSourceImpl extends AuthDataSource {
           return false;
       }
     }
-    return authorizer.currentUser != null;
+    return firebaseAuth.currentUser != null;
   }
 
   @override
@@ -111,7 +114,7 @@ class AuthDataSourceImpl extends AuthDataSource {
       );
 
       if (result.identityToken != null) {
-        final credential = IOAuthProvider("apple.com").credential(
+        final credential = OAuthProvider("apple.com").credential(
           idToken: result.identityToken,
           accessToken: result.authorizationCode,
         );
@@ -172,31 +175,31 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response<IUserCredential>> signInWithCredential({
-    required IAuthCredential credential,
+  Future<Response<UserCredential>> signInWithCredential({
+    required AuthCredential credential,
   }) async {
-    final response = Response<IUserCredential>();
+    final response = Response<UserCredential>();
     try {
-      final result = await authorizer.signInWithCredential(credential);
+      final result = await firebaseAuth.signInWithCredential(credential);
       return response.withData(result, message: "Sign in successful!");
-    } on IAuthException catch (_) {
+    } on FirebaseAuthException catch (_) {
       return response.withException(_.message, status: Status.failure);
     }
   }
 
   @override
-  Future<Response<IUserCredential>> signInWithEmailNPassword({
+  Future<Response<UserCredential>> signInWithEmailNPassword({
     required String email,
     required String password,
   }) async {
-    final response = Response<IUserCredential>();
+    final response = Response<UserCredential>();
     try {
-      final result = await authorizer.signInWithEmailAndPassword(
+      final result = await firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       return response.withData(result, message: "Sign in successful!");
-    } on IAuthException catch (_) {
+    } on FirebaseAuthException catch (_) {
       return response.withException(_.message, status: Status.failure);
     }
   }
@@ -294,20 +297,20 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response<IUserCredential>> signInWithUsernameNPassword({
+  Future<Response<UserCredential>> signInWithUsernameNPassword({
     required String username,
     required String password,
   }) async {
-    final response = Response<IUserCredential>();
+    final response = Response<UserCredential>();
     var mail = AuthConverter.toMail(username, "user", "org");
     if (AuthValidator.isValidEmail(mail)) {
       try {
-        final result = await authorizer.signInWithEmailAndPassword(
+        final result = await firebaseAuth.signInWithEmailAndPassword(
           email: mail ?? "example@user.org",
           password: password,
         );
         return response.withData(result, message: "Sign in successful!");
-      } on IAuthException catch (_) {
+      } on FirebaseAuthException catch (_) {
         return response.withException(_.message, status: Status.failure);
       }
     } else {
@@ -316,37 +319,37 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response<IUserCredential>> signUpWithEmailNPassword({
+  Future<Response<UserCredential>> signUpWithEmailNPassword({
     required String email,
     required String password,
   }) async {
-    final response = Response<IUserCredential>();
+    final response = Response<UserCredential>();
     try {
-      final result = await authorizer.createUserWithEmailAndPassword(
+      final result = await firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       return response.withData(result, message: "Sign up successful!");
-    } on IAuthException catch (_) {
+    } on FirebaseAuthException catch (_) {
       return response.withException(_.message, status: Status.failure);
     }
   }
 
   @override
-  Future<Response<IUserCredential>> signUpWithUsernameNPassword({
+  Future<Response<UserCredential>> signUpWithUsernameNPassword({
     required String username,
     required String password,
   }) async {
-    final response = Response<IUserCredential>();
+    final response = Response<UserCredential>();
     var mail = AuthConverter.toMail(username, "user", "org");
     if (AuthValidator.isValidEmail(mail)) {
       try {
-        final result = await authorizer.createUserWithEmailAndPassword(
+        final result = await firebaseAuth.createUserWithEmailAndPassword(
           email: mail ?? "example@user.org",
           password: password,
         );
         return response.withData(result, message: "Sign up successful!");
-      } on IAuthException catch (_) {
+      } on FirebaseAuthException catch (_) {
         return response.withException(_.message, status: Status.failure);
       }
     } else {
@@ -365,7 +368,7 @@ class AuthDataSourceImpl extends AuthDataSource {
             case AuthProviders.email:
             case AuthProviders.phone:
             case AuthProviders.username:
-              await authorizer.signOut();
+              await firebaseAuth.signOut();
               break;
             case AuthProviders.facebook:
               await facebookAuth.logOut();
@@ -381,7 +384,7 @@ class AuthDataSourceImpl extends AuthDataSource {
               break;
           }
         } else {
-          await authorizer.signOut();
+          await firebaseAuth.signOut();
           if (await googleAuth.isSignedIn()) {
             googleAuth.disconnect();
             googleAuth.signOut();
@@ -400,18 +403,18 @@ class AuthDataSourceImpl extends AuthDataSource {
   Future<Response<void>> verifyPhoneNumber({
     String? phoneNumber,
     int? forceResendingToken,
-    IPhoneMultiFactorInfo? multiFactorInfo,
-    IMultiFactorSession? multiFactorSession,
+    PhoneMultiFactorInfo? multiFactorInfo,
+    MultiFactorSession? multiFactorSession,
     Duration timeout = const Duration(seconds: 30),
-    required void Function(IPhoneAuthCredential credential) onComplete,
-    required void Function(IAuthException exception) onFailed,
+    required void Function(PhoneAuthCredential credential) onComplete,
+    required void Function(FirebaseAuthException exception) onFailed,
     required void Function(String verId, int? forceResendingToken) onCodeSent,
     required void Function(String verId) onCodeAutoRetrievalTimeout,
   }) async {
     final response = Response();
     if (AuthValidator.isValidPhone(phoneNumber)) {
       try {
-        authorizer.verifyPhoneNumber(
+        firebaseAuth.verifyPhoneNumber(
           phoneNumber: phoneNumber,
           forceResendingToken: forceResendingToken,
           multiFactorInfo: multiFactorInfo,
@@ -423,7 +426,7 @@ class AuthDataSourceImpl extends AuthDataSource {
           codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
         );
         return response;
-      } on IAuthException catch (_) {
+      } on FirebaseAuthException catch (_) {
         return response.withException(_.message, status: Status.failure);
       }
     } else {
