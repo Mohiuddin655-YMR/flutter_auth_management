@@ -1,7 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_entity/flutter_entity.dart';
 
-import '../utils/auth_helper.dart';
+import '../../auth/user.dart';
 import 'auth_providers.dart';
 import 'biometric_status.dart';
 
@@ -236,8 +235,6 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
     return DateTime.now().difference(lastLoggedOutDate);
   }
 
-  bool get isCurrentUid => id == AuthHelper.uid;
-
   bool get isBiometric => mBiometric.isActivated;
 
   BiometricStatus get mBiometric => BiometricStatus.from(biometric);
@@ -329,7 +326,7 @@ class Auth<Key extends AuthKeys> extends Entity<Key> {
     );
   }
 
-  factory Auth.fromUser(User? user) {
+  factory Auth.fromUser(IUser? user) {
     return Auth(
       id: user?.uid,
       email: user?.email,

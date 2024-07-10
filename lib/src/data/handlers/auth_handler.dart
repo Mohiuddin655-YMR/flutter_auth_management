@@ -1,6 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter_entity/flutter_entity.dart';
 
+import '../../../auth/auth_credential.dart';
+import '../../../auth/exception.dart';
+import '../../../auth/multi_factor.dart';
+import '../../../auth/user.dart';
+import '../../../auth/user_credential.dart';
+import '../../../providers/phone_auth.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
 import '../../models/biometric_config.dart';
@@ -16,7 +21,7 @@ class AuthHandlerImpl extends AuthHandler {
   const AuthHandlerImpl.fromRepository(super.repository);
 
   @override
-  User? get user => repository.user;
+  IUser? get user => repository.user;
 
   @override
   Future<Response> get delete {
@@ -57,29 +62,29 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<UserCredential>> signInWithCredential({
-    required AuthCredential credential,
+  Future<Response<IUserCredential>> signInWithCredential({
+    required IAuthCredential credential,
   }) async {
     try {
       return repository
           .signInWithCredential(credential: credential)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
+          .onError((_, __) => Response<IUserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+      return Future.value(Response<IUserCredential>(exception: "$_"));
     }
   }
 
   @override
-  Future<Response<UserCredential>> signInWithEmailNPassword({
+  Future<Response<IUserCredential>> signInWithEmailNPassword({
     required String email,
     required String password,
   }) {
     try {
       return repository
           .signInWithEmailNPassword(email: email, password: password)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
+          .onError((_, __) => Response<IUserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+      return Future.value(Response<IUserCredential>(exception: "$_"));
     }
   }
 
@@ -117,44 +122,44 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<UserCredential>> signInWithUsernameNPassword({
+  Future<Response<IUserCredential>> signInWithUsernameNPassword({
     required String username,
     required String password,
   }) {
     try {
       return repository
           .signInWithUsernameNPassword(username: username, password: password)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
+          .onError((_, __) => Response<IUserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+      return Future.value(Response<IUserCredential>(exception: "$_"));
     }
   }
 
   @override
-  Future<Response<UserCredential>> signUpWithEmailNPassword({
+  Future<Response<IUserCredential>> signUpWithEmailNPassword({
     required String email,
     required String password,
   }) {
     try {
       return repository
           .signUpWithEmailNPassword(email: email, password: password)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
+          .onError((_, __) => Response<IUserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+      return Future.value(Response<IUserCredential>(exception: "$_"));
     }
   }
 
   @override
-  Future<Response<UserCredential>> signUpWithUsernameNPassword({
+  Future<Response<IUserCredential>> signUpWithUsernameNPassword({
     required String username,
     required String password,
   }) {
     try {
       return repository
           .signUpWithUsernameNPassword(username: username, password: password)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
+          .onError((_, __) => Response<IUserCredential>(exception: "$_"));
     } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+      return Future.value(Response<IUserCredential>(exception: "$_"));
     }
   }
 
@@ -173,11 +178,11 @@ class AuthHandlerImpl extends AuthHandler {
   Future<Response<void>> signInByPhone({
     String? phoneNumber,
     int? forceResendingToken,
-    PhoneMultiFactorInfo? multiFactorInfo,
-    MultiFactorSession? multiFactorSession,
+    IPhoneMultiFactorInfo? multiFactorInfo,
+    IMultiFactorSession? multiFactorSession,
     Duration timeout = const Duration(seconds: 30),
-    required void Function(PhoneAuthCredential credential) onComplete,
-    required void Function(FirebaseAuthException exception) onFailed,
+    required void Function(IPhoneAuthCredential credential) onComplete,
+    required void Function(IAuthException exception) onFailed,
     required void Function(String verId, int? forceResendingToken) onCodeSent,
     required void Function(String verId) onCodeAutoRetrievalTimeout,
   }) {

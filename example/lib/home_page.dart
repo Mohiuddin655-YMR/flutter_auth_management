@@ -131,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     Text(
                       "Account created at ".join(
-                        DateProvider.toRealtime(value?.timeMills ?? 0),
+                        DateConverter.toRealtime(value?.timeMills ?? 0),
                       ),
                       style: Theme.of(context)
                           .textTheme

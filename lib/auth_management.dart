@@ -1,5 +1,6 @@
 library auth_management;
 
+export 'auth.dart';
 export 'src/core/converter.dart';
 export 'src/core/extensions.dart';
 export 'src/core/messages.dart';
@@ -30,7 +31,6 @@ export 'src/services/repositories/auth_repository.dart';
 export 'src/services/repositories/backup_repository.dart';
 export 'src/services/sources/auth_data_source.dart';
 export 'src/services/sources/authorized_data_source.dart';
-export 'src/utils/auth_helper.dart';
 export 'src/utils/auth_response.dart';
 export 'src/utils/authenticator.dart';
 export 'src/utils/authenticator_email.dart';

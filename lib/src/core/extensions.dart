@@ -1,9 +1,11 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_entity/flutter_entity.dart';
 
+import '../../auth/exception.dart';
+import '../../auth/multi_factor.dart';
+import '../../providers/phone_auth.dart';
 import '../models/auth.dart';
 import '../models/auth_providers.dart';
 import '../models/auth_state.dart';
@@ -171,11 +173,11 @@ extension AuthContextExtension on BuildContext {
 
   Future<AuthResponse<T>> signInByPhone<T extends Auth>(
     PhoneAuthenticator authenticator, {
-    PhoneMultiFactorInfo? multiFactorInfo,
-    MultiFactorSession? multiFactorSession,
+    IPhoneMultiFactorInfo? multiFactorInfo,
+    IMultiFactorSession? multiFactorSession,
     Duration timeout = const Duration(minutes: 2),
-    void Function(PhoneAuthCredential credential)? onComplete,
-    void Function(FirebaseAuthException exception)? onFailed,
+    void Function(IPhoneAuthCredential credential)? onComplete,
+    void Function(IAuthException exception)? onFailed,
     void Function(String verId, int? forceResendingToken)? onCodeSent,
     void Function(String verId)? onCodeAutoRetrievalTimeout,
   }) {

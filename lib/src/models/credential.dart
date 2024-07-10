@@ -1,8 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../providers/oauth.dart';
 
 class Credential {
   final String? accessToken;
-  final OAuthCredential? credential;
+  final IOAuthCredential? credential;
   final String? email;
   final String? id;
   final String? idToken;
@@ -41,7 +41,7 @@ class Credential {
 
   Credential copy({
     String? accessToken,
-    OAuthCredential? credential,
+    IOAuthCredential? credential,
     String? id,
     String? idToken,
     String? name,

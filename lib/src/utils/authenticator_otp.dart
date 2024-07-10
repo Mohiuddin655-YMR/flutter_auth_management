@@ -1,5 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../../auth/auth_credential.dart';
+import '../../providers/phone_auth.dart';
 import 'authenticator.dart';
 
 enum OtpType {
@@ -30,7 +30,7 @@ class OtpAuthenticator extends Authenticator {
 
   String get smsCode => super.accessToken ?? "";
 
-  AuthCredential get credential {
+  IAuthCredential get credential {
     return PhoneAuthProvider.credential(
       verificationId: token,
       smsCode: smsCode,
