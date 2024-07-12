@@ -89,16 +89,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
 
   @override
   Future<bool> get isLoggedIn {
-    return auth.then((value) {
-      final loggedIn = value != null && value.isLoggedIn;
-      if (loggedIn) {
-        _stateNotifier.value = AuthState.authenticated;
-        _userNotifier.value = value;
-        return true;
-      } else {
-        return false;
-      }
-    });
+    return auth.then((value) => value != null && value.isLoggedIn);
   }
 
   @override
@@ -307,8 +298,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
         if (initialCheck) {
           if (value.isLoggedIn) {
             _stateNotifier.value = AuthState.authenticated;
-          } else {
-            _stateNotifier.value = AuthState.unauthenticated;
           }
         }
         return backupHandler.onFetchUser(value.id).then((remote) {
@@ -328,27 +317,27 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     AuthProviders? provider,
   ]) async {
     try {
-      emit(AuthResponse.loading(provider));
       final signedIn = await authHandler.isSignIn(provider);
       final data = signedIn ? await auth : null;
       if (data != null) {
-        return emit(AuthResponse.authenticated(
+        return AuthResponse.authenticated(
           data,
           provider: provider,
           type: AuthType.signedIn,
-        ));
+        );
       } else {
-        return emit(AuthResponse.unauthenticated(
+        if (signedIn) await authHandler.signOut(provider);
+        return AuthResponse.unauthenticated(
           provider: provider,
           type: AuthType.signedIn,
-        ));
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
+      return AuthResponse.failure(
         msg.loggedIn.failure ?? error,
         provider: provider,
         type: AuthType.signedIn,
-      ));
+      );
     }
   }
 
