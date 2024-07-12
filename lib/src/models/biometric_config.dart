@@ -80,8 +80,7 @@ class BiometricConfig {
     this.deviceException = "Device isn't supported!",
     this.failureException = "Biometric matching failed!",
     this.checkingException = "Can not check biometrics!",
-    this.localizedReason =
-        "Scan your fingerprint (or face or whatever) to authenticate",
+    this.localizedReason = "Please authenticate to show account balance",
     this.options = const IBiometricOptions(
       stickyAuth: true,
       biometricOnly: true,

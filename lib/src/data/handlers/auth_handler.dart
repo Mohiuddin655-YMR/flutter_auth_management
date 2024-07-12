@@ -20,7 +20,7 @@ class AuthHandlerImpl extends AuthHandler {
 
   @override
   Future<Response> get delete {
-    return repository.delete.onError((_, __) => Response(exception: "$_"));
+    return repository.delete.onError((e, __) => Response(exception: "$e"));
   }
 
   @override
@@ -33,13 +33,13 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<Credential>> signInWithApple() {
+  Future<Response<UserCredential>> signInAnonymously() {
     try {
-      return repository.signInWithApple().onError((_, __) {
-        return Response<Credential>(exception: "$_");
-      });
-    } catch (_) {
-      return Future.value(Response<Credential>(exception: "$_"));
+      return repository
+          .signInAnonymously()
+          .onError((e, __) => Response<UserCredential>(exception: "$e"));
+    } catch (e) {
+      return Future.value(Response<UserCredential>(exception: "$e"));
     }
   }
 
@@ -48,11 +48,11 @@ class AuthHandlerImpl extends AuthHandler {
     BiometricConfig? config,
   }) {
     try {
-      return repository.signInWithBiometric(config: config).onError((_, __) {
-        return Response<bool>(exception: "$_");
+      return repository.signInWithBiometric(config: config).onError((e, __) {
+        return Response<bool>(exception: "$e");
       });
-    } catch (_) {
-      return Future.value(Response<bool>(exception: "$_"));
+    } catch (e) {
+      return Future.value(Response<bool>(exception: "$e"));
     }
   }
 
@@ -63,9 +63,9 @@ class AuthHandlerImpl extends AuthHandler {
     try {
       return repository
           .signInWithCredential(credential: credential)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
-    } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+          .onError((e, __) => Response<UserCredential>(exception: "$e"));
+    } catch (e) {
+      return Future.value(Response<UserCredential>(exception: "$e"));
     }
   }
 
@@ -77,42 +77,9 @@ class AuthHandlerImpl extends AuthHandler {
     try {
       return repository
           .signInWithEmailNPassword(email: email, password: password)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
-    } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
-    }
-  }
-
-  @override
-  Future<Response<Credential>> signInWithFacebook() {
-    try {
-      return repository.signInWithFacebook().onError((_, __) {
-        return Response<Credential>(exception: "$_");
-      });
-    } catch (_) {
-      return Future.value(Response<Credential>(exception: "$_"));
-    }
-  }
-
-  @override
-  Future<Response<Credential>> signInWithGithub() {
-    try {
-      return repository.signInWithGithub().onError((_, __) {
-        return Response<Credential>(exception: "$_");
-      });
-    } catch (_) {
-      return Future.value(Response<Credential>(exception: "$_"));
-    }
-  }
-
-  @override
-  Future<Response<Credential>> signInWithGoogle() {
-    try {
-      return repository.signInWithGoogle().onError((_, __) {
-        return Response<Credential>(exception: "$_");
-      });
-    } catch (_) {
-      return Future.value(Response<Credential>(exception: "$_"));
+          .onError((e, __) => Response<UserCredential>(exception: "$e"));
+    } catch (e) {
+      return Future.value(Response<UserCredential>(exception: "$e"));
     }
   }
 
@@ -124,9 +91,9 @@ class AuthHandlerImpl extends AuthHandler {
     try {
       return repository
           .signInWithUsernameNPassword(username: username, password: password)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
-    } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+          .onError((e, __) => Response<UserCredential>(exception: "$e"));
+    } catch (e) {
+      return Future.value(Response<UserCredential>(exception: "$e"));
     }
   }
 
@@ -138,9 +105,9 @@ class AuthHandlerImpl extends AuthHandler {
     try {
       return repository
           .signUpWithEmailNPassword(email: email, password: password)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
-    } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+          .onError((e, __) => Response<UserCredential>(exception: "$e"));
+    } catch (e) {
+      return Future.value(Response<UserCredential>(exception: "$e"));
     }
   }
 
@@ -152,25 +119,25 @@ class AuthHandlerImpl extends AuthHandler {
     try {
       return repository
           .signUpWithUsernameNPassword(username: username, password: password)
-          .onError((_, __) => Response<UserCredential>(exception: "$_"));
-    } catch (_) {
-      return Future.value(Response<UserCredential>(exception: "$_"));
+          .onError((e, __) => Response<UserCredential>(exception: "$e"));
+    } catch (e) {
+      return Future.value(Response<UserCredential>(exception: "$e"));
     }
   }
 
   @override
   Future<Response<Auth>> signOut([AuthProviders? provider]) {
     try {
-      return repository.signOut(provider).onError((_, __) {
-        return Response<Auth>(exception: "$_");
+      return repository.signOut(provider).onError((e, __) {
+        return Response<Auth>(exception: "$e");
       });
-    } catch (_) {
-      return Future.value(Response<Auth>(exception: "$_"));
+    } catch (e) {
+      return Future.value(Response<Auth>(exception: "$e"));
     }
   }
 
   @override
-  Future<Response<void>> signInByPhone({
+  Future<Response<void>> verifyPhoneNumber({
     String? phoneNumber,
     int? forceResendingToken,
     PhoneMultiFactorInfo? multiFactorInfo,
@@ -194,9 +161,120 @@ class AuthHandlerImpl extends AuthHandler {
             onCodeSent: onCodeSent,
             onCodeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
           )
-          .onError((_, __) => Response(exception: "$_"));
-    } catch (_) {
-      return Future.value(Response(exception: "$_"));
+          .onError((e, __) => Response(exception: "$e"));
+    } catch (e) {
+      return Future.value(Response(exception: "$e"));
+    }
+  }
+
+  // OAUTH
+  @override
+  Future<Response<Credential>> signInWithApple() {
+    try {
+      return repository.signInWithApple().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithFacebook() {
+    try {
+      return repository.signInWithFacebook().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithGameCenter() {
+    try {
+      return repository.signInWithGameCenter().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithGithub() {
+    try {
+      return repository.signInWithGithub().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithGoogle() {
+    try {
+      return repository.signInWithGoogle().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithMicrosoft() {
+    try {
+      return repository.signInWithMicrosoft().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithPlayGames() {
+    try {
+      return repository.signInWithPlayGames().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithSAML() {
+    try {
+      return repository.signInWithSAML().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithTwitter() {
+    try {
+      return repository.signInWithTwitter().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
+    }
+  }
+
+  @override
+  Future<Response<Credential>> signInWithYahoo() {
+    try {
+      return repository.signInWithYahoo().onError((e, __) {
+        return Response<Credential>(exception: "$e");
+      });
+    } catch (e) {
+      return Future.value(Response<Credential>(exception: "$e"));
     }
   }
 }

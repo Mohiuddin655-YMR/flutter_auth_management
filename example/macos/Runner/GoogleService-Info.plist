@@ -31,7 +31,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:977577507743:ios:5d4ec12638c284183e9baa</string>
+	<string>1:977577507743:ios:6125658364cd4e393e9baa</string>
 	<key>DATABASE_URL</key>
 	<string>https://flutter-app-391817-default-rtdb.firebaseio.com</string>
 </dict>

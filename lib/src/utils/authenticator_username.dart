@@ -10,7 +10,6 @@ class UsernameAuthenticator extends Authenticator {
     super.name,
     super.phone,
     super.photo,
-    super.provider,
     super.extra,
   }) : super.username();
 

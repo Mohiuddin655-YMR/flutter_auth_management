@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:auth_management/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_andomie/core.dart';
+import 'package:flutter_andomie/utils.dart';
 
 import 'user_model.dart';
 
@@ -20,7 +21,7 @@ class _HomePageState extends State<HomePage> {
 
   void _updateUser() {
     context.updateAccount<UserModel>({
-      UserKeys.i.biometric: true,
+      UserKeys.i.name: "Omie ${RandomProvider.getInt(max: 50)}",
     });
   }
 
@@ -37,7 +38,7 @@ class _HomePageState extends State<HomePage> {
         signInTitle: "Biometric",
         localizedReason: "Scan your face or fingerprint",
       ),
-      callback: (value) => showDialog<BiometricStatus>(
+      callback: (value) => showDialog<BiometricStatus?>(
         context: context,
         builder: (context) {
           return AlertDialog(
@@ -52,7 +53,7 @@ class _HomePageState extends State<HomePage> {
               ElevatedButton(
                 child: const Text("Inactivate"),
                 onPressed: () {
-                  Navigator.pop(context, BiometricStatus.inactivated);
+                  Navigator.pop(context, BiometricStatus.deactivated);
                 },
               ),
               ElevatedButton(
@@ -81,7 +82,7 @@ class _HomePageState extends State<HomePage> {
 
   void _status(BuildContext context, AuthState state, UserModel? user) {
     if (state.isUnauthenticated) {
-      Navigator.pushNamedAndRemoveUntil(context, "login", (route) => false);
+      Navigator.pushNamedAndRemoveUntil(context, "startup", (route) => false);
     }
   }
 
@@ -131,7 +132,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     Text(
                       "Account created at ".join(
-                        DateConverter.toRealtime(value?.timeMills ?? 0),
+                        DateProvider.toRealtime(value?.timeMills ?? 0),
                       ),
                       style: Theme.of(context)
                           .textTheme

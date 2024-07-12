@@ -25,7 +25,9 @@ class AuthRepositoryImpl extends AuthRepository {
   Future<bool> isSignIn([AuthProviders? provider]) => source.isSignIn();
 
   @override
-  Future<Response<Credential>> signInWithApple() => source.signInWithApple();
+  Future<Response<UserCredential>> signInAnonymously() {
+    return source.signInAnonymously();
+  }
 
   @override
   Future<Response<bool>> signInWithBiometric({
@@ -47,21 +49,6 @@ class AuthRepositoryImpl extends AuthRepository {
     required String password,
   }) {
     return source.signInWithEmailNPassword(email: email, password: password);
-  }
-
-  @override
-  Future<Response<Credential>> signInWithFacebook() {
-    return source.signInWithFacebook();
-  }
-
-  @override
-  Future<Response<Credential>> signInWithGithub() {
-    return source.signInWithGithub();
-  }
-
-  @override
-  Future<Response<Credential>> signInWithGoogle() {
-    return source.signInWithGoogle();
   }
 
   @override
@@ -95,7 +82,9 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<Response<Auth>> signOut([AuthProviders? provider]) => source.signOut();
+  Future<Response<Auth>> signOut([AuthProviders? provider]) {
+    return source.signOut(provider);
+  }
 
   @override
   Future<Response<void>> verifyPhoneNumber({
@@ -120,5 +109,53 @@ class AuthRepositoryImpl extends AuthRepository {
       onCodeSent: onCodeSent,
       onCodeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
     );
+  }
+
+  @override
+  Future<Response<Credential>> signInWithApple() => source.signInWithApple();
+
+  @override
+  Future<Response<Credential>> signInWithFacebook() {
+    return source.signInWithFacebook();
+  }
+
+  @override
+  Future<Response<Credential>> signInWithGameCenter() {
+    return source.signInWithGameCenter();
+  }
+
+  @override
+  Future<Response<Credential>> signInWithGithub() {
+    return source.signInWithGithub();
+  }
+
+  @override
+  Future<Response<Credential>> signInWithGoogle() {
+    return source.signInWithGoogle();
+  }
+
+  @override
+  Future<Response<Credential>> signInWithMicrosoft() {
+    return source.signInWithMicrosoft();
+  }
+
+  @override
+  Future<Response<Credential>> signInWithPlayGames() {
+    return source.signInWithPlayGames();
+  }
+
+  @override
+  Future<Response<Credential>> signInWithSAML() {
+    return source.signInWithSAML();
+  }
+
+  @override
+  Future<Response<Credential>> signInWithTwitter() {
+    return source.signInWithTwitter();
+  }
+
+  @override
+  Future<Response<Credential>> signInWithYahoo() {
+    return source.signInWithYahoo();
   }
 }

@@ -62,10 +62,14 @@ class GoogleAuthDelegate extends IGoogleAuthDelegate {
 
   @override
   Future<IGoogleSignInAccount?> signOut() {
-    return googleSignIn.signOut().then(_account);
+    return googleSignIn.signOut().then((value) {
+      return _account(value);
+    });
   }
 
-  IGoogleSignInAccount? _account(GoogleSignInAccount? value) {
+  IGoogleSignInAccount? _account(
+    GoogleSignInAccount? value,
+  ) {
     if (value != null) {
       final data = IGoogleSignInUserData(
         email: value.email,
@@ -77,6 +81,8 @@ class GoogleAuthDelegate extends IGoogleAuthDelegate {
       return IGoogleSignInAccount(
         data,
         currentUser: null,
+        authentication: value.authentication.then(_authentication),
+        authHeaders: value.authHeaders,
         getTokens: _tokens,
         onClearAuthCache: GoogleSignInPlatform.instance.clearAuthCache,
       );
@@ -98,5 +104,19 @@ class GoogleAuthDelegate extends IGoogleAuthDelegate {
         serverAuthCode: value.serverAuthCode,
       );
     });
+  }
+
+  IGoogleSignInAuthentication _authentication(
+    GoogleSignInAuthentication value,
+  ) {
+    return IGoogleSignInAuthentication(_token(value));
+  }
+
+  IGoogleSignInTokenData _token(GoogleSignInAuthentication value) {
+    return IGoogleSignInTokenData(
+      idToken: value.idToken,
+      accessToken: value.accessToken,
+      serverAuthCode: value.serverAuthCode,
+    );
   }
 }

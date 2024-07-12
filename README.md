@@ -590,7 +590,7 @@ class _HomePageState extends State<HomePage> {
 
   void _updateUser() {
     context.updateAccount<UserModel>({
-      UserKeys.i.biometric: true,
+      UserKeys.i.name: "Updated name",
     });
   }
 

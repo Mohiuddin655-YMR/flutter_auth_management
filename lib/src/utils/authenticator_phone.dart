@@ -8,13 +8,11 @@ class PhoneAuthenticator extends Authenticator {
     super.id,
     super.timeMills,
     super.email,
-    super.idToken,
     super.name,
     super.photo,
-    super.provider,
     super.username,
     super.extra,
-  }) : super.phone(accessToken: token);
+  }) : super.phone();
 
   OtpAuthenticator otp({
     required String token,

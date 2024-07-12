@@ -12,6 +12,7 @@ import '../services/controllers/controller.dart';
 import '../utils/auth_notifier.dart';
 import '../utils/auth_response.dart';
 import '../utils/authenticator_email.dart';
+import '../utils/authenticator_guest.dart';
 import '../utils/authenticator_oauth.dart';
 import '../utils/authenticator_otp.dart';
 import '../utils/authenticator_phone.dart';
@@ -53,6 +54,16 @@ extension AuthContextExtension on BuildContext {
 
   Future<T?> auth<T extends Auth>() => _i<T>("auth").auth;
 
+  String error<T extends Auth>() => _i<T>("error").error;
+
+  Future<bool> isBiometricEnabled<T extends Auth>() {
+    return _i<T>("isBiometricEnabled").isBiometricEnabled;
+  }
+
+  Future<bool> isLoggedIn<T extends Auth>() {
+    return _i<T>("isLoggedIn").isLoggedIn;
+  }
+
   AuthNotifier<String> liveError<T extends Auth>() {
     return _i<T>("liveError").liveError;
   }
@@ -65,36 +76,24 @@ extension AuthContextExtension on BuildContext {
     return _i<T>("liveMessage").liveMessage;
   }
 
-  AuthNotifier<T?> liveUser<T extends Auth>() {
-    return _i<T>("liveAuth").liveUser;
-  }
-
   AuthNotifier<AuthState> liveState<T extends Auth>() {
     return _i<T>("liveState").liveState;
   }
 
-  Future<bool> isBiometricEnabled<T extends Auth>() {
-    return _i<T>("isBiometricEnabled").isBiometricEnabled;
+  AuthNotifier<T?> liveUser<T extends Auth>() {
+    return _i<T>("liveUser").liveUser;
   }
 
-  Future<bool> isLoggedIn<T extends Auth>() {
-    return _i<T>("isLoggedIn").isLoggedIn;
-  }
+  bool loadingForAuth<T extends Auth>() => _i<T>("loadingForAuth").loading;
 
-  Future<AuthResponse<T>> emit<T extends Auth>(AuthResponse<T> data) {
-    return _i<T>("emit").emit(data);
-  }
+  String messageForAuth<T extends Auth>() => _i<T>("messageForAuth").message;
 
-  Future<T?> updateAccount<T extends Auth>(Map<String, dynamic> data) {
-    return _i<T>("updateAccount").update(data);
-  }
+  AuthState stateForAuth<T extends Auth>() => _i<T>("stateForAuth").state;
 
-  Future<AuthResponse<T>> deleteAccount<T extends Auth>() {
-    return _i<T>("deleteAccount").delete();
-  }
+  T? user<T extends Auth>() => _i<T>("user").user;
 
   Future<Response<bool>> addBiometric<T extends Auth>({
-    required SignByBiometricCallback callback,
+    SignByBiometricCallback? callback,
     BiometricConfig? config,
   }) {
     return _i<T>("addBiometric").addBiometric(
@@ -107,20 +106,34 @@ extension AuthContextExtension on BuildContext {
     return _i<T>("biometricEnable").biometricEnable(enabled);
   }
 
+  Future<AuthResponse<T>> deleteAccount<T extends Auth>() {
+    return _i<T>("deleteAccount").delete();
+  }
+
+  void disposeAuthController<T extends Auth>() {
+    return _i<T>("disposeAuthController").dispose();
+  }
+
+  Future<AuthResponse<T>> emitAuthResponse<T extends Auth>(
+    AuthResponse<T> data,
+  ) {
+    return _i<T>("emitAuthResponse").emit(data);
+  }
+
+  Future<T?> initializeAuth<T extends Auth>([bool initialCheck = true]) {
+    return _i<T>("initializeAuth").initialize(initialCheck);
+  }
+
   Future<AuthResponse<T>> isSignIn<T extends Auth>([
     AuthProviders? provider,
   ]) {
     return _i<T>("isSignIn").isSignIn(provider);
   }
 
-  Future<AuthResponse<T>> signInByApple<T extends Auth>({
-    OAuthAuthenticator? authenticator,
-    bool storeToken = false,
-  }) {
-    return _i<T>("signInByApple").signInByApple(
-      authenticator: authenticator,
-      storeToken: storeToken,
-    );
+  Future<AuthResponse<T>> signInAnonymously<T extends Auth>([
+    GuestAuthenticator? authenticator,
+  ]) {
+    return _i<T>("signInAnonymously").signInAnonymously(authenticator);
   }
 
   Future<AuthResponse<T>> signInByBiometric<T extends Auth>({
@@ -136,36 +149,6 @@ extension AuthContextExtension on BuildContext {
     return _i<T>("signInByEmail").signInByEmail(
       authenticator,
       onBiometric: onBiometric,
-    );
-  }
-
-  Future<AuthResponse<T>> signInByFacebook<T extends Auth>({
-    OAuthAuthenticator? authenticator,
-    bool storeToken = false,
-  }) {
-    return _i<T>("signInByFacebook").signInByFacebook(
-      authenticator: authenticator,
-      storeToken: storeToken,
-    );
-  }
-
-  Future<AuthResponse<T>> signInByGithub<T extends Auth>({
-    OAuthAuthenticator? authenticator,
-    bool storeToken = false,
-  }) {
-    return _i<T>("signInByGithub").signInByGithub(
-      authenticator: authenticator,
-      storeToken: storeToken,
-    );
-  }
-
-  Future<AuthResponse<T>> signInByGoogle<T extends Auth>({
-    OAuthAuthenticator? authenticator,
-    bool storeToken = false,
-  }) {
-    return _i<T>("signInByGoogle").signInByGoogle(
-      authenticator: authenticator,
-      storeToken: storeToken,
     );
   }
 
@@ -232,9 +215,13 @@ extension AuthContextExtension on BuildContext {
   }
 
   Future<AuthResponse<T>> signOut<T extends Auth>([
-    AuthProviders provider = AuthProviders.none,
+    AuthProviders? provider,
   ]) {
     return _i<T>("signOut").signOut(provider);
+  }
+
+  Future<T?> updateAccount<T extends Auth>(Map<String, dynamic> data) {
+    return _i<T>("updateAccount").update(data);
   }
 
   Future<AuthResponse> verifyPhoneByOtp<T extends Auth>(
@@ -242,10 +229,113 @@ extension AuthContextExtension on BuildContext {
   ) {
     return _i<T>("verifyPhoneByOtp").verifyPhoneByOtp(authenticator);
   }
+
+  // OAUTH
+  Future<AuthResponse<T>> signInWithApple<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithApple").signInWithApple(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithFacebook<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithFacebook").signInWithFacebook(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithGameCenter<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithGameCenter").signInWithGameCenter(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithGithub<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithGithub").signInWithGithub(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithGoogle<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithGoogle").signInWithGoogle(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithMicrosoft<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithMicrosoft").signInWithMicrosoft(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithPlayGames<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithPlayGames").signInWithPlayGames(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithSAML<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithSAML").signInWithSAML(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithTwitter<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithTwitter").signInWithTwitter(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
+
+  Future<AuthResponse<T>> signInWithYahoo<T extends Auth>({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) {
+    return _i<T>("signInWithYahoo").signInWithYahoo(
+      authenticator: authenticator,
+      storeToken: storeToken,
+    );
+  }
 }
 
 extension AuthFutureExtension<T extends Auth> on Future<AuthResponse<T>> {
-  Future<AuthResponse<T>> onStatus(void Function(bool loading) callback) async {
+  Future<AuthResponse<T>> onAuthStatus(
+    void Function(bool loading) callback,
+  ) async {
     callback(true);
     final data = await this;
     callback(false);

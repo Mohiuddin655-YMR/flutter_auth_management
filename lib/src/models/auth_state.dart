@@ -1,7 +1,8 @@
 enum AuthState {
   guest,
   authenticated,
-  unauthenticated;
+  unauthenticated,
+  unauthorized;
 
   factory AuthState.from(String? source) {
     if (source == guest.name) {
@@ -11,7 +12,7 @@ enum AuthState {
     } else if (source == unauthenticated.name) {
       return AuthState.unauthenticated;
     } else {
-      return AuthState.unauthenticated;
+      return AuthState.unauthorized;
     }
   }
 
@@ -20,4 +21,6 @@ enum AuthState {
   bool get isAuthenticated => this == AuthState.authenticated;
 
   bool get isUnauthenticated => this == AuthState.unauthenticated;
+
+  bool get isUnauthorized => this == AuthState.unauthorized;
 }

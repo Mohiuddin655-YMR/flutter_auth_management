@@ -31,7 +31,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.3.1"
+    version: "1.0.0"
   auth_management_apple_delegate:
     dependency: "direct main"
     description:
@@ -50,10 +50,10 @@ packages:
     dependency: transitive
     description:
       name: auth_management_delegates
-      sha256: caf1283d4b062102a5dc2c35f2d9e778eea5b699454136d9e26ca80a8e629936
+      sha256: "67ab70fce3c2a9e20f11e25585812af166e94f665d8b7a7af15d6a0b23635d73"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.2+1"
   auth_management_facebook_delegate:
     dependency: "direct main"
     description:
@@ -67,7 +67,7 @@ packages:
       path: "../auth_management_google_delegate"
       relative: true
     source: path
-    version: "1.0.4"
+    version: "1.0.4+1"
   badges:
     dependency: transitive
     description:
@@ -156,14 +156,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
-  cupertino_icons:
-    dependency: "direct main"
-    description:
-      name: cupertino_icons
-      sha256: ba631d1c7f7bef6b729a622b7b752645a2d076dba9976925b8f25725a30e1ee6
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.8"
   dbus:
     dependency: transitive
     description:
@@ -205,7 +197,7 @@ packages:
     source: hosted
     version: "7.0.0"
   firebase_auth:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: firebase_auth
       sha256: a41b56878fa6aef3ea52962329b47eee333672d4b0ecc406e071b9fc729f242c
@@ -269,18 +261,18 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_andomie
-      sha256: "61bb15b0a0fbc5936d8027c6d8f58af0e59fa69f0706e9efd95fcacbc7d63436"
+      sha256: b81765877a8f1d3e2c63e3a52b1f12b64ed42df0a7e210369cdbcfbfb5167ec8
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.31"
+    version: "0.5.18"
   flutter_androssy:
     dependency: "direct main"
     description:
       name: flutter_androssy
-      sha256: "7bcea8a34244bd74dee553b01853cca044d666d13440b3752a82fabde62ba853"
+      sha256: f3974532bbdd79cc32d3efb8f80fb459e7206cca968a0d83ad39e5e28ba76131
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.9"
+    version: "0.3.34"
   flutter_cache_manager:
     dependency: transitive
     description:
@@ -325,10 +317,18 @@ packages:
     dependency: "direct dev"
     description:
       name: flutter_lints
-      sha256: "9e8c3858111da373efc5aa341de011d9bd23e2c5c5e0c62bccf32438e192d7b1"
+      sha256: a25a15ebbdfc33ab1cd26c63a6ee519df92338a9c10f122adda92938253bef04
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.2"
+    version: "2.0.3"
+  flutter_network_status:
+    dependency: transitive
+    description:
+      name: flutter_network_status
+      sha256: "2ecfc64b7cba76a2f55f7840964672ce380e0eef8ab94eeeccf8a4cd7b20e308"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -412,7 +412,7 @@ packages:
     source: hosted
     version: "0.3.1+1"
   google_sign_in:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: google_sign_in
       sha256: "0b8787cb9c1a68ad398e8010e8c8766bfa33556d2ab97c439fb4137756d7308f"
@@ -471,10 +471,10 @@ packages:
     dependency: transitive
     description:
       name: intl
-      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
+      sha256: "3bc132a9dbce73a7e4a21a17d06e1878839ffbf975568bc875c60537824b0c4d"
       url: "https://pub.dev"
     source: hosted
-    version: "0.19.0"
+    version: "0.18.1"
   js:
     dependency: transitive
     description:
@@ -511,10 +511,10 @@ packages:
     dependency: transitive
     description:
       name: lints
-      sha256: cbf8d4b858bb0134ef3ef87841abdf8d63bfc255c266b7bf6b39daa1085c4290
+      sha256: "0a217c6c989d21039f1498c3ed9f3ed71b354e69873f13a8dfc3c9fe76f1b452"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "2.1.1"
   local_auth:
     dependency: transitive
     description:

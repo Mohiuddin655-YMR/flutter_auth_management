@@ -81,6 +81,17 @@ class AuthResponse<T extends Auth> {
           type: type,
         );
 
+  const AuthResponse.unauthorized({
+    dynamic msg,
+    AuthProviders? provider,
+    AuthType? type,
+  }) : this._(
+          state: AuthState.unauthorized,
+          error: msg,
+          provider: provider,
+          type: type,
+        );
+
   const AuthResponse.message(
     dynamic msg, {
     AuthProviders? provider,

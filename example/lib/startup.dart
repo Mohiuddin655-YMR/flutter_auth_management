@@ -60,9 +60,39 @@ class _StartupPageState extends State<StartupPage> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, "login");
+                  Navigator.pushNamed(context, "register");
                 },
                 child: const Text("Register"),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, "oauth");
+                },
+                child: const Text("OAuth"),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  context.signInAnonymously<UserModel>(GuestAuthenticator(
+                    name: "Omie talukdar",
+                  ));
+                },
+                child: const Text("Guest"),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  context.signOut<UserModel>();
+                },
+                child: const Text("Sign out"),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  context.updateAccount<UserModel>({AuthKeys.i.name: "XYZ"});
+                },
+                child: const Text("Update account"),
               ),
             ],
           ),

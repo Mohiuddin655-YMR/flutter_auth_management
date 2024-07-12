@@ -1,10 +1,10 @@
 name: auth_management_google_delegate
 description: "Streamlines authentication processes by integrating Google's authentication services, ensuring secure access to digital platforms."
-version: 1.0.4
+version: 1.0.4+1
 repository: https://github.com/P-YMR/flutter_auth_management.git
 
 environment:
-  sdk: '>=3.3.3 <4.0.0'
+  sdk: '>=3.4.3 <4.0.0'
   flutter: ">=1.17.0"
 
 dependencies:
@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
   google_sign_in: ^6.2.1
   google_sign_in_platform_interface: ^2.4.5
-  auth_management_delegates: ^1.0.2
+  auth_management_delegates: ^1.0.2+1
 #  auth_management_delegates:
 #    path: ../auth_management_delegate
 

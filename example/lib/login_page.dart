@@ -13,10 +13,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final etName = TextEditingController();
-  final etEmail = TextEditingController();
-  final etPhone = TextEditingController();
-  final etPassword = TextEditingController();
+  final etName = TextEditingController(text: "Mr. Abc");
+  final etEmail = TextEditingController(text: "abc@gmail.com");
+  final etPhone = TextEditingController(text: "");
+  final etPassword = TextEditingController(text: "123456");
   final etOTP = TextEditingController();
   String? token;
 
@@ -30,33 +30,12 @@ class _LoginPageState extends State<LoginPage> {
     ));
   }
 
-  void signUpByEmail() async {
-    final name = etName.text;
-    final email = etEmail.text;
-    final password = etPassword.text;
-    context.signUpByEmail<UserModel>(EmailAuthenticator(
-      email: email,
-      password: password,
-      name: name, // Optional
-    ));
-  }
-
   void signInByUsername() {
     final name = etName.text;
     final password = etPassword.text;
     context.signInByUsername<UserModel>(UsernameAuthenticator(
       username: name,
       password: password,
-    ));
-  }
-
-  void signUpByUsername() {
-    final name = etName.text;
-    final password = etPassword.text;
-    context.signUpByUsername<UserModel>(UsernameAuthenticator(
-      username: name,
-      password: password,
-      name: name, // Optional
     ));
   }
 
@@ -67,6 +46,7 @@ class _LoginPageState extends State<LoginPage> {
       PhoneAuthenticator(phone: phone, name: name),
       onCodeSent: (verId, refreshTokenId) {
         token = verId;
+        log(verId);
       },
     );
   }
@@ -75,32 +55,13 @@ class _LoginPageState extends State<LoginPage> {
     final name = etName.text;
     final phone = etPhone.text;
     final code = etOTP.text;
+    final token = this.token;
     context.signInByOtp<UserModel>(OtpAuthenticator(
       token: token ?? "",
       smsCode: code,
       name: name,
       phone: phone,
     ));
-  }
-
-  void signInByApple() {
-    context.signInByApple<UserModel>();
-  }
-
-  void signInByBiometric() {
-    context.signInByBiometric<UserModel>();
-  }
-
-  void signInByFacebook() {
-    context.signInByFacebook<UserModel>();
-  }
-
-  void signInByGithub() {
-    context.signInByGithub<UserModel>();
-  }
-
-  void signInByGoogle() {
-    context.signInByGoogle<UserModel>();
   }
 
   @override
@@ -164,15 +125,7 @@ class _LoginPageState extends State<LoginPage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: signInByEmail,
-              child: const Text("Login (Email)"),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: signUpByEmail,
-              child: const Text("Sign Up (Email)"),
+              child: const Text("Login with Email"),
             ),
           ),
           const SizedBox(height: 12),
@@ -180,15 +133,7 @@ class _LoginPageState extends State<LoginPage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: signInByUsername,
-              child: const Text("Login (Username)"),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: signUpByUsername,
-              child: const Text("Sign Up (Username)"),
+              child: const Text("Login with Username"),
             ),
           ),
           const SizedBox(height: 12),
@@ -196,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: signInByPhone,
-              child: const Text("Phone"),
+              child: const Text("Login with Phone number"),
             ),
           ),
           const SizedBox(height: 12),
@@ -204,39 +149,7 @@ class _LoginPageState extends State<LoginPage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: signInByOtp,
-              child: const Text("OTP"),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: Wrap(
-              runAlignment: WrapAlignment.center,
-              alignment: WrapAlignment.center,
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                ElevatedButton(
-                  onPressed: signInByApple,
-                  child: const Text("Apple"),
-                ),
-                ElevatedButton(
-                  onPressed: signInByBiometric,
-                  child: const Text("Biometric"),
-                ),
-                ElevatedButton(
-                  onPressed: signInByFacebook,
-                  child: const Text("Facebook"),
-                ),
-                ElevatedButton(
-                  onPressed: signInByGithub,
-                  child: const Text("Github"),
-                ),
-                ElevatedButton(
-                  onPressed: signInByGoogle,
-                  child: const Text("Google"),
-                ),
-              ],
+              child: const Text("Verify OTP"),
             ),
           ),
         ],

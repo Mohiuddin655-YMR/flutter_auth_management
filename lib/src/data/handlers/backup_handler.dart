@@ -47,12 +47,15 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   Future<bool> update(Map<String, dynamic> data) async {
     if (data.isEmpty) return false;
     try {
-      return cache.then((local) {
+      return cache.then((local) async {
         if (local != null && local.isLoggedIn && local.id.isNotEmpty) {
-          return onUpdateUser(local.id, data).then((_) {
-            return onFetchUser(local.id).then((value) {
+          await onUpdateUser(local.id, data);
+          return onFetchUser(local.id).then((value) {
+            if (value != null) {
               return repository.set(value);
-            });
+            } else {
+              return repository.update(data);
+            }
           });
         } else {
           return false;
@@ -64,43 +67,33 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
   }
 
   @override
-  Future<bool> updateAsLocal({
+  Future<bool> save({
     required String id,
-    Map<String, dynamic> creates = const {},
+    Map<String, dynamic> initials = const {},
     Map<String, dynamic> updates = const {},
-    bool updateMode = false,
+    bool cacheUpdateMode = false,
   }) async {
     if (id.isEmpty) return false;
     try {
-      if (updateMode) {
-        if (updates.isNotEmpty) {
-          return onUpdateUser(id, updates).then((_) {
-            return onFetchUser(id).then((value) {
-              return repository.set(value);
-            });
-          });
-        } else {
-          return false;
-        }
+      if (cacheUpdateMode) {
+        return repository.update(updates);
       } else {
-        return onFetchUser(id).then((remote) {
-          if (remote != null) {
-            if (updates.isNotEmpty) {
-              return onUpdateUser(id, updates).then((_) {
-                return onFetchUser(id).then((value) {
-                  return repository.set(value);
-                });
-              });
-            } else {
-              return false;
-            }
+        final remote = await onFetchUser(id);
+        if (remote != null) {
+          await onUpdateUser(id, updates);
+          Map<String, dynamic> current = Map.from(remote.source);
+          current.addAll(updates);
+          return repository.set(build(current));
+        } else {
+          final cachedUser = await cache;
+          if (cachedUser == null) {
+            final user = build(initials);
+            await onCreateUser(user);
+            return repository.set(user);
           } else {
-            final user = build(creates);
-            return onCreateUser(user).then((_) {
-              return repository.set(user);
-            });
+            return repository.update(updates);
           }
-        });
+        }
       }
     } catch (_) {
       return false;
@@ -109,27 +102,25 @@ class BackupHandlerImpl<T extends Auth> extends BackupHandler<T> {
 
   @override
   Future<bool> clear() {
-    return repository.clear().onError((_, __) => false);
+    return repository.clear();
   }
 
   @override
-  Future<T?> onFetchUser(String id) {
-    return repository.onFetchUser(id).onError((_, __) => null);
-  }
+  Future<T?> onFetchUser(String id) => repository.onFetchUser(id);
 
   @override
   Future<void> onCreateUser(T data) {
-    return repository.onCreateUser(data).onError((_, __) => null);
+    return repository.onCreateUser(data);
   }
 
   @override
   Future<void> onUpdateUser(String id, Map<String, dynamic> data) {
-    return repository.onUpdateUser(id, data).onError((_, __) => null);
+    return repository.onUpdateUser(id, data);
   }
 
   @override
   Future<void> onDeleteUser(String id) {
-    return repository.onDeleteUser(id).onError((_, __) => null);
+    return repository.onDeleteUser(id);
   }
 
   @override

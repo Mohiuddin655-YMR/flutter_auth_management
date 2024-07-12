@@ -1,3 +1,7 @@
+## 1.0.0
+
+* Stable release version
+
 ## 0.3.1
 
 * Libraries updates

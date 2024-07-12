@@ -1,10 +1,37 @@
 import 'dart:async';
 
-import 'package:auth_management/auth_management.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_entity/flutter_entity.dart';
 
+import '../../core/messages.dart';
+import '../../core/typedefs.dart';
+import '../../core/validator.dart';
+import '../../delegates/backup.dart';
+import '../../delegates/oauth.dart';
+import '../../models/auth.dart';
+import '../../models/auth_providers.dart';
+import '../../models/auth_state.dart';
+import '../../models/auth_type.dart';
+import '../../models/biometric_config.dart';
+import '../../models/biometric_status.dart';
+import '../../services/controllers/controller.dart';
+import '../../services/handlers/auth_handler.dart';
+import '../../services/handlers/backup_handler.dart';
+import '../../services/sources/auth_data_source.dart';
+import '../../services/sources/authorized_data_source.dart';
 import '../../utils/auth_notifier.dart';
+import '../../utils/auth_response.dart';
+import '../../utils/authenticator.dart';
+import '../../utils/authenticator_email.dart';
+import '../../utils/authenticator_guest.dart';
+import '../../utils/authenticator_oauth.dart';
+import '../../utils/authenticator_otp.dart';
+import '../../utils/authenticator_phone.dart';
+import '../../utils/authenticator_username.dart';
+import '../handlers/auth_handler.dart';
+import '../handlers/backup_handler.dart';
+import '../sources/auth_data_source.dart';
+import '../sources/authorized_data_source.dart';
 
 class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   final AuthMessages msg;
@@ -56,16 +83,23 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   String get error => _errorNotifier.value;
 
   @override
-  bool get loading => _loadingNotifier.value;
+  Future<bool> get isBiometricEnabled {
+    return _auth.then((value) => value != null && value.isBiometric);
+  }
 
   @override
-  String get message => _messageNotifier.value;
-
-  @override
-  AuthState get state => _stateNotifier.value;
-
-  @override
-  T? get user => _userNotifier.value;
+  Future<bool> get isLoggedIn {
+    return auth.then((value) {
+      final loggedIn = value != null && value.isLoggedIn;
+      if (loggedIn) {
+        _stateNotifier.value = AuthState.authenticated;
+        _userNotifier.value = value;
+        return true;
+      } else {
+        return false;
+      }
+    });
+  }
 
   @override
   AuthNotifier<String> get liveError => _errorNotifier;
@@ -83,22 +117,187 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   AuthNotifier<T?> get liveUser => _userNotifier;
 
   @override
-  Future<bool> get isBiometricEnabled {
-    return _auth.then((value) => value != null && value.isBiometric);
+  bool get loading => _loadingNotifier.value;
+
+  @override
+  String get message => _messageNotifier.value;
+
+  @override
+  AuthState get state => _stateNotifier.value;
+
+  @override
+  T? get user => _userNotifier.value;
+
+  @override
+  Future<Response<bool>> addBiometric({
+    SignByBiometricCallback? callback,
+    BiometricConfig? config,
+  }) async {
+    final auth = await _auth;
+    final provider = AuthProviders.from(auth?.provider);
+    if (auth != null && auth.isLoggedIn && provider.isAllowBiometric) {
+      try {
+        final response = await authHandler.signInWithBiometric(config: config);
+        if (response.isSuccessful && (response.data ?? false)) {
+          final biometric = callback != null
+              ? await callback(auth.mBiometric)
+              : BiometricStatus.activated;
+          return _update(
+            id: auth.id,
+            updateMode: true,
+            updates: {
+              AuthKeys.i.biometric: biometric?.name,
+            },
+          ).then((_) => Response(status: Status.ok, data: true));
+        } else {
+          return Response(
+            status: response.status,
+            exception: response.exception,
+          );
+        }
+      } catch (error) {
+        return Response(status: Status.failure, exception: error.toString());
+      }
+    } else {
+      return Response(
+        status: Status.notSupported,
+        exception: "User not logged in with email or username!",
+      );
+    }
   }
 
   @override
-  Future<bool> get isLoggedIn {
-    return auth.then((value) {
-      final loggedIn = value != null && value.isLoggedIn;
-      if (loggedIn) {
-        _stateNotifier.value = AuthState.authenticated;
-        _userNotifier.value = value;
-        return true;
-      } else {
-        return false;
+  Future<Response<bool>> biometricEnable(bool enabled) async {
+    final auth = await _auth;
+    final provider = AuthProviders.from(auth?.provider);
+    final permission = auth != null &&
+        auth.isLoggedIn &&
+        !auth.mBiometric.isInitial &&
+        provider.isAllowBiometric;
+    if (permission) {
+      try {
+        final activated = BiometricStatus.value(enabled);
+        return _update(
+          id: auth.id,
+          updateMode: true,
+          updates: {
+            AuthKeys.i.biometric: activated.name,
+          },
+        ).then((_) {
+          return Response(status: Status.ok, data: true);
+        });
+      } catch (error) {
+        return Response(status: Status.failure, exception: error.toString());
       }
+    } else {
+      return Response(
+        status: Status.undefined,
+        exception: "Biometric not initialized yet!",
+      );
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> delete() async {
+    emit(const AuthResponse.loading(AuthProviders.none, AuthType.delete));
+    var data = await auth;
+    if (data != null) {
+      try {
+        return authHandler.delete.then((response) {
+          if (response.isSuccessful) {
+            return _delete().then((value) {
+              return backupHandler.onDeleteUser(data.id).then((value) {
+                return emit(AuthResponse.unauthenticated(
+                  msg: msg.delete.done,
+                  provider: AuthProviders.none,
+                  type: AuthType.delete,
+                ));
+              });
+            });
+          } else {
+            return emit(AuthResponse.rollback(
+              data,
+              msg: response.message,
+              provider: AuthProviders.none,
+              type: AuthType.delete,
+            ));
+          }
+        });
+      } catch (error) {
+        return emit(AuthResponse.rollback(
+          data,
+          msg: msg.delete.failure ?? error,
+          provider: AuthProviders.none,
+          type: AuthType.delete,
+        ));
+      }
+    } else {
+      return emit(AuthResponse.rollback(
+        data,
+        msg: msg.loggedIn.failure,
+        provider: AuthProviders.none,
+        type: AuthType.delete,
+      ));
+    }
+  }
+
+  Future<bool> _delete() {
+    return backupHandler.clear().then((clear) {
+      if (clear) _emitUser(null);
+      return clear;
     });
+  }
+
+  @override
+  void dispose() {
+    _errorNotifier.dispose();
+    _loadingNotifier.dispose();
+    _messageNotifier.dispose();
+    _stateNotifier.dispose();
+    _userNotifier.dispose();
+  }
+
+  @override
+  Future<AuthResponse<T>> emit(AuthResponse<T> data) async {
+    if (data.isLoading) {
+      _emitLoading(true);
+    } else {
+      _emitLoading(false);
+      _emitError(data);
+      _emitMessage(data);
+      _emitState(data);
+      _emitUser(data.data);
+    }
+    return data;
+  }
+
+  void _emitError(AuthResponse<T> data) {
+    if (data.isError) {
+      _errorNotifier.notifiable = data.error;
+    }
+  }
+
+  void _emitLoading(bool data) {
+    if (loading != data) {
+      _loadingNotifier.value = data;
+    }
+  }
+
+  void _emitMessage(AuthResponse<T> data) {
+    if (data.isMessage) {
+      _errorNotifier.notifiable = data.error;
+    }
+  }
+
+  void _emitState(AuthResponse<T> data) {
+    if (data.isState && _stateNotifier.value != data.state) {
+      _stateNotifier.value = data.state;
+    }
+  }
+
+  T? _emitUser(T? data) {
+    if (data != null) _userNotifier.value = data;
+    return _userNotifier.value;
   }
 
   @override
@@ -124,210 +323,6 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     });
   }
 
-  void _notifyError(AuthResponse<T> data) {
-    if (data.isError) {
-      _errorNotifier.notifiable = data.error;
-    }
-  }
-
-  void _notifyLoading(bool data) {
-    if (loading != data) {
-      _loadingNotifier.value = data;
-    }
-  }
-
-  void _notifyMessage(AuthResponse<T> data) {
-    if (data.isMessage) {
-      _errorNotifier.notifiable = data.error;
-    }
-  }
-
-  void _notifyState(AuthResponse<T> data) {
-    if (data.isState && _stateNotifier.value != data.state) {
-      _stateNotifier.value = data.state;
-    }
-  }
-
-  T? _notifyUser(T? data) {
-    if (data != null) _userNotifier.value = data;
-    return _userNotifier.value;
-  }
-
-  @override
-  Future<AuthResponse<T>> emit(AuthResponse<T> data) async {
-    if (data.isLoading) {
-      _notifyLoading(true);
-    } else {
-      _notifyLoading(false);
-      _notifyError(data);
-      _notifyMessage(data);
-      _notifyState(data);
-      _notifyUser(data.data);
-    }
-    return data;
-  }
-
-  @override
-  void dispose() {
-    _errorNotifier.dispose();
-    _loadingNotifier.dispose();
-    _messageNotifier.dispose();
-    _stateNotifier.dispose();
-    _userNotifier.dispose();
-  }
-
-  Future<bool> _clear() {
-    return backupHandler.clear().then((clear) {
-      if (clear) _notifyUser(null);
-      return clear;
-    });
-  }
-
-  @override
-  Future<T?> update(Map<String, dynamic> data) {
-    return backupHandler.update(data).then((value) {
-      return auth.then((update) {
-        _notifyUser(update);
-        return update;
-      });
-    });
-  }
-
-  Future<T?> _update({
-    required String id,
-    Map<String, dynamic> creates = const {},
-    Map<String, dynamic> updates = const {},
-    bool updateMode = false,
-  }) {
-    return backupHandler
-        .updateAsLocal(
-      id: id,
-      updateMode: updateMode,
-      creates: creates,
-      updates: updates,
-    )
-        .then((value) {
-      return auth.then((update) {
-        _notifyUser(update);
-        return update;
-      });
-    });
-  }
-
-  @override
-  Future<AuthResponse<T>> delete() async {
-    emit(const AuthResponse.loading(AuthProviders.none, AuthType.delete));
-    var data = await auth;
-    if (data != null) {
-      try {
-        return authHandler.delete.then((response) {
-          if (response.isSuccessful) {
-            return _clear().then((value) {
-              return backupHandler.onDeleteUser(data.id).then((value) {
-                return emit(AuthResponse.unauthenticated(
-                  msg: msg.delete.done,
-                  provider: AuthProviders.none,
-                  type: AuthType.delete,
-                ));
-              });
-            });
-          } else {
-            return emit(AuthResponse.rollback(
-              data,
-              msg: response.message,
-              provider: AuthProviders.none,
-              type: AuthType.delete,
-            ));
-          }
-        });
-      } catch (_) {
-        return emit(AuthResponse.rollback(
-          data,
-          msg: msg.delete.failure ?? _,
-          provider: AuthProviders.none,
-          type: AuthType.delete,
-        ));
-      }
-    } else {
-      return emit(AuthResponse.rollback(
-        data,
-        msg: msg.loggedIn.failure,
-        provider: AuthProviders.none,
-        type: AuthType.delete,
-      ));
-    }
-  }
-
-  @override
-  Future<Response<bool>> addBiometric({
-    required SignByBiometricCallback callback,
-    BiometricConfig? config,
-  }) async {
-    final auth = await _auth;
-    final provider = AuthProviders.from(auth?.provider);
-    if (auth != null && auth.isLoggedIn && provider.isAllowBiometric) {
-      try {
-        final response = await authHandler.signInWithBiometric(config: config);
-        if (response.isSuccessful) {
-          final biometric = await callback(auth.mBiometric);
-          return _update(
-            id: auth.id,
-            updateMode: true,
-            creates:
-                auth.copy(biometric: biometric?.name ?? auth.biometric).source,
-            updates: {
-              AuthKeys.i.biometric: biometric?.name,
-            },
-          ).then((_) => Response(status: Status.ok, data: true));
-        } else {
-          return Response(
-            status: response.status,
-            exception: response.exception,
-          );
-        }
-      } catch (_) {
-        return Response(status: Status.failure, exception: _.toString());
-      }
-    } else {
-      return Response(
-        status: Status.notSupported,
-        exception: "User not logged in email or username!",
-      );
-    }
-  }
-
-  @override
-  Future<Response<bool>> biometricEnable(bool enabled) async {
-    final auth = await _auth;
-    final provider = AuthProviders.from(auth?.provider);
-    final permission = auth != null &&
-        auth.isLoggedIn &&
-        !auth.mBiometric.isInitial &&
-        provider.isAllowBiometric;
-    if (permission) {
-      try {
-        final activated = BiometricStatus.value(enabled);
-        return _update(
-          id: auth.id,
-          updateMode: true,
-          creates: auth.copy(biometric: activated.name).source,
-          updates: {
-            AuthKeys.i.biometric: activated.name,
-          },
-        ).then((_) {
-          return Response(status: Status.ok, data: true);
-        });
-      } catch (_) {
-        return Response(status: Status.failure, exception: _.toString());
-      }
-    } else {
-      return Response(
-        status: Status.undefined,
-        exception: "Biometric not initialized yet!",
-      );
-    }
-  }
-
   @override
   Future<AuthResponse<T>> isSignIn([
     AuthProviders? provider,
@@ -348,9 +343,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           type: AuthType.signedIn,
         ));
       }
-    } catch (_) {
+    } catch (error) {
       return emit(AuthResponse.failure(
-        msg.loggedIn.failure ?? _,
+        msg.loggedIn.failure ?? error,
         provider: provider,
         type: AuthType.signedIn,
       ));
@@ -358,76 +353,59 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> signInByApple({
-    OAuthAuthenticator? authenticator,
-    bool storeToken = false,
-  }) async {
+  Future<AuthResponse<T>> signInAnonymously([
+    GuestAuthenticator? authenticator,
+  ]) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.apple, AuthType.oauth));
-      final response = await authHandler.signInWithApple();
-      final raw = response.data;
-      if (raw != null && raw.credential != null) {
-        final current = await authHandler.signInWithCredential(
-          credential: raw.credential!,
-        );
-        if (current.isSuccessful) {
-          final result = current.data?.user;
-          if (result != null) {
-            final user = (authenticator ?? Authenticator.empty()).copy(
-              id: result.uid,
-              accessToken: storeToken ? raw.accessToken : null,
-              idToken: storeToken ? raw.idToken : null,
-              email: raw.email ?? result.email,
-              name: raw.name ?? result.displayName,
-              phone: result.phoneNumber,
-              photo: raw.photo ?? result.photoURL,
-              provider: AuthProviders.apple.name,
-              loggedIn: true,
-              loggedInTime: Entity.generateTimeMills,
-              verified: true,
-            );
-            return _update(
-              id: user.id,
-              creates: user.source,
-              updates: {
-                ...user.extra ?? {},
-                AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-              },
-            ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithApple.done,
-                provider: AuthProviders.apple,
-                type: AuthType.oauth,
-              ));
-            });
-          } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.apple,
-              type: AuthType.oauth,
+      emit(const AuthResponse.loading(AuthProviders.email, AuthType.login));
+      final response = await authHandler.signInAnonymously();
+      if (response.isSuccessful) {
+        final result = response.data?.user;
+        if (result != null) {
+          final user = (authenticator ?? Authenticator.guest()).copy(
+            id: result.uid,
+            email: result.email,
+            name: result.displayName,
+            phone: result.phoneNumber,
+            photo: result.photoURL,
+            loggedIn: true,
+            loggedInTime: Entity.generateTimeMills,
+          );
+          return _update(
+            id: user.id,
+            initials: user.source,
+            updates: {
+              ...user.extra ?? {},
+              AuthKeys.i.loggedIn: true,
+              AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+            },
+          ).then((value) {
+            return emit(AuthResponse.authenticated(
+              value,
+              msg: msg.signInWithEmail.done,
+              provider: AuthProviders.guest,
+              type: AuthType.none,
             ));
-          }
+          });
         } else {
           return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.apple,
-            type: AuthType.oauth,
+            msg.authorization,
+            provider: AuthProviders.guest,
+            type: AuthType.none,
           ));
         }
       } else {
         return emit(AuthResponse.failure(
           response.exception,
-          provider: AuthProviders.apple,
-          type: AuthType.oauth,
+          provider: AuthProviders.guest,
+          type: AuthType.none,
         ));
       }
-    } catch (_) {
+    } catch (error) {
       return emit(AuthResponse.failure(
-        msg.signInWithApple.failure ?? _,
-        provider: AuthProviders.apple,
-        type: AuthType.oauth,
+        msg.signInWithEmail.failure ?? error,
+        provider: AuthProviders.guest,
+        type: AuthType.none,
       ));
     }
   }
@@ -483,15 +461,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             }
           }
           if (current.isSuccessful) {
-            final data = <String, dynamic>{
+            final updates = <String, dynamic>{
               AuthKeys.i.loggedIn: true,
               AuthKeys.i.loggedInTime: Entity.generateTimeMills,
             };
-            return _update(
-              id: user.id,
-              creates: data,
-              updates: data,
-            ).then((value) {
+            return _update(id: user.id, updates: updates).then((value) {
               return emit(AuthResponse.authenticated(
                 value,
                 msg: msg.signInWithBiometric.done,
@@ -514,15 +488,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           ));
         }
       } else {
-        return emit(AuthResponse.failure(
-          msg.biometric,
+        return emit(AuthResponse.unauthorized(
+          msg: msg.signInWithBiometric.failure ?? error,
           provider: AuthProviders.biometric,
           type: AuthType.biometric,
         ));
       }
-    } catch (_) {
+    } catch (error) {
       return emit(AuthResponse.failure(
-        msg.signInWithBiometric.failure ?? _,
+        msg.signInWithBiometric.failure ?? error,
         provider: AuthProviders.biometric,
         type: AuthType.biometric,
       ));
@@ -572,9 +546,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               final biometric = await onBiometric(user.mBiometric);
               return _update(
                 id: user.id,
-                creates: user.copy(biometric: biometric?.name).source,
+                initials: user.copy(biometric: biometric?.name).source,
                 updates: {
                   ...user.extra ?? {},
+                  AuthKeys.i.biometric: biometric?.name,
                   AuthKeys.i.loggedIn: true,
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
@@ -589,7 +564,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return _update(
                 id: user.id,
-                creates: user.source,
+                initials: user.source,
                 updates: {
                   ...user.extra ?? {},
                   AuthKeys.i.loggedIn: true,
@@ -618,238 +593,13 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             type: AuthType.login,
           ));
         }
-      } catch (_) {
+      } catch (error) {
         return emit(AuthResponse.failure(
-          msg.signInWithEmail.failure ?? _,
+          msg.signInWithEmail.failure ?? error,
           provider: AuthProviders.email,
           type: AuthType.login,
         ));
       }
-    }
-  }
-
-  @override
-  Future<AuthResponse<T>> signInByFacebook({
-    OAuthAuthenticator? authenticator,
-    bool storeToken = false,
-  }) async {
-    try {
-      emit(const AuthResponse.loading(AuthProviders.facebook, AuthType.oauth));
-      final response = await authHandler.signInWithFacebook();
-      final raw = response.data;
-      if (raw != null && raw.credential != null) {
-        final current = await authHandler.signInWithCredential(
-          credential: raw.credential!,
-        );
-        if (current.isSuccessful) {
-          final result = current.data?.user;
-          if (result != null) {
-            final user = (authenticator ?? Authenticator.empty()).copy(
-              id: result.uid,
-              accessToken: storeToken ? raw.accessToken : null,
-              idToken: storeToken ? raw.idToken : null,
-              email: raw.email ?? result.email,
-              name: raw.name ?? result.displayName,
-              phone: result.phoneNumber,
-              photo: raw.photo ?? result.photoURL,
-              provider: AuthProviders.facebook.name,
-              loggedIn: true,
-              loggedInTime: Entity.generateTimeMills,
-              verified: true,
-            );
-            return _update(
-              id: user.id,
-              creates: user.source,
-              updates: {
-                ...user.extra ?? {},
-                AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-              },
-            ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithFacebook.done,
-                provider: AuthProviders.facebook,
-                type: AuthType.oauth,
-              ));
-            });
-          } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.facebook,
-              type: AuthType.oauth,
-            ));
-          }
-        } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.facebook,
-            type: AuthType.oauth,
-          ));
-        }
-      } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.facebook,
-          type: AuthType.oauth,
-        ));
-      }
-    } catch (_) {
-      return emit(AuthResponse.failure(
-        msg.signInWithFacebook.failure ?? _,
-        provider: AuthProviders.facebook,
-        type: AuthType.oauth,
-      ));
-    }
-  }
-
-  @override
-  Future<AuthResponse<T>> signInByGithub({
-    OAuthAuthenticator? authenticator,
-    bool storeToken = false,
-  }) async {
-    try {
-      emit(const AuthResponse.loading(AuthProviders.github, AuthType.oauth));
-      final response = await authHandler.signInWithGithub();
-      final raw = response.data;
-      if (raw != null && raw.credential != null) {
-        final current = await authHandler.signInWithCredential(
-          credential: raw.credential!,
-        );
-        if (current.isSuccessful) {
-          final result = current.data?.user;
-          if (result != null) {
-            final user = (authenticator ?? Authenticator.empty()).copy(
-              id: result.uid,
-              accessToken: storeToken ? raw.accessToken : null,
-              idToken: storeToken ? raw.idToken : null,
-              email: raw.email ?? result.email,
-              name: raw.name ?? result.displayName,
-              phone: result.phoneNumber,
-              photo: raw.photo ?? result.photoURL,
-              provider: AuthProviders.github.name,
-              loggedIn: true,
-              loggedInTime: Entity.generateTimeMills,
-              verified: true,
-            );
-            return _update(
-              id: user.id,
-              creates: user.source,
-              updates: {
-                ...user.extra ?? {},
-                AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-              },
-            ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGithub.done,
-                provider: AuthProviders.github,
-                type: AuthType.oauth,
-              ));
-            });
-          } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.github,
-              type: AuthType.oauth,
-            ));
-          }
-        } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.github,
-            type: AuthType.oauth,
-          ));
-        }
-      } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.github,
-          type: AuthType.oauth,
-        ));
-      }
-    } catch (_) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGithub.failure ?? _,
-        provider: AuthProviders.github,
-        type: AuthType.oauth,
-      ));
-    }
-  }
-
-  @override
-  Future<AuthResponse<T>> signInByGoogle({
-    OAuthAuthenticator? authenticator,
-    bool storeToken = false,
-  }) async {
-    try {
-      emit(const AuthResponse.loading(AuthProviders.google, AuthType.oauth));
-      final response = await authHandler.signInWithGoogle();
-      final raw = response.data;
-      if (raw != null && raw.credential != null) {
-        final current = await authHandler.signInWithCredential(
-          credential: raw.credential!,
-        );
-        if (current.isSuccessful) {
-          final result = current.data?.user;
-          if (result != null) {
-            final user = (authenticator ?? Authenticator.empty()).copy(
-              id: result.uid,
-              accessToken: storeToken ? raw.accessToken : null,
-              idToken: storeToken ? raw.idToken : null,
-              email: raw.email ?? result.email,
-              name: raw.name ?? result.displayName,
-              phone: result.phoneNumber,
-              photo: raw.photo ?? result.photoURL,
-              provider: AuthProviders.google.name,
-              loggedIn: true,
-              loggedInTime: Entity.generateTimeMills,
-              verified: true,
-            );
-            return _update(
-              id: user.id,
-              creates: user.source,
-              updates: {
-                ...user.extra ?? {},
-                AuthKeys.i.loggedIn: true,
-                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-              },
-            ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGoogle.done,
-                provider: AuthProviders.google,
-                type: AuthType.oauth,
-              ));
-            });
-          } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.google,
-              type: AuthType.oauth,
-            ));
-          }
-        } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.google,
-            type: AuthType.oauth,
-          ));
-        }
-      } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.google,
-          type: AuthType.oauth,
-        ));
-      }
-    } catch (_) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGoogle.failure ?? _,
-        provider: AuthProviders.google,
-        type: AuthType.oauth,
-      ));
     }
   }
 
@@ -873,7 +623,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
       ));
     } else {
       try {
-        authHandler.signInByPhone(
+        authHandler.verifyPhoneNumber(
           phoneNumber: phone,
           forceResendingToken: int.tryParse(authenticator.accessToken ?? ""),
           multiFactorInfo: multiFactorInfo,
@@ -939,9 +689,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           AuthProviders.phone,
           AuthType.otp,
         ));
-      } catch (_) {
+      } catch (error) {
         return emit(AuthResponse.failure(
-          msg.signOut.failure ?? _,
+          msg.signOut.failure ?? error,
           provider: AuthProviders.phone,
           type: AuthType.otp,
         ));
@@ -995,7 +745,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             );
             return _update(
               id: user.id,
-              creates: user.source,
+              initials: user.source,
               updates: {
                 ...user.extra ?? {},
                 AuthKeys.i.loggedIn: true,
@@ -1023,9 +773,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             type: AuthType.phone,
           ));
         }
-      } catch (_) {
+      } catch (error) {
         return emit(AuthResponse.failure(
-          msg.signInWithPhone.failure ?? _,
+          msg.signInWithPhone.failure ?? error,
           provider: AuthProviders.phone,
           type: AuthType.phone,
         ));
@@ -1079,9 +829,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               final biometric = await onBiometric(user.mBiometric);
               return _update(
                 id: user.id,
-                creates: user.copy(biometric: biometric?.name).source,
+                initials: user.copy(biometric: biometric?.name).source,
                 updates: {
                   ...user.extra ?? {},
+                  AuthKeys.i.biometric: biometric?.name,
                   AuthKeys.i.loggedIn: true,
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
@@ -1096,7 +847,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             } else {
               return _update(
                 id: user.id,
-                creates: user.source,
+                initials: user.source,
                 updates: {
                   ...user.extra ?? {},
                   AuthKeys.i.loggedIn: true,
@@ -1125,9 +876,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             type: AuthType.login,
           ));
         }
-      } catch (_) {
+      } catch (error) {
         return emit(AuthResponse.failure(
-          msg.signInWithUsername.failure ?? _,
+          msg.signInWithUsername.failure ?? error,
           provider: AuthProviders.username,
           type: AuthType.login,
         ));
@@ -1183,12 +934,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               final biometric = await onBiometric(user.mBiometric);
               return _update(
                 id: user.id,
-                creates: user.copy(biometric: biometric?.name).source,
-                updates: {
-                  ...user.extra ?? {},
-                  AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-                },
+                initials: user.copy(biometric: biometric?.name).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -1198,14 +944,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 ));
               });
             } else {
-              return _update(
-                id: user.id,
-                creates: user.source,
-                updates: {
-                  AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-                },
-              ).then((value) {
+              return _update(id: user.id, initials: user.source).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
                   msg: msg.signUpWithEmail.done,
@@ -1228,9 +967,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             type: AuthType.register,
           ));
         }
-      } catch (_) {
+      } catch (error) {
         return emit(AuthResponse.failure(
-          msg.signUpWithEmail.failure ?? _,
+          msg.signUpWithEmail.failure ?? error,
           provider: AuthProviders.email,
           type: AuthType.register,
         ));
@@ -1286,12 +1025,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               final biometric = await onBiometric(user.mBiometric);
               return _update(
                 id: user.id,
-                creates: user.copy(biometric: biometric?.name).source,
-                updates: {
-                  ...user.extra ?? {},
-                  AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-                },
+                initials: user.copy(biometric: biometric?.name).source,
               ).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
@@ -1301,14 +1035,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 ));
               });
             } else {
-              return _update(
-                id: user.id,
-                creates: user.source,
-                updates: {
-                  AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-                },
-              ).then((value) {
+              return _update(id: user.id, initials: user.source).then((value) {
                 return emit(AuthResponse.authenticated(
                   value,
                   msg: msg.signUpWithUsername.done,
@@ -1331,9 +1058,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             type: AuthType.register,
           ));
         }
-      } catch (_) {
+      } catch (error) {
         return emit(AuthResponse.failure(
-          msg.signUpWithUsername.failure ?? _,
+          msg.signUpWithUsername.failure ?? error,
           provider: AuthProviders.username,
           type: AuthType.register,
         ));
@@ -1343,9 +1070,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
 
   @override
   Future<AuthResponse<T>> signOut([
-    AuthProviders provider = AuthProviders.none,
+    AuthProviders? provider,
   ]) async {
     try {
+      provider ??= (await _auth)?.mProvider;
       emit(AuthResponse.loading(provider, AuthType.logout));
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
@@ -1371,7 +1099,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 ));
               });
             } else {
-              return _clear().then((value) {
+              return _delete().then((value) {
                 return emit(AuthResponse.unauthenticated(
                   msg: msg.signOut.done,
                   provider: provider,
@@ -1394,13 +1122,44 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           type: AuthType.logout,
         ));
       }
-    } catch (_) {
+    } catch (error) {
       return emit(AuthResponse.failure(
-        msg.signOut.failure ?? _,
+        msg.signOut.failure ?? error,
         provider: provider,
         type: AuthType.logout,
       ));
     }
+  }
+
+  @override
+  Future<T?> update(Map<String, dynamic> data) {
+    return backupHandler.update(data).then((value) {
+      return auth.then((update) {
+        _emitUser(update);
+        return update;
+      });
+    });
+  }
+
+  Future<T?> _update({
+    required String id,
+    Map<String, dynamic> initials = const {},
+    Map<String, dynamic> updates = const {},
+    bool updateMode = false,
+  }) {
+    return backupHandler
+        .save(
+      id: id,
+      initials: initials,
+      cacheUpdateMode: updateMode,
+      updates: updates,
+    )
+        .then((value) {
+      return _auth.then((update) {
+        _emitUser(update);
+        return update;
+      });
+    });
   }
 
   @override
@@ -1461,13 +1220,767 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             type: AuthType.phone,
           );
         }
-      } catch (_) {
+      } catch (error) {
         return AuthResponse.failure(
-          msg.signInWithPhone.failure ?? _,
+          msg.signInWithPhone.failure ?? error,
           provider: AuthProviders.phone,
           type: AuthType.phone,
         );
       }
+    }
+  }
+
+  // OAUTH
+  @override
+  Future<AuthResponse<T>> signInWithApple({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.apple, AuthType.oauth));
+      final response = await authHandler.signInWithApple();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.apple.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithApple.done,
+                provider: AuthProviders.apple,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.apple,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.apple,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.apple,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithApple.failure ?? error,
+        provider: AuthProviders.apple,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithFacebook({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.facebook, AuthType.oauth));
+      final response = await authHandler.signInWithFacebook();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.facebook.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithFacebook.done,
+                provider: AuthProviders.facebook,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.facebook,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.facebook,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.facebook,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithFacebook.failure ?? error,
+        provider: AuthProviders.facebook,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithGameCenter({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(
+        AuthProviders.gameCenter,
+        AuthType.oauth,
+      ));
+      final response = await authHandler.signInWithGameCenter();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.gameCenter.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGithub.done,
+                provider: AuthProviders.gameCenter,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.gameCenter,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.gameCenter,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.gameCenter,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithGithub.failure ?? error,
+        provider: AuthProviders.gameCenter,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithGithub({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.github, AuthType.oauth));
+      final response = await authHandler.signInWithGithub();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.github.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGithub.done,
+                provider: AuthProviders.github,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.github,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.github,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.github,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithGithub.failure ?? error,
+        provider: AuthProviders.github,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithGoogle({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.google, AuthType.oauth));
+      final response = await authHandler.signInWithGoogle();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.google.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGoogle.done,
+                provider: AuthProviders.google,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.google,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.google,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.google,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithGoogle.failure ?? error,
+        provider: AuthProviders.google,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithMicrosoft({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.microsoft, AuthType.oauth));
+      final response = await authHandler.signInWithMicrosoft();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.microsoft.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGithub.done,
+                provider: AuthProviders.microsoft,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.microsoft,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.microsoft,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.microsoft,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithGithub.failure ?? error,
+        provider: AuthProviders.microsoft,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithPlayGames({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.playGames, AuthType.oauth));
+      final response = await authHandler.signInWithPlayGames();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.playGames.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGithub.done,
+                provider: AuthProviders.playGames,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.playGames,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.playGames,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.playGames,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithGithub.failure ?? error,
+        provider: AuthProviders.playGames,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithSAML({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.saml, AuthType.oauth));
+      final response = await authHandler.signInWithSAML();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.saml.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGithub.done,
+                provider: AuthProviders.saml,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.saml,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.saml,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.saml,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithGithub.failure ?? error,
+        provider: AuthProviders.saml,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithTwitter({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.twitter, AuthType.oauth));
+      final response = await authHandler.signInWithTwitter();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.twitter.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGithub.done,
+                provider: AuthProviders.twitter,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.twitter,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.twitter,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.twitter,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithGithub.failure ?? error,
+        provider: AuthProviders.twitter,
+        type: AuthType.oauth,
+      ));
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInWithYahoo({
+    OAuthAuthenticator? authenticator,
+    bool storeToken = false,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.yahoo, AuthType.oauth));
+      final response = await authHandler.signInWithYahoo();
+      final raw = response.data;
+      if (raw != null && raw.credential != null) {
+        final current = await authHandler.signInWithCredential(
+          credential: raw.credential!,
+        );
+        if (current.isSuccessful) {
+          final result = current.data?.user;
+          if (result != null) {
+            final user = (authenticator ?? Authenticator.oauth()).copy(
+              id: result.uid,
+              accessToken: storeToken ? raw.accessToken : null,
+              idToken: storeToken ? raw.idToken : null,
+              email: raw.email ?? result.email,
+              name: raw.name ?? result.displayName,
+              phone: result.phoneNumber,
+              photo: raw.photo ?? result.photoURL,
+              provider: AuthProviders.yahoo.name,
+              loggedIn: true,
+              loggedInTime: Entity.generateTimeMills,
+              verified: true,
+            );
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithGithub.done,
+                provider: AuthProviders.yahoo,
+                type: AuthType.oauth,
+              ));
+            });
+          } else {
+            return emit(AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.yahoo,
+              type: AuthType.oauth,
+            ));
+          }
+        } else {
+          return emit(AuthResponse.failure(
+            current.exception,
+            provider: AuthProviders.yahoo,
+            type: AuthType.oauth,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.yahoo,
+          type: AuthType.oauth,
+        ));
+      }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithGithub.failure ?? error,
+        provider: AuthProviders.yahoo,
+        type: AuthType.oauth,
+      ));
     }
   }
 }

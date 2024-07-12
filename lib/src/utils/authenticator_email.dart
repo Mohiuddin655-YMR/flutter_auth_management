@@ -9,7 +9,6 @@ class EmailAuthenticator extends Authenticator {
     super.name,
     super.phone,
     super.photo,
-    super.provider,
     super.username,
     super.extra,
   }) : super.email();

@@ -8,15 +8,23 @@ class Authenticator extends Auth {
     required String password,
     super.id,
     super.timeMills,
-    super.accessToken,
-    super.idToken,
     super.name,
     super.phone,
     super.photo,
-    super.provider,
     super.username,
     super.extra,
-  }) : super(email: email, password: password);
+  }) : super(provider: "email", email: email, password: password);
+
+  Authenticator.guest({
+    super.id,
+    super.timeMills,
+    super.name,
+    super.email,
+    super.phone,
+    super.photo,
+    super.username,
+    super.extra,
+  }) : super(provider: "guest");
 
   Authenticator.oauth({
     super.id,
@@ -50,28 +58,22 @@ class Authenticator extends Auth {
     required String phone,
     super.id,
     super.timeMills,
-    super.accessToken,
-    super.idToken,
     super.name,
     super.email,
     super.photo,
-    super.provider,
     super.username,
     super.extra,
-  }) : super(phone: phone);
+  }) : super(provider: "phone", phone: phone);
 
   Authenticator.username({
     required String username,
     required String password,
     super.id,
     super.timeMills,
-    super.accessToken,
-    super.idToken,
     super.name,
     super.email,
     super.phone,
     super.photo,
-    super.provider,
     super.extra,
-  }) : super(username: username, password: password);
+  }) : super(provider: "username", username: username, password: password);
 }

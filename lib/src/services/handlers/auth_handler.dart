@@ -18,12 +18,14 @@ abstract class AuthHandler {
 
   Future<bool> isSignIn([AuthProviders? provider]);
 
-  Future<Response<Auth>> signOut([AuthProviders? provider]);
-
-  Future<Response<Credential>> signInWithApple();
+  Future<Response<UserCredential>> signInAnonymously();
 
   Future<Response<bool>> signInWithBiometric({
     BiometricConfig? config,
+  });
+
+  Future<Response<UserCredential>> signInWithCredential({
+    required AuthCredential credential,
   });
 
   Future<Response<UserCredential>> signInWithEmailNPassword({
@@ -31,19 +33,9 @@ abstract class AuthHandler {
     required String password,
   });
 
-  Future<Response<Credential>> signInWithFacebook();
-
-  Future<Response<Credential>> signInWithGithub();
-
-  Future<Response<Credential>> signInWithGoogle();
-
   Future<Response<UserCredential>> signInWithUsernameNPassword({
     required String username,
     required String password,
-  });
-
-  Future<Response<UserCredential>> signInWithCredential({
-    required AuthCredential credential,
   });
 
   Future<Response<UserCredential>> signUpWithEmailNPassword({
@@ -56,7 +48,9 @@ abstract class AuthHandler {
     required String password,
   });
 
-  Future<Response<void>> signInByPhone({
+  Future<Response<Auth>> signOut([AuthProviders? provider]);
+
+  Future<Response<void>> verifyPhoneNumber({
     String? phoneNumber,
     int? forceResendingToken,
     PhoneMultiFactorInfo? multiFactorInfo,
@@ -67,4 +61,25 @@ abstract class AuthHandler {
     required void Function(String verId, int? forceResendingToken) onCodeSent,
     required void Function(String verId) onCodeAutoRetrievalTimeout,
   });
+
+  // OAUTH
+  Future<Response<Credential>> signInWithApple();
+
+  Future<Response<Credential>> signInWithFacebook();
+
+  Future<Response<Credential>> signInWithGameCenter();
+
+  Future<Response<Credential>> signInWithGithub();
+
+  Future<Response<Credential>> signInWithGoogle();
+
+  Future<Response<Credential>> signInWithMicrosoft();
+
+  Future<Response<Credential>> signInWithPlayGames();
+
+  Future<Response<Credential>> signInWithSAML();
+
+  Future<Response<Credential>> signInWithTwitter();
+
+  Future<Response<Credential>> signInWithYahoo();
 }

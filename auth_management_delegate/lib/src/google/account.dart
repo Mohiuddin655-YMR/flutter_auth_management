@@ -18,6 +18,8 @@ class IGoogleSignInAccount {
     this.currentUser,
     required this.getTokens,
     required this.onClearAuthCache,
+    required this.authentication,
+    required this.authHeaders,
   })  : displayName = data.displayName,
         email = data.email,
         id = data.id,
@@ -44,32 +46,13 @@ class IGoogleSignInAccount {
   /// Otherwise, if [shouldRecoverAuth] is false and the authentication can be
   /// recovered by user action a [PlatformException] is thrown with error code
   /// [kUserRecoverableAuthError].
-  Future<IGoogleSignInAuthentication> get authentication async {
-    if (currentUser != this) {
-      throw StateError('User is no longer signed in.');
-    }
-
-    final IGoogleSignInTokenData response = await getTokens(
-      email: email,
-      shouldRecoverAuth: true,
-    );
-
-    return IGoogleSignInAuthentication(response);
-  }
+  Future<IGoogleSignInAuthentication> authentication;
 
   /// Convenience method returning a `<String, String>` map of HTML Authorization
   /// headers, containing the current `authentication.accessToken`.
   ///
   /// See also https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization.
-  Future<Map<String, String>> get authHeaders async {
-    final String? token = (await authentication).accessToken;
-    return <String, String>{
-      'Authorization': 'Bearer $token',
-      // TODO(kevmoo): Use the correct value once it's available from authentication
-      // See https://github.com/flutter/flutter/issues/80905
-      'X-Goog-AuthUser': '0',
-    };
-  }
+  Future<Map<String, String>> authHeaders;
 
   /// Clears any client side cache that might be holding invalid tokens.
   ///

@@ -30,7 +30,7 @@ class AuthMessages {
 
   const AuthMessages({
     this.authorization = "Authorization data not found!",
-    this.biometric = "Biometric not initialized!",
+    this.biometric = "Biometric not initialized yet!",
     this.email = "Email isn't valid!",
     this.error = "Something went wrong, please try again!",
     this.otp = "OTP Code isn't valid!",
@@ -53,8 +53,8 @@ class AuthMessages {
       done: "Apple sign in successful!",
     ),
     this.signInWithBiometric = const AuthMessage(
-      done: "Biometric sign in successful!",
-    ),
+        done: "Biometric sign in successful!",
+        failure: "Biometric not initialized yet!"),
     this.signInWithEmail = const AuthMessage(
       done: "Sign in successful!",
     ),

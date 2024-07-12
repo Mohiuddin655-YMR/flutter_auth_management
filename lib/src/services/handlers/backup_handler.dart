@@ -11,11 +11,11 @@ abstract class BackupHandler<T extends Auth> {
 
   Future<bool> update(Map<String, dynamic> data);
 
-  Future<bool> updateAsLocal({
+  Future<bool> save({
     required String id,
-    Map<String, dynamic> creates = const {},
+    Map<String, dynamic> initials = const {},
     Map<String, dynamic> updates = const {},
-    bool updateMode = false,
+    bool cacheUpdateMode = false,
   });
 
   Future<bool> clear();
