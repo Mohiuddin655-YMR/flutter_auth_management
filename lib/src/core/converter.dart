@@ -1,5 +1,3 @@
-import 'validator.dart';
-
 /// Provides methods for modifying and converting values.
 class AuthConverter {
   const AuthConverter._();
@@ -12,7 +10,6 @@ class AuthConverter {
     String suffix, [
     String type = "com",
   ]) {
-    final String mail = "$prefix@$suffix.$type";
-    return AuthValidator.isValidEmail(mail) ? mail : null;
+    return "$prefix@$suffix.$type";
   }
 }

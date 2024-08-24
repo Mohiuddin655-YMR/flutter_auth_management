@@ -6,8 +6,9 @@ import 'package:flutter_entity/flutter_entity.dart';
 import '../../core/messages.dart';
 import '../../core/typedefs.dart';
 import '../../data/controllers/controller.dart';
+import '../../delegates/auth.dart';
 import '../../delegates/backup.dart';
-import '../../delegates/oauth.dart';
+import '../../delegates/user.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
 import '../../models/auth_state.dart';
@@ -25,7 +26,8 @@ abstract class AuthController<T extends Auth> {
   static AuthController? _i;
 
   static AuthController<T> getInstance<T extends Auth>({
-    OAuthDelegates? oauth,
+    AuthDelegate? auth,
+    UserDelegate? user,
     BackupDelegate<T>? backup,
     AuthMessages? messages,
   }) {
@@ -33,7 +35,8 @@ abstract class AuthController<T extends Auth> {
       return _i as AuthController<T>;
     } else {
       _i = AuthControllerImpl<T>(
-        auth: oauth,
+        auth: auth,
+        user: user,
         backup: backup,
         messages: messages,
       );
@@ -66,6 +69,8 @@ abstract class AuthController<T extends Auth> {
   AuthState get state;
 
   T? get user;
+
+  IUserDelegate get userDelegate;
 
   Future<Response<bool>> addBiometric({
     SignByBiometricCallback? callback,

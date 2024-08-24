@@ -5,9 +5,9 @@ import 'package:flutter_entity/flutter_entity.dart';
 
 import '../../core/messages.dart';
 import '../../core/typedefs.dart';
-import '../../core/validator.dart';
+import '../../delegates/auth.dart';
 import '../../delegates/backup.dart';
-import '../../delegates/oauth.dart';
+import '../../delegates/user.dart';
 import '../../models/auth.dart';
 import '../../models/auth_providers.dart';
 import '../../models/auth_state.dart';
@@ -46,11 +46,12 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<T?> get _auth => backupHandler.cache;
 
   AuthControllerImpl({
-    OAuthDelegates? auth,
+    AuthDelegate? auth,
+    UserDelegate? user,
     BackupDelegate<T>? backup,
     AuthMessages? messages,
   }) : this.fromSource(
-          auth: AuthDataSourceImpl(auth),
+          auth: AuthDataSourceImpl(auth: auth, user: user),
           backup: AuthorizedDataSourceImpl(backup),
         );
 
@@ -118,6 +119,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
 
   @override
   T? get user => _userNotifier.value;
+
+  @override
+  IUserDelegate get userDelegate => authHandler.userDelegate;
 
   @override
   Future<Response<bool>> addBiometric({
@@ -194,7 +198,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     var data = await auth;
     if (data != null) {
       try {
-        return authHandler.delete.then((response) {
+        return userDelegate.delete().then((response) {
           if (response.isSuccessful) {
             return _delete().then((value) {
               return backupHandler.onDeleteUser(data.id).then((value) {
@@ -497,98 +501,82 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    final email = authenticator.email;
-    final password = authenticator.password;
-    if (!AuthValidator.isValidEmail(email)) {
-      return emit(AuthResponse.failure(
-        msg.email,
-        provider: AuthProviders.email,
-        type: AuthType.login,
-      ));
-    } else if (!AuthValidator.isValidPassword(password)) {
-      return emit(AuthResponse.failure(
-        msg.password,
-        provider: AuthProviders.email,
-        type: AuthType.login,
-      ));
-    } else {
-      try {
-        emit(const AuthResponse.loading(AuthProviders.email, AuthType.login));
-        final response = await authHandler.signInWithEmailNPassword(
-          email: email,
-          password: password,
-        );
-        if (response.isSuccessful) {
-          final result = response.data?.user;
-          if (result != null) {
-            final user = authenticator.copy(
-              id: result.uid,
-              email: result.email,
-              name: result.displayName,
-              phone: result.phoneNumber,
-              photo: result.photoURL,
-              provider: AuthProviders.email.name,
-              loggedIn: true,
-              loggedInTime: Entity.generateTimeMills,
-            );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return _update(
-                id: user.id,
-                initials: user.copy(biometric: biometric?.name).source,
-                updates: {
-                  ...user.extra ?? {},
-                  AuthKeys.i.biometric: biometric?.name,
-                  AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-                },
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithEmail.done,
-                  provider: AuthProviders.email,
-                  type: AuthType.login,
-                ));
-              });
-            } else {
-              return _update(
-                id: user.id,
-                initials: user.source,
-                updates: {
-                  ...user.extra ?? {},
-                  AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-                },
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithEmail.done,
-                  provider: AuthProviders.email,
-                  type: AuthType.login,
-                ));
-              });
-            }
+    try {
+      emit(const AuthResponse.loading(AuthProviders.email, AuthType.login));
+      final response = await authHandler.signInWithEmailNPassword(
+        email: authenticator.email,
+        password: authenticator.password,
+      );
+      if (response.isSuccessful) {
+        final result = response.data?.user;
+        if (result != null) {
+          final user = authenticator.copy(
+            id: result.uid,
+            email: result.email,
+            name: result.displayName,
+            phone: result.phoneNumber,
+            photo: result.photoURL,
+            provider: AuthProviders.email.name,
+            loggedIn: true,
+            loggedInTime: Entity.generateTimeMills,
+          );
+          if (onBiometric != null) {
+            final biometric = await onBiometric(user.mBiometric);
+            return _update(
+              id: user.id,
+              initials: user.copy(biometric: biometric?.name).source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.biometric: biometric?.name,
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithEmail.done,
+                provider: AuthProviders.email,
+                type: AuthType.login,
+              ));
+            });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.email,
-              type: AuthType.login,
-            ));
+            return _update(
+              id: user.id,
+              initials: user.source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithEmail.done,
+                provider: AuthProviders.email,
+                type: AuthType.login,
+              ));
+            });
           }
         } else {
           return emit(AuthResponse.failure(
-            response.exception,
+            msg.authorization,
             provider: AuthProviders.email,
             type: AuthType.login,
           ));
         }
-      } catch (error) {
+      } else {
         return emit(AuthResponse.failure(
-          msg.signInWithEmail.failure ?? error,
+          response.exception,
           provider: AuthProviders.email,
           type: AuthType.login,
         ));
       }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithEmail.failure ?? error,
+        provider: AuthProviders.email,
+        type: AuthType.login,
+      ));
     }
   }
 
@@ -603,88 +591,79 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     void Function(String verId, int? forceResendingToken)? onCodeSent,
     void Function(String verId)? onCodeAutoRetrievalTimeout,
   }) async {
-    final phone = authenticator.phone;
-    if (!AuthValidator.isValidPhone(phone)) {
-      return emit(AuthResponse.failure(
-        msg.phoneNumber,
-        provider: AuthProviders.phone,
-        type: AuthType.otp,
-      ));
-    } else {
-      try {
-        authHandler.verifyPhoneNumber(
-          phoneNumber: phone,
-          forceResendingToken: int.tryParse(authenticator.accessToken ?? ""),
-          multiFactorInfo: multiFactorInfo,
-          multiFactorSession: multiFactorSession,
-          timeout: timeout,
-          onComplete: (PhoneAuthCredential credential) async {
-            if (onComplete != null) {
-              emit(const AuthResponse.message(
-                "Verification done!",
+    try {
+      authHandler.verifyPhoneNumber(
+        phoneNumber: authenticator.phone,
+        forceResendingToken: int.tryParse(authenticator.accessToken ?? ""),
+        multiFactorInfo: multiFactorInfo,
+        multiFactorSession: multiFactorSession,
+        timeout: timeout,
+        onComplete: (PhoneAuthCredential credential) async {
+          if (onComplete != null) {
+            emit(const AuthResponse.message(
+              "Verification done!",
+              provider: AuthProviders.phone,
+              type: AuthType.otp,
+            ));
+            onComplete(credential);
+          } else {
+            final verId = credential.verificationId;
+            final code = credential.smsCode;
+            if (verId != null && code != null) {
+              signInByOtp(authenticator.otp(
+                token: verId,
+                smsCode: code,
+              ));
+            } else {
+              emit(const AuthResponse.failure(
+                "Verification token or otp code not valid!",
                 provider: AuthProviders.phone,
                 type: AuthType.otp,
               ));
-              onComplete(credential);
-            } else {
-              final verId = credential.verificationId;
-              final code = credential.smsCode;
-              if (verId != null && code != null) {
-                signInByOtp(authenticator.otp(
-                  token: verId,
-                  smsCode: code,
-                ));
-              } else {
-                emit(const AuthResponse.failure(
-                  "Verification token or otp code not valid!",
-                  provider: AuthProviders.phone,
-                  type: AuthType.otp,
-                ));
-              }
             }
-          },
-          onCodeSent: (String verId, int? forceResendingToken) {
-            emit(const AuthResponse.message(
-              "Code sent to your device!",
-              provider: AuthProviders.phone,
-              type: AuthType.otp,
-            ));
-            if (onCodeSent != null) {
-              onCodeSent(verId, forceResendingToken);
-            }
-          },
-          onFailed: (FirebaseAuthException exception) {
-            emit(AuthResponse.failure(
-              exception.message,
-              provider: AuthProviders.phone,
-              type: AuthType.otp,
-            ));
-            if (onFailed != null) {
-              onFailed(exception);
-            }
-          },
-          onCodeAutoRetrievalTimeout: (String verId) {
-            emit(const AuthResponse.failure(
-              "Auto retrieval code timeout!",
-              provider: AuthProviders.phone,
-              type: AuthType.otp,
-            ));
-            if (onCodeAutoRetrievalTimeout != null) {
-              onCodeAutoRetrievalTimeout(verId);
-            }
-          },
-        );
-        return emit(const AuthResponse.loading(
-          AuthProviders.phone,
-          AuthType.otp,
-        ));
-      } catch (error) {
-        return emit(AuthResponse.failure(
-          msg.signOut.failure ?? error,
-          provider: AuthProviders.phone,
-          type: AuthType.otp,
-        ));
-      }
+          }
+        },
+        onCodeSent: (String verId, int? forceResendingToken) {
+          emit(const AuthResponse.message(
+            "Code sent to your device!",
+            provider: AuthProviders.phone,
+            type: AuthType.otp,
+          ));
+          if (onCodeSent != null) {
+            onCodeSent(verId, forceResendingToken);
+          }
+        },
+        onFailed: (FirebaseAuthException exception) {
+          emit(AuthResponse.failure(
+            exception.message,
+            provider: AuthProviders.phone,
+            type: AuthType.otp,
+          ));
+          if (onFailed != null) {
+            onFailed(exception);
+          }
+        },
+        onCodeAutoRetrievalTimeout: (String verId) {
+          emit(const AuthResponse.failure(
+            "Auto retrieval code timeout!",
+            provider: AuthProviders.phone,
+            type: AuthType.otp,
+          ));
+          if (onCodeAutoRetrievalTimeout != null) {
+            onCodeAutoRetrievalTimeout(verId);
+          }
+        },
+      );
+      return emit(const AuthResponse.loading(
+        AuthProviders.phone,
+        AuthType.otp,
+      ));
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signOut.failure ?? error,
+        provider: AuthProviders.phone,
+        type: AuthType.otp,
+      ));
     }
   }
 
@@ -693,45 +672,116 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     OtpAuthenticator authenticator, {
     bool storeToken = false,
   }) async {
-    final token = authenticator.token;
-    final code = authenticator.smsCode;
-    if (!AuthValidator.isValidToken(token)) {
+    try {
+      emit(const AuthResponse.loading(AuthProviders.phone, AuthType.phone));
+      final credential = authenticator.credential;
+      final response = await authHandler.signInWithCredential(
+        credential: credential,
+      );
+      if (response.isSuccessful) {
+        final result = response.data?.user;
+        if (result != null) {
+          final user = authenticator.copy(
+            id: result.uid,
+            accessToken: storeToken ? credential.accessToken : null,
+            idToken: storeToken && credential.token != null
+                ? "${credential.token}"
+                : null,
+            email: result.email,
+            name: result.displayName,
+            phone: result.phoneNumber,
+            photo: result.photoURL,
+            provider: AuthProviders.phone.name,
+            loggedIn: true,
+            loggedInTime: Entity.generateTimeMills,
+            verified: true,
+          );
+          return _update(
+            id: user.id,
+            initials: user.source,
+            updates: {
+              ...user.extra ?? {},
+              AuthKeys.i.loggedIn: true,
+              AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+            },
+          ).then((value) {
+            return emit(AuthResponse.authenticated(
+              value,
+              msg: msg.signInWithPhone.done,
+              provider: AuthProviders.phone,
+              type: AuthType.phone,
+            ));
+          });
+        } else {
+          return emit(AuthResponse.failure(
+            msg.authorization,
+            provider: AuthProviders.phone,
+            type: AuthType.phone,
+          ));
+        }
+      } else {
+        return emit(AuthResponse.failure(
+          response.exception,
+          provider: AuthProviders.phone,
+          type: AuthType.phone,
+        ));
+      }
+    } catch (error) {
       return emit(AuthResponse.failure(
-        msg.token,
+        msg.signInWithPhone.failure ?? error,
         provider: AuthProviders.phone,
         type: AuthType.phone,
       ));
-    } else if (!AuthValidator.isValidSmsCode(code)) {
-      return emit(AuthResponse.failure(
-        msg.otp,
-        provider: AuthProviders.phone,
-        type: AuthType.phone,
+    }
+  }
+
+  @override
+  Future<AuthResponse<T>> signInByUsername(
+    UsernameAuthenticator authenticator, {
+    SignByBiometricCallback? onBiometric,
+  }) async {
+    try {
+      emit(const AuthResponse.loading(
+        AuthProviders.username,
+        AuthType.login,
       ));
-    } else {
-      try {
-        emit(const AuthResponse.loading(AuthProviders.phone, AuthType.phone));
-        final credential = authenticator.credential;
-        final response = await authHandler.signInWithCredential(
-          credential: credential,
-        );
-        if (response.isSuccessful) {
-          final result = response.data?.user;
-          if (result != null) {
-            final user = authenticator.copy(
-              id: result.uid,
-              accessToken: storeToken ? credential.accessToken : null,
-              idToken: storeToken && credential.token != null
-                  ? "${credential.token}"
-                  : null,
-              email: result.email,
-              name: result.displayName,
-              phone: result.phoneNumber,
-              photo: result.photoURL,
-              provider: AuthProviders.phone.name,
-              loggedIn: true,
-              loggedInTime: Entity.generateTimeMills,
-              verified: true,
-            );
+      final response = await authHandler.signInWithUsernameNPassword(
+        username: authenticator.username,
+        password: authenticator.password,
+      );
+      if (response.isSuccessful) {
+        final result = response.data?.user;
+        if (result != null) {
+          final user = authenticator.copy(
+            id: result.uid,
+            email: result.email,
+            name: result.displayName,
+            phone: result.phoneNumber,
+            photo: result.photoURL,
+            provider: AuthProviders.username.name,
+            loggedIn: true,
+            loggedInTime: Entity.generateTimeMills,
+          );
+          if (onBiometric != null) {
+            final biometric = await onBiometric(user.mBiometric);
+            return _update(
+              id: user.id,
+              initials: user.copy(biometric: biometric?.name).source,
+              updates: {
+                ...user.extra ?? {},
+                AuthKeys.i.biometric: biometric?.name,
+                AuthKeys.i.loggedIn: true,
+                AuthKeys.i.loggedInTime: Entity.generateTimeMills,
+              },
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithUsername.done,
+                provider: AuthProviders.username,
+                type: AuthType.login,
+              ));
+            });
+          } else {
             return _update(
               id: user.id,
               initials: user.source,
@@ -743,135 +793,32 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             ).then((value) {
               return emit(AuthResponse.authenticated(
                 value,
-                msg: msg.signInWithPhone.done,
-                provider: AuthProviders.phone,
-                type: AuthType.phone,
+                msg: msg.signInWithUsername.done,
+                provider: AuthProviders.username,
+                type: AuthType.login,
               ));
             });
-          } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.phone,
-              type: AuthType.phone,
-            ));
           }
         } else {
           return emit(AuthResponse.failure(
-            response.exception,
-            provider: AuthProviders.phone,
-            type: AuthType.phone,
-          ));
-        }
-      } catch (error) {
-        return emit(AuthResponse.failure(
-          msg.signInWithPhone.failure ?? error,
-          provider: AuthProviders.phone,
-          type: AuthType.phone,
-        ));
-      }
-    }
-  }
-
-  @override
-  Future<AuthResponse<T>> signInByUsername(
-    UsernameAuthenticator authenticator, {
-    SignByBiometricCallback? onBiometric,
-  }) async {
-    final username = authenticator.username;
-    final password = authenticator.password;
-    if (!AuthValidator.isValidUsername(username)) {
-      return emit(AuthResponse.failure(
-        msg.username,
-        provider: AuthProviders.username,
-        type: AuthType.login,
-      ));
-    } else if (!AuthValidator.isValidPassword(password)) {
-      return emit(AuthResponse.failure(
-        msg.password,
-        provider: AuthProviders.username,
-        type: AuthType.login,
-      ));
-    } else {
-      try {
-        emit(const AuthResponse.loading(
-          AuthProviders.username,
-          AuthType.login,
-        ));
-        final response = await authHandler.signInWithUsernameNPassword(
-          username: username,
-          password: password,
-        );
-        if (response.isSuccessful) {
-          final result = response.data?.user;
-          if (result != null) {
-            final user = authenticator.copy(
-              id: result.uid,
-              email: result.email,
-              name: result.displayName,
-              phone: result.phoneNumber,
-              photo: result.photoURL,
-              provider: AuthProviders.username.name,
-              loggedIn: true,
-              loggedInTime: Entity.generateTimeMills,
-            );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return _update(
-                id: user.id,
-                initials: user.copy(biometric: biometric?.name).source,
-                updates: {
-                  ...user.extra ?? {},
-                  AuthKeys.i.biometric: biometric?.name,
-                  AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-                },
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithUsername.done,
-                  provider: AuthProviders.username,
-                  type: AuthType.login,
-                ));
-              });
-            } else {
-              return _update(
-                id: user.id,
-                initials: user.source,
-                updates: {
-                  ...user.extra ?? {},
-                  AuthKeys.i.loggedIn: true,
-                  AuthKeys.i.loggedInTime: Entity.generateTimeMills,
-                },
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithUsername.done,
-                  provider: AuthProviders.username,
-                  type: AuthType.login,
-                ));
-              });
-            }
-          } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.username,
-              type: AuthType.login,
-            ));
-          }
-        } else {
-          return emit(AuthResponse.failure(
-            response.exception,
+            msg.authorization,
             provider: AuthProviders.username,
             type: AuthType.login,
           ));
         }
-      } catch (error) {
+      } else {
         return emit(AuthResponse.failure(
-          msg.signInWithUsername.failure ?? error,
+          response.exception,
           provider: AuthProviders.username,
           type: AuthType.login,
         ));
       }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signInWithUsername.failure ?? error,
+        provider: AuthProviders.username,
+        type: AuthType.login,
+      ));
     }
   }
 
@@ -880,89 +827,73 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    final email = authenticator.email;
-    final password = authenticator.password;
-    if (!AuthValidator.isValidEmail(email)) {
-      return emit(AuthResponse.failure(
-        msg.email,
-        provider: AuthProviders.email,
-        type: AuthType.register,
+    try {
+      emit(const AuthResponse.loading(
+        AuthProviders.email,
+        AuthType.register,
       ));
-    } else if (!AuthValidator.isValidPassword(password)) {
-      return emit(AuthResponse.failure(
-        msg.password,
-        provider: AuthProviders.email,
-        type: AuthType.register,
-      ));
-    } else {
-      try {
-        emit(const AuthResponse.loading(
-          AuthProviders.email,
-          AuthType.register,
-        ));
-        final response = await authHandler.signUpWithEmailNPassword(
-          email: email,
-          password: password,
-        );
-        if (response.isSuccessful) {
-          final result = response.data?.user;
-          if (result != null) {
-            final creationTime = Entity.generateTimeMills;
-            final user = authenticator.copy(
-              id: result.uid,
-              email: result.email,
-              name: result.displayName,
-              phone: result.phoneNumber,
-              photo: result.photoURL,
-              provider: AuthProviders.email.name,
-              loggedIn: true,
-              loggedInTime: creationTime,
-              timeMills: creationTime,
-            );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return _update(
-                id: user.id,
-                initials: user.copy(biometric: biometric?.name).source,
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signUpWithEmail.done,
-                  provider: AuthProviders.email,
-                  type: AuthType.register,
-                ));
-              });
-            } else {
-              return _update(id: user.id, initials: user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signUpWithEmail.done,
-                  provider: AuthProviders.email,
-                  type: AuthType.register,
-                ));
-              });
-            }
+      final response = await authHandler.signUpWithEmailNPassword(
+        email: authenticator.email,
+        password: authenticator.password,
+      );
+      if (response.isSuccessful) {
+        final result = response.data?.user;
+        if (result != null) {
+          final creationTime = Entity.generateTimeMills;
+          final user = authenticator.copy(
+            id: result.uid,
+            email: result.email,
+            name: result.displayName,
+            phone: result.phoneNumber,
+            photo: result.photoURL,
+            provider: AuthProviders.email.name,
+            loggedIn: true,
+            loggedInTime: creationTime,
+            timeMills: creationTime,
+          );
+          if (onBiometric != null) {
+            final biometric = await onBiometric(user.mBiometric);
+            return _update(
+              id: user.id,
+              initials: user.copy(biometric: biometric?.name).source,
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signUpWithEmail.done,
+                provider: AuthProviders.email,
+                type: AuthType.register,
+              ));
+            });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.email,
-              type: AuthType.register,
-            ));
+            return _update(id: user.id, initials: user.source).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signUpWithEmail.done,
+                provider: AuthProviders.email,
+                type: AuthType.register,
+              ));
+            });
           }
         } else {
           return emit(AuthResponse.failure(
-            response.exception,
+            msg.authorization,
             provider: AuthProviders.email,
             type: AuthType.register,
           ));
         }
-      } catch (error) {
+      } else {
         return emit(AuthResponse.failure(
-          msg.signUpWithEmail.failure ?? error,
+          response.exception,
           provider: AuthProviders.email,
           type: AuthType.register,
         ));
       }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signUpWithEmail.failure ?? error,
+        provider: AuthProviders.email,
+        type: AuthType.register,
+      ));
     }
   }
 
@@ -971,89 +902,73 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
   }) async {
-    final username = authenticator.username;
-    final password = authenticator.password;
-    if (!AuthValidator.isValidUsername(username)) {
-      return emit(AuthResponse.failure(
-        msg.username,
-        provider: AuthProviders.username,
-        type: AuthType.register,
+    try {
+      emit(const AuthResponse.loading(
+        AuthProviders.username,
+        AuthType.register,
       ));
-    } else if (!AuthValidator.isValidPassword(password)) {
-      return emit(AuthResponse.failure(
-        msg.password,
-        provider: AuthProviders.username,
-        type: AuthType.register,
-      ));
-    } else {
-      try {
-        emit(const AuthResponse.loading(
-          AuthProviders.username,
-          AuthType.register,
-        ));
-        final response = await authHandler.signUpWithUsernameNPassword(
-          username: username,
-          password: password,
-        );
-        if (response.isSuccessful) {
-          final result = response.data?.user;
-          if (result != null) {
-            final creationTime = Entity.generateTimeMills;
-            final user = authenticator.copy(
-              id: result.uid,
-              email: result.email,
-              name: result.displayName,
-              phone: result.phoneNumber,
-              photo: result.photoURL,
-              provider: AuthProviders.username.name,
-              loggedIn: true,
-              loggedInTime: creationTime,
-              timeMills: creationTime,
-            );
-            if (onBiometric != null) {
-              final biometric = await onBiometric(user.mBiometric);
-              return _update(
-                id: user.id,
-                initials: user.copy(biometric: biometric?.name).source,
-              ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signUpWithUsername.done,
-                  provider: AuthProviders.username,
-                  type: AuthType.register,
-                ));
-              });
-            } else {
-              return _update(id: user.id, initials: user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signUpWithUsername.done,
-                  provider: AuthProviders.username,
-                  type: AuthType.register,
-                ));
-              });
-            }
+      final response = await authHandler.signUpWithUsernameNPassword(
+        username: authenticator.username,
+        password: authenticator.password,
+      );
+      if (response.isSuccessful) {
+        final result = response.data?.user;
+        if (result != null) {
+          final creationTime = Entity.generateTimeMills;
+          final user = authenticator.copy(
+            id: result.uid,
+            email: result.email,
+            name: result.displayName,
+            phone: result.phoneNumber,
+            photo: result.photoURL,
+            provider: AuthProviders.username.name,
+            loggedIn: true,
+            loggedInTime: creationTime,
+            timeMills: creationTime,
+          );
+          if (onBiometric != null) {
+            final biometric = await onBiometric(user.mBiometric);
+            return _update(
+              id: user.id,
+              initials: user.copy(biometric: biometric?.name).source,
+            ).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signUpWithUsername.done,
+                provider: AuthProviders.username,
+                type: AuthType.register,
+              ));
+            });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.username,
-              type: AuthType.register,
-            ));
+            return _update(id: user.id, initials: user.source).then((value) {
+              return emit(AuthResponse.authenticated(
+                value,
+                msg: msg.signUpWithUsername.done,
+                provider: AuthProviders.username,
+                type: AuthType.register,
+              ));
+            });
           }
         } else {
           return emit(AuthResponse.failure(
-            response.exception,
+            msg.authorization,
             provider: AuthProviders.username,
             type: AuthType.register,
           ));
         }
-      } catch (error) {
+      } else {
         return emit(AuthResponse.failure(
-          msg.signUpWithUsername.failure ?? error,
+          response.exception,
           provider: AuthProviders.username,
           type: AuthType.register,
         ));
       }
+    } catch (error) {
+      return emit(AuthResponse.failure(
+        msg.signUpWithUsername.failure ?? error,
+        provider: AuthProviders.username,
+        type: AuthType.register,
+      ));
     }
   }
 
@@ -1153,69 +1068,53 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
 
   @override
   Future<AuthResponse> verifyPhoneByOtp(OtpAuthenticator authenticator) async {
-    final token = authenticator.token;
-    final code = authenticator.smsCode;
-    if (!AuthValidator.isValidToken(token)) {
-      return AuthResponse.failure(
-        msg.token,
-        provider: AuthProviders.phone,
-        type: AuthType.phone,
+    try {
+      final credential = authenticator.credential;
+      final response = await authHandler.signInWithCredential(
+        credential: credential,
       );
-    } else if (!AuthValidator.isValidSmsCode(code)) {
-      return AuthResponse.failure(
-        msg.otp,
-        provider: AuthProviders.phone,
-        type: AuthType.phone,
-      );
-    } else {
-      try {
-        final credential = authenticator.credential;
-        final response = await authHandler.signInWithCredential(
-          credential: credential,
-        );
-        if (response.isSuccessful) {
-          final result = response.data?.user;
-          if (result != null) {
-            final user = authenticator.copy(
-              id: result.uid,
-              accessToken: credential.accessToken,
-              idToken: credential.token != null ? "${credential.token}" : null,
-              email: result.email,
-              name: result.displayName,
-              phone: result.phoneNumber,
-              photo: result.photoURL,
-              provider: AuthProviders.phone.name,
-              loggedIn: true,
-              loggedInTime: Entity.generateTimeMills,
-              verified: true,
-            );
-            return AuthResponse.authenticated(
-              user,
-              msg: msg.signInWithPhone.done,
-              provider: AuthProviders.phone,
-              type: AuthType.phone,
-            );
-          } else {
-            return AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.phone,
-              type: AuthType.phone,
-            );
-          }
+      if (response.isSuccessful) {
+        final result = response.data?.user;
+        if (result != null) {
+          final user = authenticator.copy(
+            id: result.uid,
+            accessToken: credential.accessToken,
+            idToken: credential.token != null ? "${credential.token}" : null,
+            email: result.email,
+            name: result.displayName,
+            phone: result.phoneNumber,
+            photo: result.photoURL,
+            provider: AuthProviders.phone.name,
+            loggedIn: true,
+            loggedInTime: Entity.generateTimeMills,
+            verified: true,
+          );
+          return AuthResponse.authenticated(
+            user,
+            msg: msg.signInWithPhone.done,
+            provider: AuthProviders.phone,
+            type: AuthType.phone,
+          );
         } else {
           return AuthResponse.failure(
-            response.exception,
+            msg.authorization,
             provider: AuthProviders.phone,
             type: AuthType.phone,
           );
         }
-      } catch (error) {
+      } else {
         return AuthResponse.failure(
-          msg.signInWithPhone.failure ?? error,
+          response.exception,
           provider: AuthProviders.phone,
           type: AuthType.phone,
         );
       }
+    } catch (error) {
+      return AuthResponse.failure(
+        msg.signInWithPhone.failure ?? error,
+        provider: AuthProviders.phone,
+        type: AuthType.phone,
+      );
     }
   }
 

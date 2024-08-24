@@ -31,7 +31,7 @@ class Application extends StatelessWidget {
       initialCheck: true,
       controller: AuthController.getInstance<UserModel>(
         backup: UserBackupDelegate(),
-        oauth: OAuthDelegates(
+        auth: AuthDelegate(
           // appleAuthDelegate: AppleAuthDelegate(),
           biometricAuthDelegate: BiometricAuthDelegate(),
           // facebookAuthDelegate: FacebookAuthDelegate(),
