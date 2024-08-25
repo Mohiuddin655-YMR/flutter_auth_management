@@ -43,6 +43,11 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   final _userNotifier = AuthNotifier<T?>(null);
   final _stateNotifier = AuthNotifier(AuthState.unauthenticated);
 
+  Object? _args;
+
+  @override
+  Object? get args => _args;
+
   Future<T?> get _auth => backupHandler.cache;
 
   AuthControllerImpl({
@@ -69,8 +74,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     BackupHandler<T>? backupHandler,
     AuthMessages? messages,
   })  : msg = messages ?? const AuthMessages(),
-        backupHandler =
-            backupHandler ?? BackupHandlerImpl<T>(AuthorizedDataSourceImpl());
+        backupHandler = backupHandler ??
+            BackupHandlerImpl<T>(
+              AuthorizedDataSourceImpl(),
+            );
 
   @override
   Future<T?> get auth {
@@ -80,7 +87,7 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  String get error => _errorNotifier.value;
+  String get errorText => _errorNotifier.value;
 
   @override
   Future<bool> get isBiometricEnabled {
@@ -120,6 +127,24 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   T? get user => _userNotifier.value;
 
   @override
+  User? get firebaseUser => FirebaseAuth.instance.currentUser;
+
+  @override
+  Stream<User?> get firebaseAuthChanges {
+    return FirebaseAuth.instance.authStateChanges();
+  }
+
+  @override
+  Stream<User?> get firebaseIdTokenChanges {
+    return FirebaseAuth.instance.idTokenChanges();
+  }
+
+  @override
+  Stream<User?> get firebaseUserChanges {
+    return FirebaseAuth.instance.userChanges();
+  }
+
+  @override
   Future<Response<bool>> addBiometric({
     SignByBiometricCallback? callback,
     BiometricConfig? config,
@@ -139,7 +164,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
             updates: {
               AuthKeys.i.biometric: biometric?.name,
             },
-          ).then((_) => Response(status: Status.ok, data: true));
+          ).then(
+            (_) => Response(status: Status.ok, data: true),
+          );
         } else {
           return Response(
             status: response.status,
@@ -147,7 +174,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           );
         }
       } catch (error) {
-        return Response(status: Status.failure, exception: error.toString());
+        return Response(
+          status: Status.failure,
+          exception: error.toString(),
+        );
       }
     } else {
       return Response(
@@ -178,7 +208,10 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           return Response(status: Status.ok, data: true);
         });
       } catch (error) {
-        return Response(status: Status.failure, exception: error.toString());
+        return Response(
+          status: Status.failure,
+          exception: error.toString(),
+        );
       }
     } else {
       return Response(
@@ -189,8 +222,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> delete() async {
-    emit(const AuthResponse.loading(AuthProviders.none, AuthType.delete));
+  Future<AuthResponse<T>> delete({
+    Object? args,
+    bool notifiable = true,
+  }) async {
+    emit(
+      const AuthResponse.loading(AuthProviders.none, AuthType.delete),
+      args: args,
+      notifiable: notifiable,
+    );
     var data = await auth;
     if (data != null) {
       try {
@@ -198,37 +238,53 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           if (response.isSuccessful) {
             return _delete().then((value) {
               return backupHandler.onDeleteUser(data.id).then((value) {
-                return emit(AuthResponse.unauthenticated(
-                  msg: msg.delete.done,
-                  provider: AuthProviders.none,
-                  type: AuthType.delete,
-                ));
+                return emit(
+                  AuthResponse.unauthenticated(
+                    msg: msg.delete.done,
+                    provider: AuthProviders.none,
+                    type: AuthType.delete,
+                  ),
+                  args: args,
+                  notifiable: notifiable,
+                );
               });
             });
           } else {
-            return emit(AuthResponse.rollback(
-              data,
-              msg: response.message,
-              provider: AuthProviders.none,
-              type: AuthType.delete,
-            ));
+            return emit(
+              AuthResponse.rollback(
+                data,
+                msg: response.message,
+                provider: AuthProviders.none,
+                type: AuthType.delete,
+              ),
+              args: args,
+              notifiable: notifiable,
+            );
           }
         });
       } catch (error) {
-        return emit(AuthResponse.rollback(
-          data,
-          msg: msg.delete.failure ?? error,
-          provider: AuthProviders.none,
-          type: AuthType.delete,
-        ));
+        return emit(
+          AuthResponse.rollback(
+            data,
+            msg: msg.delete.failure ?? error,
+            provider: AuthProviders.none,
+            type: AuthType.delete,
+          ),
+          args: args,
+          notifiable: notifiable,
+        );
       }
     } else {
-      return emit(AuthResponse.rollback(
-        data,
-        msg: msg.loggedIn.failure,
-        provider: AuthProviders.none,
-        type: AuthType.delete,
-      ));
+      return emit(
+        AuthResponse.rollback(
+          data,
+          msg: msg.loggedIn.failure,
+          provider: AuthProviders.none,
+          type: AuthType.delete,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
     }
   }
 
@@ -249,16 +305,26 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> emit(AuthResponse<T> data) async {
-    if (data.isLoading) {
-      _emitLoading(true);
+  Future<AuthResponse<T>> emit(
+    AuthResponse<T> data, {
+    Object? args,
+    bool notifiable = true,
+  }) async {
+    _args = args;
+    if (notifiable) {
+      if (data.isLoading) {
+        _emitLoading(true);
+      } else {
+        _emitLoading(false);
+        _emitError(data);
+        _emitMessage(data);
+        _emitState(data);
+        _emitUser(data.data);
+      }
     } else {
-      _emitLoading(false);
-      _emitError(data);
-      _emitMessage(data);
-      _emitState(data);
-      _emitUser(data.data);
+      if (!data.isLoading) _emitUser(data.data);
     }
+
     return data;
   }
 
@@ -313,9 +379,9 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> isSignIn([
+  Future<AuthResponse<T>> isSignIn({
     AuthProviders? provider,
-  ]) async {
+  }) async {
     try {
       final signedIn = await authHandler.isSignIn(provider);
       final data = signedIn ? await auth : null;
@@ -342,11 +408,17 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   }
 
   @override
-  Future<AuthResponse<T>> signInAnonymously([
+  Future<AuthResponse<T>> signInAnonymously({
     GuestAuthenticator? authenticator,
-  ]) async {
+    Object? args,
+    bool notifiable = true,
+  }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.email, AuthType.login));
+      emit(
+        const AuthResponse.loading(AuthProviders.email, AuthType.login),
+        args: args,
+        notifiable: notifiable,
+      );
       final response = await authHandler.signInAnonymously();
       if (response.isSuccessful) {
         final result = response.data?.user;
@@ -369,45 +441,67 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               AuthKeys.i.loggedInTime: Entity.generateTimeMills,
             },
           ).then((value) {
-            return emit(AuthResponse.authenticated(
-              value,
-              msg: msg.signInWithEmail.done,
-              provider: AuthProviders.guest,
-              type: AuthType.none,
-            ));
+            return emit(
+              AuthResponse.authenticated(
+                value,
+                msg: msg.signInWithEmail.done,
+                provider: AuthProviders.guest,
+                type: AuthType.none,
+              ),
+              args: args,
+              notifiable: notifiable,
+            );
           });
         } else {
-          return emit(AuthResponse.failure(
-            msg.authorization,
-            provider: AuthProviders.guest,
-            type: AuthType.none,
-          ));
+          return emit(
+            AuthResponse.failure(
+              msg.authorization,
+              provider: AuthProviders.guest,
+              type: AuthType.none,
+            ),
+            args: args,
+            notifiable: notifiable,
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.guest,
-          type: AuthType.none,
-        ));
+        return emit(
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.guest,
+            type: AuthType.none,
+          ),
+          args: args,
+          notifiable: notifiable,
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithEmail.failure ?? error,
-        provider: AuthProviders.guest,
-        type: AuthType.none,
-      ));
+      return emit(
+        AuthResponse.failure(
+          msg.signInWithEmail.failure ?? error,
+          provider: AuthProviders.guest,
+          type: AuthType.none,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
     }
   }
 
   @override
   Future<AuthResponse<T>> signInByBiometric({
     BiometricConfig? config,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(
-        AuthProviders.biometric,
-        AuthType.biometric,
-      ));
+      emit(
+        const AuthResponse.loading(
+          AuthProviders.biometric,
+          AuthType.biometric,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
       final user = await _auth;
       if (user != null && user.isBiometric) {
         final response = await authHandler.signInWithBiometric(config: config);
@@ -455,40 +549,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
               AuthKeys.i.loggedInTime: Entity.generateTimeMills,
             };
             return _update(id: user.id, updates: updates).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithBiometric.done,
-                provider: AuthProviders.biometric,
-                type: AuthType.biometric,
-              ));
+              return emit(
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithBiometric.done,
+                  provider: AuthProviders.biometric,
+                  type: AuthType.biometric,
+                ),
+                args: args,
+                notifiable: notifiable,
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              current.exception,
-              provider: AuthProviders.biometric,
-              type: AuthType.biometric,
-            ));
+            return emit(
+              AuthResponse.failure(
+                current.exception,
+                provider: AuthProviders.biometric,
+                type: AuthType.biometric,
+              ),
+              args: args,
+              notifiable: notifiable,
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            response.exception,
-            provider: AuthProviders.biometric,
-            type: AuthType.biometric,
-          ));
+          return emit(
+            AuthResponse.failure(
+              response.exception,
+              provider: AuthProviders.biometric,
+              type: AuthType.biometric,
+            ),
+            args: args,
+            notifiable: notifiable,
+          );
         }
       } else {
-        return emit(AuthResponse.unauthorized(
-          msg: msg.signInWithBiometric.failure ?? error,
-          provider: AuthProviders.biometric,
-          type: AuthType.biometric,
-        ));
+        return emit(
+          AuthResponse.unauthorized(
+            msg: msg.signInWithBiometric.failure ?? errorText,
+            provider: AuthProviders.biometric,
+            type: AuthType.biometric,
+          ),
+          args: args,
+          notifiable: notifiable,
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithBiometric.failure ?? error,
-        provider: AuthProviders.biometric,
-        type: AuthType.biometric,
-      ));
+      return emit(
+        AuthResponse.failure(
+          msg.signInWithBiometric.failure ?? error,
+          provider: AuthProviders.biometric,
+          type: AuthType.biometric,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
     }
   }
 
@@ -496,24 +610,38 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInByEmail(
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
+    Object? args,
+    bool notifiable = true,
   }) async {
     final email = authenticator.email;
     final password = authenticator.password;
     if (!AuthValidator.isValidEmail(email)) {
-      return emit(AuthResponse.failure(
-        msg.email,
-        provider: AuthProviders.email,
-        type: AuthType.login,
-      ));
+      return emit(
+        AuthResponse.failure(
+          msg.email,
+          provider: AuthProviders.email,
+          type: AuthType.login,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
     } else if (!AuthValidator.isValidPassword(password)) {
-      return emit(AuthResponse.failure(
-        msg.password,
-        provider: AuthProviders.email,
-        type: AuthType.login,
-      ));
+      return emit(
+        AuthResponse.failure(
+          msg.password,
+          provider: AuthProviders.email,
+          type: AuthType.login,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
     } else {
       try {
-        emit(const AuthResponse.loading(AuthProviders.email, AuthType.login));
+        emit(
+          const AuthResponse.loading(AuthProviders.email, AuthType.login),
+          args: args,
+          notifiable: notifiable,
+        );
         final response = await authHandler.signInWithEmailNPassword(
           email: email,
           password: password,
@@ -543,12 +671,16 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithEmail.done,
-                  provider: AuthProviders.email,
-                  type: AuthType.login,
-                ));
+                return emit(
+                  AuthResponse.authenticated(
+                    value,
+                    msg: msg.signInWithEmail.done,
+                    provider: AuthProviders.email,
+                    type: AuthType.login,
+                  ),
+                  args: args,
+                  notifiable: notifiable,
+                );
               });
             } else {
               return _update(
@@ -560,34 +692,50 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithEmail.done,
-                  provider: AuthProviders.email,
-                  type: AuthType.login,
-                ));
+                return emit(
+                  AuthResponse.authenticated(
+                    value,
+                    msg: msg.signInWithEmail.done,
+                    provider: AuthProviders.email,
+                    type: AuthType.login,
+                  ),
+                  args: args,
+                  notifiable: notifiable,
+                );
               });
             }
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.email,
-              type: AuthType.login,
-            ));
+            return emit(
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.email,
+                type: AuthType.login,
+              ),
+              args: args,
+              notifiable: notifiable,
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            response.exception,
-            provider: AuthProviders.email,
-            type: AuthType.login,
-          ));
+          return emit(
+            AuthResponse.failure(
+              response.exception,
+              provider: AuthProviders.email,
+              type: AuthType.login,
+            ),
+            args: args,
+            notifiable: notifiable,
+          );
         }
       } catch (error) {
-        return emit(AuthResponse.failure(
-          msg.signInWithEmail.failure ?? error,
-          provider: AuthProviders.email,
-          type: AuthType.login,
-        ));
+        return emit(
+          AuthResponse.failure(
+            msg.signInWithEmail.failure ?? error,
+            provider: AuthProviders.email,
+            type: AuthType.login,
+          ),
+          args: args,
+          notifiable: notifiable,
+        );
       }
     }
   }
@@ -602,14 +750,20 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
     void Function(FirebaseAuthException exception)? onFailed,
     void Function(String verId, int? forceResendingToken)? onCodeSent,
     void Function(String verId)? onCodeAutoRetrievalTimeout,
+    Object? args,
+    bool notifiable = true,
   }) async {
     final phone = authenticator.phone;
     if (!AuthValidator.isValidPhone(phone)) {
-      return emit(AuthResponse.failure(
-        msg.phoneNumber,
-        provider: AuthProviders.phone,
-        type: AuthType.otp,
-      ));
+      return emit(
+        AuthResponse.failure(
+          msg.phoneNumber,
+          provider: AuthProviders.phone,
+          type: AuthType.otp,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
     } else {
       try {
         authHandler.verifyPhoneNumber(
@@ -620,70 +774,100 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
           timeout: timeout,
           onComplete: (PhoneAuthCredential credential) async {
             if (onComplete != null) {
-              emit(const AuthResponse.message(
-                "Verification done!",
-                provider: AuthProviders.phone,
-                type: AuthType.otp,
-              ));
+              emit(
+                const AuthResponse.message(
+                  "Verification done!",
+                  provider: AuthProviders.phone,
+                  type: AuthType.otp,
+                ),
+                args: args,
+                notifiable: notifiable,
+              );
               onComplete(credential);
             } else {
               final verId = credential.verificationId;
               final code = credential.smsCode;
               if (verId != null && code != null) {
-                signInByOtp(authenticator.otp(
-                  token: verId,
-                  smsCode: code,
-                ));
+                signInByOtp(
+                  authenticator.otp(
+                    token: verId,
+                    smsCode: code,
+                  ),
+                );
               } else {
-                emit(const AuthResponse.failure(
-                  "Verification token or otp code not valid!",
-                  provider: AuthProviders.phone,
-                  type: AuthType.otp,
-                ));
+                emit(
+                  const AuthResponse.failure(
+                    "Verification token or otp code not valid!",
+                    provider: AuthProviders.phone,
+                    type: AuthType.otp,
+                  ),
+                  args: args,
+                  notifiable: notifiable,
+                );
               }
             }
           },
           onCodeSent: (String verId, int? forceResendingToken) {
-            emit(const AuthResponse.message(
-              "Code sent to your device!",
-              provider: AuthProviders.phone,
-              type: AuthType.otp,
-            ));
+            emit(
+              const AuthResponse.message(
+                "Code sent to your device!",
+                provider: AuthProviders.phone,
+                type: AuthType.otp,
+              ),
+              args: args,
+              notifiable: notifiable,
+            );
             if (onCodeSent != null) {
               onCodeSent(verId, forceResendingToken);
             }
           },
           onFailed: (FirebaseAuthException exception) {
-            emit(AuthResponse.failure(
-              exception.message,
-              provider: AuthProviders.phone,
-              type: AuthType.otp,
-            ));
+            emit(
+              AuthResponse.failure(
+                exception.message,
+                provider: AuthProviders.phone,
+                type: AuthType.otp,
+              ),
+              args: args,
+              notifiable: notifiable,
+            );
             if (onFailed != null) {
               onFailed(exception);
             }
           },
           onCodeAutoRetrievalTimeout: (String verId) {
-            emit(const AuthResponse.failure(
-              "Auto retrieval code timeout!",
-              provider: AuthProviders.phone,
-              type: AuthType.otp,
-            ));
+            emit(
+              const AuthResponse.failure(
+                "Auto retrieval code timeout!",
+                provider: AuthProviders.phone,
+                type: AuthType.otp,
+              ),
+              args: args,
+              notifiable: notifiable,
+            );
             if (onCodeAutoRetrievalTimeout != null) {
               onCodeAutoRetrievalTimeout(verId);
             }
           },
         );
-        return emit(const AuthResponse.loading(
-          AuthProviders.phone,
-          AuthType.otp,
-        ));
+        return emit(
+          const AuthResponse.loading(
+            AuthProviders.phone,
+            AuthType.otp,
+          ),
+          args: args,
+          notifiable: notifiable,
+        );
       } catch (error) {
-        return emit(AuthResponse.failure(
-          msg.signOut.failure ?? error,
-          provider: AuthProviders.phone,
-          type: AuthType.otp,
-        ));
+        return emit(
+          AuthResponse.failure(
+            msg.signOut.failure ?? error,
+            provider: AuthProviders.phone,
+            type: AuthType.otp,
+          ),
+          args: args,
+          notifiable: notifiable,
+        );
       }
     }
   }
@@ -692,24 +876,38 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInByOtp(
     OtpAuthenticator authenticator, {
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     final token = authenticator.token;
     final code = authenticator.smsCode;
     if (!AuthValidator.isValidToken(token)) {
-      return emit(AuthResponse.failure(
-        msg.token,
-        provider: AuthProviders.phone,
-        type: AuthType.phone,
-      ));
+      return emit(
+        AuthResponse.failure(
+          msg.token,
+          provider: AuthProviders.phone,
+          type: AuthType.phone,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
     } else if (!AuthValidator.isValidSmsCode(code)) {
-      return emit(AuthResponse.failure(
-        msg.otp,
-        provider: AuthProviders.phone,
-        type: AuthType.phone,
-      ));
+      return emit(
+        AuthResponse.failure(
+          msg.otp,
+          provider: AuthProviders.phone,
+          type: AuthType.phone,
+        ),
+        args: args,
+        notifiable: notifiable,
+      );
     } else {
       try {
-        emit(const AuthResponse.loading(AuthProviders.phone, AuthType.phone));
+        emit(
+          const AuthResponse.loading(AuthProviders.phone, AuthType.phone),
+          args: args,
+          notifiable: notifiable,
+        );
         final credential = authenticator.credential;
         final response = await authHandler.signInWithCredential(
           credential: credential,
@@ -741,33 +939,49 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithPhone.done,
-                provider: AuthProviders.phone,
-                type: AuthType.phone,
-              ));
+              return emit(
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithPhone.done,
+                  provider: AuthProviders.phone,
+                  type: AuthType.phone,
+                ),
+                args: args,
+                notifiable: notifiable,
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.phone,
-              type: AuthType.phone,
-            ));
+            return emit(
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.phone,
+                type: AuthType.phone,
+              ),
+              args: args,
+              notifiable: notifiable,
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            response.exception,
-            provider: AuthProviders.phone,
-            type: AuthType.phone,
-          ));
+          return emit(
+            AuthResponse.failure(
+              response.exception,
+              provider: AuthProviders.phone,
+              type: AuthType.phone,
+            ),
+            args: args,
+            notifiable: notifiable,
+          );
         }
       } catch (error) {
-        return emit(AuthResponse.failure(
-          msg.signInWithPhone.failure ?? error,
-          provider: AuthProviders.phone,
-          type: AuthType.phone,
-        ));
+        return emit(
+          AuthResponse.failure(
+            msg.signInWithPhone.failure ?? error,
+            provider: AuthProviders.phone,
+            type: AuthType.phone,
+          ),
+          args: args,
+          notifiable: notifiable,
+        );
       }
     }
   }
@@ -776,27 +990,41 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInByUsername(
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
+    Object? args,
+    bool notifiable = true,
   }) async {
     final username = authenticator.username;
     final password = authenticator.password;
     if (!AuthValidator.isValidUsername(username)) {
-      return emit(AuthResponse.failure(
-        msg.username,
-        provider: AuthProviders.username,
-        type: AuthType.login,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.username,
+          provider: AuthProviders.username,
+          type: AuthType.login,
+        ),
+      );
     } else if (!AuthValidator.isValidPassword(password)) {
-      return emit(AuthResponse.failure(
-        msg.password,
-        provider: AuthProviders.username,
-        type: AuthType.login,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.password,
+          provider: AuthProviders.username,
+          type: AuthType.login,
+        ),
+      );
     } else {
       try {
-        emit(const AuthResponse.loading(
-          AuthProviders.username,
-          AuthType.login,
-        ));
+        emit(
+          args: args,
+          notifiable: notifiable,
+          const AuthResponse.loading(
+            AuthProviders.username,
+            AuthType.login,
+          ),
+        );
         final response = await authHandler.signInWithUsernameNPassword(
           username: username,
           password: password,
@@ -826,12 +1054,16 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithUsername.done,
-                  provider: AuthProviders.username,
-                  type: AuthType.login,
-                ));
+                return emit(
+                  args: args,
+                  notifiable: notifiable,
+                  AuthResponse.authenticated(
+                    value,
+                    msg: msg.signInWithUsername.done,
+                    provider: AuthProviders.username,
+                    type: AuthType.login,
+                  ),
+                );
               });
             } else {
               return _update(
@@ -843,34 +1075,50 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                   AuthKeys.i.loggedInTime: Entity.generateTimeMills,
                 },
               ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signInWithUsername.done,
-                  provider: AuthProviders.username,
-                  type: AuthType.login,
-                ));
+                return emit(
+                  args: args,
+                  notifiable: notifiable,
+                  AuthResponse.authenticated(
+                    value,
+                    msg: msg.signInWithUsername.done,
+                    provider: AuthProviders.username,
+                    type: AuthType.login,
+                  ),
+                );
               });
             }
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.username,
-              type: AuthType.login,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.username,
+                type: AuthType.login,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            response.exception,
-            provider: AuthProviders.username,
-            type: AuthType.login,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              response.exception,
+              provider: AuthProviders.username,
+              type: AuthType.login,
+            ),
+          );
         }
       } catch (error) {
-        return emit(AuthResponse.failure(
-          msg.signInWithUsername.failure ?? error,
-          provider: AuthProviders.username,
-          type: AuthType.login,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            msg.signInWithUsername.failure ?? error,
+            provider: AuthProviders.username,
+            type: AuthType.login,
+          ),
+        );
       }
     }
   }
@@ -879,27 +1127,41 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signUpByEmail(
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
+    Object? args,
+    bool notifiable = true,
   }) async {
     final email = authenticator.email;
     final password = authenticator.password;
     if (!AuthValidator.isValidEmail(email)) {
-      return emit(AuthResponse.failure(
-        msg.email,
-        provider: AuthProviders.email,
-        type: AuthType.register,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.email,
+          provider: AuthProviders.email,
+          type: AuthType.register,
+        ),
+      );
     } else if (!AuthValidator.isValidPassword(password)) {
-      return emit(AuthResponse.failure(
-        msg.password,
-        provider: AuthProviders.email,
-        type: AuthType.register,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.password,
+          provider: AuthProviders.email,
+          type: AuthType.register,
+        ),
+      );
     } else {
       try {
-        emit(const AuthResponse.loading(
-          AuthProviders.email,
-          AuthType.register,
-        ));
+        emit(
+          args: args,
+          notifiable: notifiable,
+          const AuthResponse.loading(
+            AuthProviders.email,
+            AuthType.register,
+          ),
+        );
         final response = await authHandler.signUpWithEmailNPassword(
           email: email,
           password: password,
@@ -925,43 +1187,63 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 id: user.id,
                 initials: user.copy(biometric: biometric?.name).source,
               ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signUpWithEmail.done,
-                  provider: AuthProviders.email,
-                  type: AuthType.register,
-                ));
+                return emit(
+                  args: args,
+                  notifiable: notifiable,
+                  AuthResponse.authenticated(
+                    value,
+                    msg: msg.signUpWithEmail.done,
+                    provider: AuthProviders.email,
+                    type: AuthType.register,
+                  ),
+                );
               });
             } else {
               return _update(id: user.id, initials: user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signUpWithEmail.done,
-                  provider: AuthProviders.email,
-                  type: AuthType.register,
-                ));
+                return emit(
+                  args: args,
+                  notifiable: notifiable,
+                  AuthResponse.authenticated(
+                    value,
+                    msg: msg.signUpWithEmail.done,
+                    provider: AuthProviders.email,
+                    type: AuthType.register,
+                  ),
+                );
               });
             }
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.email,
-              type: AuthType.register,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.email,
+                type: AuthType.register,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            response.exception,
-            provider: AuthProviders.email,
-            type: AuthType.register,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              response.exception,
+              provider: AuthProviders.email,
+              type: AuthType.register,
+            ),
+          );
         }
       } catch (error) {
-        return emit(AuthResponse.failure(
-          msg.signUpWithEmail.failure ?? error,
-          provider: AuthProviders.email,
-          type: AuthType.register,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            msg.signUpWithEmail.failure ?? error,
+            provider: AuthProviders.email,
+            type: AuthType.register,
+          ),
+        );
       }
     }
   }
@@ -970,27 +1252,41 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signUpByUsername(
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
+    Object? args,
+    bool notifiable = true,
   }) async {
     final username = authenticator.username;
     final password = authenticator.password;
     if (!AuthValidator.isValidUsername(username)) {
-      return emit(AuthResponse.failure(
-        msg.username,
-        provider: AuthProviders.username,
-        type: AuthType.register,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.username,
+          provider: AuthProviders.username,
+          type: AuthType.register,
+        ),
+      );
     } else if (!AuthValidator.isValidPassword(password)) {
-      return emit(AuthResponse.failure(
-        msg.password,
-        provider: AuthProviders.username,
-        type: AuthType.register,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.password,
+          provider: AuthProviders.username,
+          type: AuthType.register,
+        ),
+      );
     } else {
       try {
-        emit(const AuthResponse.loading(
-          AuthProviders.username,
-          AuthType.register,
-        ));
+        emit(
+          args: args,
+          notifiable: notifiable,
+          const AuthResponse.loading(
+            AuthProviders.username,
+            AuthType.register,
+          ),
+        );
         final response = await authHandler.signUpWithUsernameNPassword(
           username: username,
           password: password,
@@ -1016,54 +1312,80 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 id: user.id,
                 initials: user.copy(biometric: biometric?.name).source,
               ).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signUpWithUsername.done,
-                  provider: AuthProviders.username,
-                  type: AuthType.register,
-                ));
+                return emit(
+                  args: args,
+                  notifiable: notifiable,
+                  AuthResponse.authenticated(
+                    value,
+                    msg: msg.signUpWithUsername.done,
+                    provider: AuthProviders.username,
+                    type: AuthType.register,
+                  ),
+                );
               });
             } else {
               return _update(id: user.id, initials: user.source).then((value) {
-                return emit(AuthResponse.authenticated(
-                  value,
-                  msg: msg.signUpWithUsername.done,
-                  provider: AuthProviders.username,
-                  type: AuthType.register,
-                ));
+                return emit(
+                  args: args,
+                  notifiable: notifiable,
+                  AuthResponse.authenticated(
+                    value,
+                    msg: msg.signUpWithUsername.done,
+                    provider: AuthProviders.username,
+                    type: AuthType.register,
+                  ),
+                );
               });
             }
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.username,
-              type: AuthType.register,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.username,
+                type: AuthType.register,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            response.exception,
-            provider: AuthProviders.username,
-            type: AuthType.register,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              response.exception,
+              provider: AuthProviders.username,
+              type: AuthType.register,
+            ),
+          );
         }
       } catch (error) {
-        return emit(AuthResponse.failure(
-          msg.signUpWithUsername.failure ?? error,
-          provider: AuthProviders.username,
-          type: AuthType.register,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            msg.signUpWithUsername.failure ?? error,
+            provider: AuthProviders.username,
+            type: AuthType.register,
+          ),
+        );
       }
     }
   }
 
   @override
-  Future<AuthResponse<T>> signOut([
+  Future<AuthResponse<T>> signOut({
     AuthProviders? provider,
-  ]) async {
+    Object? args,
+    bool notifiable = true,
+  }) async {
     try {
       provider ??= (await _auth)?.mProvider;
-      emit(AuthResponse.loading(provider, AuthType.logout));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.loading(provider, AuthType.logout),
+      );
       final response = await authHandler.signOut(provider);
       if (response.isSuccessful) {
         return _auth.then((data) async {
@@ -1081,50 +1403,73 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                   AuthKeys.i.loggedOutTime: Entity.generateTimeMills,
                 },
               ).then((value) {
-                return emit(AuthResponse.unauthenticated(
-                  msg: msg.signOut.done,
-                  provider: provider,
-                  type: AuthType.logout,
-                ));
+                return emit(
+                  args: args,
+                  notifiable: notifiable,
+                  AuthResponse.unauthenticated(
+                    msg: msg.signOut.done,
+                    provider: provider,
+                    type: AuthType.logout,
+                  ),
+                );
               });
             } else {
               return _delete().then((value) {
-                return emit(AuthResponse.unauthenticated(
-                  msg: msg.signOut.done,
-                  provider: provider,
-                  type: AuthType.logout,
-                ));
+                return emit(
+                  args: args,
+                  notifiable: notifiable,
+                  AuthResponse.unauthenticated(
+                    msg: msg.signOut.done,
+                    provider: provider,
+                    type: AuthType.logout,
+                  ),
+                );
               });
             }
           } else {
-            return emit(AuthResponse.unauthenticated(
-              msg: msg.signOut.done,
-              provider: provider,
-              type: AuthType.logout,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.unauthenticated(
+                msg: msg.signOut.done,
+                provider: provider,
+                type: AuthType.logout,
+              ),
+            );
           }
         });
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: provider,
-          type: AuthType.logout,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: provider,
+            type: AuthType.logout,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signOut.failure ?? error,
-        provider: provider,
-        type: AuthType.logout,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signOut.failure ?? error,
+          provider: provider,
+          type: AuthType.logout,
+        ),
+      );
     }
   }
 
   @override
-  Future<T?> update(Map<String, dynamic> data) {
+  Future<T?> update(
+    Map<String, dynamic> data, {
+    bool notifiable = true,
+  }) {
     return backupHandler.update(data).then((value) {
       return auth.then((update) {
-        _emitUser(update);
+        if (notifiable) _emitUser(update);
         return update;
       });
     });
@@ -1224,9 +1569,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithApple({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.apple, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.apple, AuthType.oauth),
+      );
       final response = await authHandler.signInWithApple();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1258,40 +1609,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithApple.done,
-                provider: AuthProviders.apple,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithApple.done,
+                  provider: AuthProviders.apple,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.apple,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.apple,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.apple,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.apple,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.apple,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.apple,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithApple.failure ?? error,
-        provider: AuthProviders.apple,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithApple.failure ?? error,
+          provider: AuthProviders.apple,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1299,9 +1670,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithFacebook({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.facebook, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.facebook, AuthType.oauth),
+      );
       final response = await authHandler.signInWithFacebook();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1333,40 +1710,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithFacebook.done,
-                provider: AuthProviders.facebook,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithFacebook.done,
+                  provider: AuthProviders.facebook,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.facebook,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.facebook,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.facebook,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.facebook,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.facebook,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.facebook,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithFacebook.failure ?? error,
-        provider: AuthProviders.facebook,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithFacebook.failure ?? error,
+          provider: AuthProviders.facebook,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1374,12 +1771,18 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithGameCenter({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(
-        AuthProviders.gameCenter,
-        AuthType.oauth,
-      ));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(
+          AuthProviders.gameCenter,
+          AuthType.oauth,
+        ),
+      );
       final response = await authHandler.signInWithGameCenter();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1411,40 +1814,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGithub.done,
-                provider: AuthProviders.gameCenter,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithGithub.done,
+                  provider: AuthProviders.gameCenter,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.gameCenter,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.gameCenter,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.gameCenter,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.gameCenter,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.gameCenter,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.gameCenter,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGithub.failure ?? error,
-        provider: AuthProviders.gameCenter,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithGithub.failure ?? error,
+          provider: AuthProviders.gameCenter,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1452,9 +1875,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithGithub({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.github, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.github, AuthType.oauth),
+      );
       final response = await authHandler.signInWithGithub();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1486,40 +1915,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGithub.done,
-                provider: AuthProviders.github,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithGithub.done,
+                  provider: AuthProviders.github,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.github,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.github,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.github,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.github,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.github,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.github,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGithub.failure ?? error,
-        provider: AuthProviders.github,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithGithub.failure ?? error,
+          provider: AuthProviders.github,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1527,9 +1976,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithGoogle({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.google, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.google, AuthType.oauth),
+      );
       final response = await authHandler.signInWithGoogle();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1561,40 +2016,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGoogle.done,
-                provider: AuthProviders.google,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithGoogle.done,
+                  provider: AuthProviders.google,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.google,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.google,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.google,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.google,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.google,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.google,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGoogle.failure ?? error,
-        provider: AuthProviders.google,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithGoogle.failure ?? error,
+          provider: AuthProviders.google,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1602,9 +2077,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithMicrosoft({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.microsoft, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.microsoft, AuthType.oauth),
+      );
       final response = await authHandler.signInWithMicrosoft();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1636,40 +2117,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGithub.done,
-                provider: AuthProviders.microsoft,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithGithub.done,
+                  provider: AuthProviders.microsoft,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.microsoft,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.microsoft,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.microsoft,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.microsoft,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.microsoft,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.microsoft,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGithub.failure ?? error,
-        provider: AuthProviders.microsoft,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithGithub.failure ?? error,
+          provider: AuthProviders.microsoft,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1677,9 +2178,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithPlayGames({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.playGames, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.playGames, AuthType.oauth),
+      );
       final response = await authHandler.signInWithPlayGames();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1711,40 +2218,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGithub.done,
-                provider: AuthProviders.playGames,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithGithub.done,
+                  provider: AuthProviders.playGames,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.playGames,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.playGames,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.playGames,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.playGames,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.playGames,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.playGames,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGithub.failure ?? error,
-        provider: AuthProviders.playGames,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithGithub.failure ?? error,
+          provider: AuthProviders.playGames,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1752,9 +2279,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithSAML({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.saml, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.saml, AuthType.oauth),
+      );
       final response = await authHandler.signInWithSAML();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1786,40 +2319,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGithub.done,
-                provider: AuthProviders.saml,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithGithub.done,
+                  provider: AuthProviders.saml,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.saml,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.saml,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.saml,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.saml,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.saml,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.saml,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGithub.failure ?? error,
-        provider: AuthProviders.saml,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithGithub.failure ?? error,
+          provider: AuthProviders.saml,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1827,9 +2380,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithTwitter({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.twitter, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.twitter, AuthType.oauth),
+      );
       final response = await authHandler.signInWithTwitter();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1861,40 +2420,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGithub.done,
-                provider: AuthProviders.twitter,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithGithub.done,
+                  provider: AuthProviders.twitter,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.twitter,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.twitter,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.twitter,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.twitter,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.twitter,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.twitter,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGithub.failure ?? error,
-        provider: AuthProviders.twitter,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithGithub.failure ?? error,
+          provider: AuthProviders.twitter,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 
@@ -1902,9 +2481,15 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
   Future<AuthResponse<T>> signInWithYahoo({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   }) async {
     try {
-      emit(const AuthResponse.loading(AuthProviders.yahoo, AuthType.oauth));
+      emit(
+        args: args,
+        notifiable: notifiable,
+        const AuthResponse.loading(AuthProviders.yahoo, AuthType.oauth),
+      );
       final response = await authHandler.signInWithYahoo();
       final raw = response.data;
       if (raw != null && raw.credential != null) {
@@ -1936,40 +2521,60 @@ class AuthControllerImpl<T extends Auth> extends AuthController<T> {
                 AuthKeys.i.loggedInTime: Entity.generateTimeMills,
               },
             ).then((value) {
-              return emit(AuthResponse.authenticated(
-                value,
-                msg: msg.signInWithGithub.done,
-                provider: AuthProviders.yahoo,
-                type: AuthType.oauth,
-              ));
+              return emit(
+                args: args,
+                notifiable: notifiable,
+                AuthResponse.authenticated(
+                  value,
+                  msg: msg.signInWithGithub.done,
+                  provider: AuthProviders.yahoo,
+                  type: AuthType.oauth,
+                ),
+              );
             });
           } else {
-            return emit(AuthResponse.failure(
-              msg.authorization,
-              provider: AuthProviders.yahoo,
-              type: AuthType.oauth,
-            ));
+            return emit(
+              args: args,
+              notifiable: notifiable,
+              AuthResponse.failure(
+                msg.authorization,
+                provider: AuthProviders.yahoo,
+                type: AuthType.oauth,
+              ),
+            );
           }
         } else {
-          return emit(AuthResponse.failure(
-            current.exception,
-            provider: AuthProviders.yahoo,
-            type: AuthType.oauth,
-          ));
+          return emit(
+            args: args,
+            notifiable: notifiable,
+            AuthResponse.failure(
+              current.exception,
+              provider: AuthProviders.yahoo,
+              type: AuthType.oauth,
+            ),
+          );
         }
       } else {
-        return emit(AuthResponse.failure(
-          response.exception,
-          provider: AuthProviders.yahoo,
-          type: AuthType.oauth,
-        ));
+        return emit(
+          args: args,
+          notifiable: notifiable,
+          AuthResponse.failure(
+            response.exception,
+            provider: AuthProviders.yahoo,
+            type: AuthType.oauth,
+          ),
+        );
       }
     } catch (error) {
-      return emit(AuthResponse.failure(
-        msg.signInWithGithub.failure ?? error,
-        provider: AuthProviders.yahoo,
-        type: AuthType.oauth,
-      ));
+      return emit(
+        args: args,
+        notifiable: notifiable,
+        AuthResponse.failure(
+          msg.signInWithGithub.failure ?? error,
+          provider: AuthProviders.yahoo,
+          type: AuthType.oauth,
+        ),
+      );
     }
   }
 }

@@ -41,9 +41,11 @@ abstract class AuthController<T extends Auth> {
     }
   }
 
+  Object? get args;
+
   Future<T?> get auth;
 
-  String get error;
+  String get errorText;
 
   Future<bool> get isBiometricEnabled;
 
@@ -67,6 +69,14 @@ abstract class AuthController<T extends Auth> {
 
   T? get user;
 
+  User? get firebaseUser;
+
+  Stream<User?> get firebaseAuthChanges;
+
+  Stream<User?> get firebaseIdTokenChanges;
+
+  Stream<User?> get firebaseUserChanges;
+
   Future<Response<bool>> addBiometric({
     SignByBiometricCallback? callback,
     BiometricConfig? config,
@@ -74,29 +84,44 @@ abstract class AuthController<T extends Auth> {
 
   Future<Response<bool>> biometricEnable(bool enabled);
 
-  Future<AuthResponse<T>> delete();
+  Future<AuthResponse<T>> delete({
+    Object? args,
+    bool notifiable = true,
+  });
 
   void dispose();
 
-  Future<AuthResponse<T>> emit(AuthResponse<T> data);
+  Future<AuthResponse<T>> emit(
+    AuthResponse<T> data, {
+    Object? args,
+    bool notifiable = true,
+  });
 
-  Future<T?> initialize([bool initialCheck = true]);
+  Future<T?> initialize([
+    bool initialCheck = true,
+  ]);
 
-  Future<AuthResponse<T>> isSignIn([
+  Future<AuthResponse<T>> isSignIn({
     AuthProviders? provider,
-  ]);
+  });
 
-  Future<AuthResponse<T>> signInAnonymously([
+  Future<AuthResponse<T>> signInAnonymously({
     GuestAuthenticator? authenticator,
-  ]);
+    Object? args,
+    bool notifiable = true,
+  });
 
   Future<AuthResponse<T>> signInByBiometric({
     BiometricConfig? config,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInByEmail(
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInByPhone(
@@ -108,33 +133,48 @@ abstract class AuthController<T extends Auth> {
     void Function(FirebaseAuthException exception)? onFailed,
     void Function(String verId, int? forceResendingToken)? onCodeSent,
     void Function(String verId)? onCodeAutoRetrievalTimeout,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInByOtp(
     OtpAuthenticator authenticator, {
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInByUsername(
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signUpByEmail(
     EmailAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signUpByUsername(
     UsernameAuthenticator authenticator, {
     SignByBiometricCallback? onBiometric,
+    Object? args,
+    bool notifiable = true,
   });
 
-  Future<AuthResponse<T>> signOut([
+  Future<AuthResponse<T>> signOut({
     AuthProviders? provider,
-  ]);
+    Object? args,
+    bool notifiable = true,
+  });
 
-  Future<T?> update(Map<String, dynamic> data);
+  Future<T?> update(
+    Map<String, dynamic> data, {
+    bool notifiable = true,
+  });
 
   Future<AuthResponse> verifyPhoneByOtp(OtpAuthenticator authenticator);
 
@@ -142,50 +182,70 @@ abstract class AuthController<T extends Auth> {
   Future<AuthResponse<T>> signInWithApple({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithFacebook({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithGameCenter({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithGithub({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithGoogle({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithMicrosoft({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithPlayGames({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithSAML({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithTwitter({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 
   Future<AuthResponse<T>> signInWithYahoo({
     OAuthAuthenticator? authenticator,
     bool storeToken = false,
+    Object? args,
+    bool notifiable = true,
   });
 }
