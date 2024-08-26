@@ -44,7 +44,7 @@ class AuthHandlerImpl extends AuthHandler {
   }
 
   @override
-  Future<Response<bool>> signInWithBiometric({
+  Future<Response<void>> signInWithBiometric({
     BiometricConfig? config,
   }) {
     try {

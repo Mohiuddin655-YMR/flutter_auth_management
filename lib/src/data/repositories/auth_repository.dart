@@ -30,7 +30,7 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<Response<bool>> signInWithBiometric({
+  Future<Response<void>> signInWithBiometric({
     BiometricConfig? config,
   }) {
     return source.signInWithBiometric(config: config);

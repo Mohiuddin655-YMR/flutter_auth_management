@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter_entity/flutter_entity.dart';
 
 import '../../core/converter.dart';
-import '../../core/validator.dart';
 import '../../delegates/oauth.dart';
 import '../../exceptions/oauth.dart';
 import '../../models/auth.dart';
@@ -144,17 +143,16 @@ class AuthDataSourceImpl extends AuthDataSource {
   }
 
   @override
-  Future<Response<bool>> signInWithBiometric({
+  Future<Response<void>> signInWithBiometric({
     BiometricConfig? config,
   }) async {
-    final response = Response<bool>();
     final mConfig = config ?? const BiometricConfig();
     try {
       final bool check = await localAuth.canCheckBiometrics;
       final bool isSupportable = check || await localAuth.isDeviceSupported();
       if (!isSupportable) {
-        return response.withException(
-          mConfig.deviceException,
+        return Response(
+          exception: mConfig.deviceException,
           status: Status.notSupported,
         );
       } else {
@@ -165,22 +163,22 @@ class AuthDataSourceImpl extends AuthDataSource {
             options: mConfig.options,
           );
           if (authenticated) {
-            return response.withData(true);
+            return Response(status: Status.ok);
           } else {
-            return response.withException(
-              mConfig.failureException,
+            return Response(
+              exception: mConfig.failureException,
               status: Status.notFound,
             );
           }
         } else {
-          return response.withException(
-            mConfig.checkingException,
+          return Response(
+            exception: mConfig.checkingException,
             status: Status.undetected,
           );
         }
       }
-    } catch (_) {
-      return response.withException(_, status: Status.failure);
+    } catch (error) {
+      return Response(exception: error.toString(), status: Status.failure);
     }
   }
 
@@ -219,20 +217,19 @@ class AuthDataSourceImpl extends AuthDataSource {
     required String username,
     required String password,
   }) async {
-    final response = Response<UserCredential>();
     var mail = AuthConverter.toMail(username, "user", "org");
-    if (AuthValidator.isValidEmail(mail)) {
-      try {
-        final result = await firebaseAuth.signInWithEmailAndPassword(
-          email: mail ?? "example@user.org",
-          password: password,
-        );
-        return response.withData(result, message: "Sign in successful!");
-      } on FirebaseAuthException catch (_) {
-        return response.withException(_.message, status: Status.failure);
-      }
-    } else {
-      return response.withException("Username isn't valid!");
+    try {
+      final result = await firebaseAuth.signInWithEmailAndPassword(
+        email: mail ?? "example@user.org",
+        password: password,
+      );
+      return Response(
+        status: Status.ok,
+        data: result,
+        message: "Sign in successful!",
+      );
+    } on FirebaseAuthException catch (error) {
+      return Response(exception: error.message, status: Status.failure);
     }
   }
 
@@ -260,18 +257,14 @@ class AuthDataSourceImpl extends AuthDataSource {
   }) async {
     final response = Response<UserCredential>();
     var mail = AuthConverter.toMail(username, "user", "org");
-    if (AuthValidator.isValidEmail(mail)) {
-      try {
-        final result = await firebaseAuth.createUserWithEmailAndPassword(
-          email: mail ?? "example@user.org",
-          password: password,
-        );
-        return response.withData(result, message: "Sign up successful!");
-      } on FirebaseAuthException catch (_) {
-        return response.withException(_.message, status: Status.failure);
-      }
-    } else {
-      return response.withException("Username isn't valid!");
+    try {
+      final result = await firebaseAuth.createUserWithEmailAndPassword(
+        email: mail ?? "example@user.org",
+        password: password,
+      );
+      return response.withData(result, message: "Sign up successful!");
+    } on FirebaseAuthException catch (_) {
+      return response.withException(_.message, status: Status.failure);
     }
   }
 
@@ -347,25 +340,21 @@ class AuthDataSourceImpl extends AuthDataSource {
     required void Function(String verId) onCodeAutoRetrievalTimeout,
   }) async {
     final response = Response();
-    if (AuthValidator.isValidPhone(phoneNumber)) {
-      try {
-        firebaseAuth.verifyPhoneNumber(
-          phoneNumber: phoneNumber,
-          forceResendingToken: forceResendingToken,
-          multiFactorInfo: multiFactorInfo,
-          multiFactorSession: multiFactorSession,
-          timeout: timeout,
-          verificationCompleted: onComplete,
-          verificationFailed: onFailed,
-          codeSent: onCodeSent,
-          codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
-        );
-        return response;
-      } on FirebaseAuthException catch (_) {
-        return response.withException(_.message, status: Status.failure);
-      }
-    } else {
-      return response.withException("Phone number isn't valid!");
+    try {
+      firebaseAuth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        forceResendingToken: forceResendingToken,
+        multiFactorInfo: multiFactorInfo,
+        multiFactorSession: multiFactorSession,
+        timeout: timeout,
+        verificationCompleted: onComplete,
+        verificationFailed: onFailed,
+        codeSent: onCodeSent,
+        codeAutoRetrievalTimeout: onCodeAutoRetrievalTimeout,
+      );
+      return response;
+    } on FirebaseAuthException catch (_) {
+      return response.withException(_.message, status: Status.failure);
     }
   }
 

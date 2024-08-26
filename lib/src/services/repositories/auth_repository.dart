@@ -17,7 +17,7 @@ abstract class AuthRepository {
 
   Future<Response<UserCredential>> signInAnonymously();
 
-  Future<Response<bool>> signInWithBiometric({
+  Future<Response<void>> signInWithBiometric({
     BiometricConfig? config,
   });
 
